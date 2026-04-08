@@ -4,6 +4,8 @@ Demonstrates **`RunBuilder.onWait`**: the model returns a **`wait`** step; the c
 
 The LLM is a **small mock** (no API keys): turn 1 → `wait`, turn 2 → `result` echoing what you typed.
 
+**Production:** this demo uses **`InMemoryMemoryAdapter`** (single process only). For real deployments use **Redis** / **Upstash** memory adapters — see [`examples/README.md`](../README.md#memory-in-production).
+
 ## Prerequisite
 
 ```bash

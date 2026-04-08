@@ -2,6 +2,12 @@
 
 Runnable sample programs under **`examples/*`**, linked as **`pnpm` workspace** packages (see root [`pnpm-workspace.yaml`](../pnpm-workspace.yaml)). From the repository root: `pnpm install`, build the workspace packages each example depends on, then `pnpm --filter <package> start` or `cd examples/<dir> && pnpm start`.
 
+### Memory in production
+
+Most examples use **`InMemoryMemoryAdapter`**: it is **in-process only** (heap), **not durable** across restarts, and **wrong for multiple workers** — each process has its own empty store.
+
+For production or any shared runtime, swap to **`RedisMemoryAdapter`** (`@agent-runtime/adapters-redis`, TCP `REDIS_URL`) or **`UpstashRedisMemoryAdapter`** (`@agent-runtime/adapters-upstash`, HTTP), and keep the same `configureRuntime({ memoryAdapter: … })` pattern. Cluster guidance: [`docs/core/19-cluster-deployment.md`](../docs/core/19-cluster-deployment.md) §1.2; adapter inventory: [`docs/core/05-adapters.md`](../docs/core/05-adapters.md).
+
 ---
 
 ## Inventory (all examples)

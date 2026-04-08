@@ -2,6 +2,8 @@
 
 Uses **`OpenAILLMAdapter`**, a **custom tool** (`roll_dice`), and a **skill** (`dice-skill`) that exposes that tool to the agent.
 
+**Production:** memory is **`InMemoryMemoryAdapter`** here for a minimal demo. Use **`RedisMemoryAdapter`** / **`UpstashRedisMemoryAdapter`** when you need shared or persistent memory — [`examples/README.md`](../README.md#memory-in-production).
+
 The engine expects each model turn as **JSON in `message.content`** (`thought` | `action` | `result` | …). OpenAI sometimes returns **`tool_calls`** instead; this example includes **`OpenAiProtocolBridgeLlm`** to map the first tool call into an `action` step when `content` is empty.
 
 ## Setup

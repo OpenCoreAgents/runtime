@@ -2,6 +2,8 @@
 
 Single-file demo: **`configureRuntime`** with a **mock LLM** (no OpenAI key), **`InMemoryMemoryAdapter`**, **`Agent.define`** → **`Agent.load`** → **`run()`**.
 
+**Production:** replace **`InMemoryMemoryAdapter`** with **`RedisMemoryAdapter`** or **`UpstashRedisMemoryAdapter`** so memory is shared and durable — see [`examples/README.md`](../README.md#memory-in-production) and [`docs/core/19-cluster-deployment.md`](../../docs/core/19-cluster-deployment.md).
+
 ## Prerequisite
 
 Build core once (the example imports `dist` from `@agent-runtime/core`):
