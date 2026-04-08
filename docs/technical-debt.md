@@ -2,7 +2,7 @@
 
 English-language register of **intentional deferrals**, **plan vs implementation gaps**, and **follow-up work** for the `@agent-runtime` monorepo. It complements [`plan.md`](./plan.md) (roadmap) and [`core/19-cluster-deployment.md`](./core/19-cluster-deployment.md) (cluster patterns).
 
-**Snapshot:** Automated **CI** (`build` / `test` / `lint`) and **per-tool timeout** (`toolTimeoutMs`, `ToolTimeoutError`) are **implemented** — see [`plan.md` — Progress snapshot](./plan.md). This file focuses on what remains. **Multi-worker races** (`RunStore`, memory append, queue dedupe): **§8**; **security gaps**: **§7**; **RAG example + OpenAI adapter** (durable vector, embedding timeouts/retries, `finish_reason`): **§1**, **§3**, **§6**, **§9**.
+**Snapshot:** Automated **CI** (`build` / `test` / `lint`) and **per-tool timeout** (`toolTimeoutMs` on **`AgentRuntime`**, `ToolTimeoutError`) are **implemented** — see [`plan.md` — Progress snapshot](./plan.md). Runtime wiring is explicit: **`new AgentRuntime({ … })`** + **`Agent.load(agentId, runtime, { session })`** / **`dispatchEngineJob(runtime, payload)`** (no global runtime singleton in the public API). This file focuses on what remains. **Multi-worker races** (`RunStore`, memory append, queue dedupe): **§8**; **security gaps**: **§7**; **RAG example + OpenAI adapter** (durable vector, embedding timeouts/retries, `finish_reason`): **§1**, **§3**, **§6**, **§9**.
 
 ---
 
@@ -17,7 +17,7 @@ English-language register of **intentional deferrals**, **plan vs implementation
 | **Message bus stream keys (Redis + Upstash)** | Both `RedisMessageBus` and `UpstashRedisMessageBus` use `bus:agent:{toAgentId}` with no `projectId`/tenant segment — if agent IDs are not globally unique, shared Redis could mix traffic across tenants; consider namespacing. |
 | **`RedisMessageBus.waitFor`** | Polls with full `XRANGE` + fixed sleep — fine for tests and short streams; under load, prefer `XREAD`/`BLOCK` or consumer groups to avoid repeated full-stream reads. (`UpstashRedisMessageBus` uses a similar polling pattern.) |
 | **Memory keys: `longTerm` + Redis/Upstash** | **`InMemoryMemoryAdapter`** partitions **`longTerm`** / **`vectorMemory`** by **`endUserId`** when set (matches [15-multi-tenancy.md](./core/15-multi-tenancy.md) §4.3). **`RedisMemoryAdapter`** / **`UpstashRedisMemoryAdapter`** still use **`memoryKeyPrefix(scope)`** (includes **`sessionId`**) for **all** memory types — cross-session **`longTerm`** for the same end-user may require a follow-up key layout change. |
-| **`@agent-runtime/rag` + `examples/rag`** | Catalog + ingest pipeline are usable from apps; **`examples/rag`** uses **`createDemoVectorAdapter()`** (in-memory, single-process) and permissive demo **`security.roles`** — **not** a production deployment pattern. Ship a **durable** **`VectorAdapter`**, explicit embedding model + **dimensions** config, and minimal roles for real traffic. |
+| **`@agent-runtime/rag` + `examples/rag`** | Per-project catalog: **`registerRagCatalog(runtime, projectId, sources)`** from **`@agent-runtime/rag`** (or **`AgentRuntime.registerRagCatalog`**) after **`registerRagToolsAndSkills()`**. **`fileReadRoot`** can default on **`AgentRuntime`** (session overrides). **`examples/rag`** uses **`createDemoVectorAdapter()`** (in-memory, single-process) and permissive demo **`security.roles`** — **not** production. Ship a **durable** **`VectorAdapter`**, explicit embedding model + **dimensions** config, and minimal roles for real traffic. |
 
 ---
 
@@ -27,7 +27,7 @@ English-language register of **intentional deferrals**, **plan vs implementation
 |------|--------|
 | **Dedicated `hooks.ts` module** | The plan references `src/engine/hooks.ts`; hooks are wired inside [`Engine.ts`](../packages/core/src/engine/Engine.ts) instead. Low priority unless hook surface grows. |
 | **Hook integration tests** | **`hooks.test.ts`** — hook order incl. **`onLLMAfterParse`**. **`watch-usage.test.ts`** — **`watchUsage`** totals + **wasted** tokens (incl. fatal **`StepSchemaError`** path). |
-| **`getEngineConfig` visibility** | Exported as `@internal` for tests; worker docs reference configuration patterns — consider a stable public helper if needed. |
+| **Resolved engine config** | **`AgentRuntime.config`** exposes merged **`EngineConfig`** (limits, adapters, optional **`allowedToolIds`**, **`sendMessageTargetPolicy`**, **`fileReadRoot`**, …). There is no separate **`getEngineConfig()`** in the public API — workers/tests should hold a **`AgentRuntime`** (or spread **`runtime.config`** when assembling custom **`EngineDeps`**). |
 | **`executeRun` iteration vs parse recovery** | **Documented** in [`03-execution-model.md`](./core/03-execution-model.md) §**Iteration counter and parse recovery** — `maxIterations` vs parse-recovery `continue`, and **`wait`/`result`** not incrementing **`iteration`**. |
 | **`parseStep` / step payload strictness** | Validates `type` and minimal required fields, then casts the object to `Step`; `action.input` and extra JSON keys are unconstrained — acceptable for flexibility; add schema validation or strip unknown keys if stricter contracts or safer logging are needed. |
 
@@ -74,11 +74,11 @@ English-language register of **intentional deferrals**, **plan vs implementation
 
 ## 7. Security, integrity, and production readiness
 
-Audit-style gaps (2026-04); the **core** assumes a trusted **host** (API/BFF) for real auth unless extended below. Docs describe **SecurityLayer** before the engine; **enforcement** in `packages/core` is mostly **agent allowlists**, not principal-scoped authZ.
+Audit-style gaps (2026-04); the **core** assumes a trusted **host** (API/BFF) for real auth unless extended below. Docs describe **SecurityLayer** before the engine; **enforcement** in `packages/core` is **agent + skills (+ optional `AgentRuntime.allowedToolIds`) tool allowlists**, not principal-scoped authZ. Canonical narrative: [08-scope-and-security.md](./core/08-scope-and-security.md) §2–§3.
 
 | Item | Notes |
 |------|--------|
-| **`SecurityContext` unused in `ContextBuilder`** | [`ContextBuilder.build`](../packages/core/src/context/ContextBuilder.ts) receives `securityContext` but does not filter tools/skills by roles or scopes. Tool visibility matches **agent + skills** only. |
+| **`SecurityContext` unused in `ContextBuilder` / `ToolRunner`** | [`ContextBuilder.build`](../packages/core/src/context/ContextBuilder.ts) **omits** `securityContext` from destructuring — it is never used to filter tools. **[`ToolRunner`](../packages/core/src/tools/ToolRunner.ts)** does not read **`securityContext`** for role checks. Tool visibility matches **allowlist** only; **`SecurityContext`** is still passed on **`ToolContext`** for tools that need it. |
 | **`SecurityError` never thrown** | [`SecurityError`](../packages/core/src/errors/index.ts) is exported but no core path raises it — policy must live in the app layer or be wired into builder/runner. |
 | **Default `scopes: ["*"]` in `securityContextForAgent`** | [`buildEngineDeps`](../packages/core/src/engine/buildEngineDeps.ts) sets `scopes: agent.security?.scopes ?? ["*"]` and `kind: "internal"`. Fine for **embedded** use; **unsafe** if mistaken for end-user JWT-derived context — hosts should pass an explicit context once a public API exists. |
 | **Tool failure messages leaked to the LLM** | **Mitigated (not full logging story):** [`observationForToolFailure`](../packages/core/src/engine/toolFailureObservation.ts) maps **`ToolExecutionError`** and unknown errors to a generic message + **`code`**; **`ToolTimeoutError`** uses generic text. **`ToolNotAllowedError`** / **`ToolValidationError`** still expose engine-authored messages (no raw third-party strings). Emit full errors in **`onObservation`** server-side if you log there, or add a dedicated hook later. |
@@ -121,8 +121,8 @@ Use this when wiring **HTTP API**, **workers**, and **shared Redis**. The engine
 
 | Layer | Verify |
 |-------|--------|
-| **Identity** | No public route calls `Agent.load` without authenticating the caller and resolving **organization → `projectId`** (and **`endUserId`** for B2B2C). |
-| **Session ↔ run** | On **`resume`**, bind **`runId`** to the same **`sessionId`** (and tenant) as create; see **§7** — core does not enforce this today. |
+| **Identity** | No public route calls **`Agent.load(agentId, runtime, { session })`** without authenticating the caller and resolving **organization → `projectId`** (and **`endUserId`** for B2B2C). **`AgentRuntime`** construction must also sit behind the same trust boundary. |
+| **Session ↔ run** | On **`resume`**, use the same tenant **`Session`** as create; when **`Run.sessionId`** was set at create, core **rejects** resume if **`session.id`** does not match (**§7**). If **`sessionId`** was omitted on the run, enforce binding in the host layer. |
 | **Secrets** | API keys for LLM / Redis / vector live in **env** or a secret manager; never in agent JSON or prompts. |
 | **RAG / vectors** | Use a **durable** vector store and **stable** embedding model + dimension config; do not rely on in-memory demo adapters or model-name heuristics for dimensions in production. |
 | **Tools** | Disable or wrap **`file_read`**, raw HTTP tools, and unrestricted **`send_message`** for untrusted tenants; cap vector **`topK`** and **`runTimeoutMs`**. |
@@ -139,4 +139,4 @@ Canonical narrative: [08-scope-and-security.md §7](./core/08-scope-and-security
 - **Triaging:** Prefer turning items into tracked issues with owners.
 - **Closing entries:** Remove or move to “Done” only when the codebase or tests actually reflect the fix (not when docs alone change).
 
-Last updated **2026-04-08** (RAG/`examples/rag` + **`@agent-runtime/adapters-openai`** follow-ups in **§1**, **§3**, **§6**, **§7**, **§9**). Repository roadmap snapshot: [`plan.md` — Progress snapshot](./plan.md).
+Last updated **2026-04-08** (**`AgentRuntime`** public API, RAG **`registerRagCatalog(runtime, …)`**, **`runtime.config`** / **`fileReadRoot`**, **§7** `SecurityContext` + **`ToolRunner`**, **§9** session–resume wording, **`docs/core/08-scope-and-security.md`** alignment). Repository roadmap snapshot: [`plan.md` — Progress snapshot](./plan.md).

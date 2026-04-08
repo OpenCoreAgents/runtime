@@ -1207,12 +1207,19 @@ The engine still exposes **`onLLMResponse`** (before parse) for streaming or log
 **Usage:**
 
 ```typescript
+import { Agent, AgentRuntime, InMemoryMemoryAdapter, Session } from "@agent-runtime/core";
+
+const runtime = new AgentRuntime({
+  llmAdapter: chatAdapter, // your LLMAdapter
+  memoryAdapter: new InMemoryMemoryAdapter(),
+});
+
 const session = new Session({
   id: "queue-east-2026-04-02",
   projectId: "acme-corp",
 });
 
-const agent = await Agent.load("ops-analyst", { session });
+const agent = await Agent.load("ops-analyst", runtime, { session });
 
 const { builder, getUsage } = watchUsage(
   agent.run("Ticket #4412"),

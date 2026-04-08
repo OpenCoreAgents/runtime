@@ -94,7 +94,7 @@ export class AgentRuntime {
       this._warnedMissingRagTools = true;
       console.warn(
         "[AgentRuntime] registerRagCatalog: `list_rag_sources` is not registered yet. " +
-          "Call registerRagToolsAndSkills() (or register RAG tools) before registerRagCatalog to avoid this warning and ensure catalog tools run.",
+          "Call `registerRagToolsAndSkills()` from `@agent-runtime/rag` (or register RAG tools) before `registerRagCatalog` to avoid this warning and ensure catalog tools run.",
       );
     }
     validateRagFileCatalog(sources);

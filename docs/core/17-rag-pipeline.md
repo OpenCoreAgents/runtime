@@ -286,21 +286,44 @@ await Tool.define({
 
 Requires a **document registry** (metadata stored in `MemoryAdapter` under `longTerm` or a dedicated `documents` memory type) to track ingested files separately from their vector chunks.
 
+### 2.7 Registered file catalog (`@agent-runtime/rag`)
+
+The **`@agent-runtime/rag`** package adds **`list_rag_sources`** and **`ingest_rag_source`**: the app registers a **declarative catalog** (stable `id`, human `description`, server-side `source` path or URL) per **`projectId`**, and the model only sees ids from the list tool — not raw filenames.
+
+**Bootstrap** (order matters — core warns in dev if tools are missing):
+
+1. **`await registerRagToolsAndSkills()`** — registers RAG tools and the shipped **`rag`** / **`rag-reader`** skills.
+2. **`registerRagCatalog(runtime, projectId, entries)`** from **`@agent-runtime/rag`** — same as **`runtime.registerRagCatalog(projectId, entries)`** on **`AgentRuntime`**. Pass **`[]`** to pin an empty catalog for that project (no fallback to the legacy global map).
+
+**File sandbox**: set **`fileReadRoot`** on **`AgentRuntime`** and/or **`Session`** (session wins when both are set); same resolution rules as **`file_ingest`**. See [07-definition-syntax.md](./07-definition-syntax.md) §9 and **`examples/rag`**.
+
+**Legacy**: **`registerRagFileCatalog(entries)`** replaces a **process-wide** catalog used only when no per-project catalog was registered for the session’s project.
+
 ---
 
 ## 3. RAG skill
 
 Groups RAG tools and provides context instructions to the agent.
 
+**In-repo:** **`@agent-runtime/rag`** defines **`rag`** and **`rag-reader`** with **`list_rag_sources`**, **`ingest_rag_source`**, and the vector / file tools below — use **`registerRagToolsAndSkills()`** instead of redefining them unless you replace behavior. The snippets in this section are **conceptual** shapes; the shipped skill tool lists match **`packages/rag/src/skills/rag.ts`**.
+
 ```typescript
 await Skill.define({
   id: "rag",
   scope: "global",
-  tools: ["vector_search", "vector_upsert", "vector_delete",
-          "file_read", "file_ingest", "file_list"],
+  tools: [
+    "list_rag_sources",
+    "ingest_rag_source",
+    "vector_search",
+    "vector_upsert",
+    "vector_delete",
+    "file_read",
+    "file_ingest",
+    "file_list",
+  ],
   description:
-    "Retrieval-Augmented Generation: search the knowledge base before answering, " +
-    "ingest new documents, and manage stored fragments.",
+    "Retrieval-Augmented Generation: list and ingest preregistered sources, search the knowledge base, " +
+    "and manage stored fragments.",
 });
 ```
 
@@ -310,9 +333,9 @@ Agents that only need **read** access to the knowledge base can reference a subs
 await Skill.define({
   id: "rag-reader",
   scope: "global",
-  tools: ["vector_search"],
+  tools: ["list_rag_sources", "vector_search"],
   description:
-    "Search the knowledge base for relevant context before answering questions.",
+    "List registered RAG sources (id + description) and search the knowledge base for context.",
 });
 ```
 
@@ -408,13 +431,20 @@ await Agent.define({
 At runtime with `endUserId`:
 
 ```typescript
+import { Agent, AgentRuntime, Session, InMemoryMemoryAdapter } from "@agent-runtime/core";
+
+const runtime = new AgentRuntime({
+  // llmAdapter, memoryAdapter, …
+  memoryAdapter: new InMemoryMemoryAdapter(),
+});
+
 const session = new Session({
   id: "customer-789:conv-001",
   projectId: "acme-support",
   endUserId: "customer-789",
 });
 
-const agent = await Agent.load("support-rag", { session });
+const agent = await Agent.load("support-rag", runtime, { session });
 await agent.run("My order #8812 hasn't arrived");
 ```
 

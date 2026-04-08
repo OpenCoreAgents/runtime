@@ -6,11 +6,11 @@
 
 | Doc | Topic |
 |-----|--------|
-| [`plan-cli.md`](./plan-cli.md) | **`@agent-runtime/cli`**: scaffold (done) vs future **`run` / `resume` / memory / logs** — ideas from [`brainstorm/06-libreria-adapters-cli.md`](./brainstorm/06-libreria-adapters-cli.md). |
-| [`plan-rest.md`](./plan-rest.md) | **HTTP/JSON API** — endpoints, async jobs, tenancy; brainstorm [`07-multi-agente-rest-sesiones.md`](./brainstorm/07-multi-agente-rest-sesiones.md). |
+| [`plan-cli.md`](./plan-cli.md) | **`@agent-runtime/cli`**: scaffold (done) vs future **`run` / `resume` / memory / logs**. |
+| [`plan-rest.md`](./plan-rest.md) | **HTTP/JSON API** — endpoints, async jobs, tenancy. |
 | [`plan-mcp.md`](./plan-mcp.md) | **Model Context Protocol** — MCP server as channel over SDK or REST. |
 
-**Runnable examples:** [`examples/minimal-run`](../examples/minimal-run/) (mock LLM, no keys); [`examples/openai-tools-skill`](../examples/openai-tools-skill/) (`OpenAILLMAdapter` + tool + skill, **`OPENAI_API_KEY`**); [`examples/console-wait`](../examples/console-wait/) (**`onWait`** + stdin, mock LLM).
+**Runnable examples:** [`examples/minimal-run`](../examples/minimal-run/) (mock LLM, **`AgentRuntime`**, no keys); [`examples/openai-tools-skill`](../examples/openai-tools-skill/) (`OpenAILLMAdapter` + tool + skill, **`OPENAI_API_KEY`**); [`examples/console-wait`](../examples/console-wait/) (**`onWait`** + stdin); [`examples/rag`](../examples/rag/) (**`registerRagToolsAndSkills`**, **`registerRagCatalog(runtime, …)`**, **`ingest_rag_source`** / **`vector_search`**; optional **`start:openai`**).
 
 ---
 
@@ -20,7 +20,7 @@
 |-------|--------|
 | **Phases 0–4** (monorepo → core loop → **TCP Redis** + Upstash REST → OpenAI LLM → hooks / global + **per-tool** timeout / abort) | **Done** — `pnpm turbo run build test lint` passes workspace-wide |
 | **RunStore + resume** (`AgentRuntime` + **`runStore`**, `InMemoryRunStore`, **`RedisRunStore`** / `UpstashRunStore`, `Agent.resume`, `RunBuilder` persistence) | **Done** — see `docs/core/19-cluster-deployment.md` §3 |
-| **Worker / direct engine API** (`buildEngineDeps`, `createRun`, `executeRun`, `effectiveToolAllowlist`, `getAgentDefinition`, `resolveToolRegistry`, `securityContextForAgent`) | **Done** — same loop as `RunBuilder`; integration tests in `packages/core/tests/engine.test.ts` |
+| **Worker / direct engine API** (`buildEngineDeps(agent, session, runtime)`, `createRun`, `executeRun`, `dispatchEngineJob(runtime, payload)`, `effectiveToolAllowlist`, optional **`AgentRuntime.allowedToolIds`**, `getAgentDefinition`, `resolveToolRegistry`, `securityContextForAgent`) | **Done** — same loop as `RunBuilder`; BullMQ: `packages/adapters-bullmq`; tests: `packages/core/tests/engine.test.ts`, `adapters-bullmq/tests/dispatch.test.ts` |
 | **`RunBuilder.onWait`** (in-process continuation after `wait` when callback returns text) | **Done** |
 | **Per-tool timeout** (`toolTimeoutMs` on **`AgentRuntime`**, `ToolTimeoutError` / `TOOL_TIMEOUT`) | **Done** — [`ToolRunner`](../packages/core/src/tools/ToolRunner.ts) |
 | **Phases 6–8** (RAG pipeline, multi-agent `MessageBus` + `send_message`, CLI + scaffold) | **Done** |
@@ -78,19 +78,20 @@ For package-level detail, see **`docs/scaffold.md` §0.8** and **§12**. Known g
 | 1.5 | `InMemoryMemoryAdapter` | `src/adapters/memory/InMemoryMemoryAdapter.ts` | Unit: save/query/delete/getState with scope |
 | 1.6 | `ToolAdapter`, `ToolContext`, `ObservationContent` interfaces | `src/adapters/tool/ToolAdapter.ts` | Type-only |
 | 1.7 | `SecurityContext`, `SessionOptions` types | `src/security/types.ts` | Type-only |
-| 1.8 | MVP `SecurityLayer` stub (returns fixed internal context) | `src/security/SecurityLayer.ts` | Unit: returns `kind: "internal"`, `projectId: "default"` |
+| 1.8 | `SecurityContext` + `SessionOptions`; embedded context via **`securityContextForAgent`** (`buildEngineDeps`) | `src/security/types.ts`, `src/engine/buildEngineDeps.ts` | No in-core HTTP **`SecurityLayer`** module — hosts authenticate **before** **`Agent.load`**; see [`08-scope-and-security.md`](./core/08-scope-and-security.md) |
 | 1.9 | `parseStep` — JSON parse + fence stripping + schema validation | `src/engine/parseStep.ts` | Unit: valid JSON (all 4 step types), invalid JSON, fenced JSON, missing fields |
 | 1.10 | `ToolRunner` — registry, allowlist check, validate, execute | `src/tools/ToolRunner.ts` | Unit: register, resolve, allowlist deny, validate fail, execute success/error |
 | 1.11 | Built-in tools: `save_memory`, `get_memory`, `update_state` | `src/tools/builtins/*.ts` | Unit: each tool with mock `MemoryAdapter` |
 | 1.12 | `EngineDeps`, `EngineHooks`, `LLMResponseMeta` types | `src/engine/types.ts` | Type-only |
-| 1.13 | `ContextBuilder` | `src/context/ContextBuilder.ts` | Unit: deterministic output from same inputs; memory scope resolution (endUserId vs sessionId); security filtering |
+| 1.13 | `ContextBuilder` | `src/context/ContextBuilder.ts` | Unit: deterministic output; tool catalog from agent + skills (+ registry). **`SecurityContext` on input type is unused in `build()`** — see [`technical-debt.md`](./technical-debt.md) §7 |
 | 1.14 | `executeRun` — main loop (+ `createRun`) | `src/engine/Engine.ts` | Integration: thought→action→result cycle; wait→resume; max iterations; parse recovery (1 re-prompt then fail) |
-| 1.15 | Define API: `Tool.define`, `Skill.define`, `Agent.define`, `Session`, `Agent.load` | `src/define/*.ts` | Integration: define→load→run end-to-end with in-memory adapters |
+| 1.15 | Define API: `Tool.define`, `Skill.define`, `Agent.define`, `Session`, **`Agent.load(agentId, runtime, { session })`** | `src/define/*.ts`, `src/runtime/AgentRuntime.ts` | Integration: **`new AgentRuntime({ … })`** → define→load→run with in-memory adapters |
 | 1.16 | `watchUsage` helper | `src/engine/watchUsage.ts` | Unit: totals + **wasted** tokens when parse fails (`onLLMAfterParse`) |
 | 1.17 | Barrel export | `src/index.ts` | Compile: all public types and classes importable |
-| 1.18 | `RunBuilder`, `RunStore` wiring, `Agent.resume` | `src/define/RunBuilder.ts`, `src/adapters/run/*`, `AgentRuntime` | Integration: `wait` → persisted run → `resume` |
-| 1.19 | `buildEngineDeps`, `effectiveToolAllowlist`, registry exports for workers | `src/engine/buildEngineDeps.ts`, `src/define/effectiveToolAllowlist.ts` | Integration: `executeRun` with deps built like `RunBuilder` |
-| 1.20 | `RunBuilder.onWait` | `src/define/RunBuilder.ts` | Integration: in-process continuation after `wait` |
+| 1.18 | **`AgentRuntime`** (`EngineConfig`, merged **`runtime.config`**, per-project **`registerRagCatalog`**, optional **`fileReadRoot`**, **`allowedToolIds`**, **`sendMessageTargetPolicy`**) | `src/runtime/AgentRuntime.ts`, `src/runtime/engineConfig.ts` | Integration: explicit runtime per worker; public API has no global singleton |
+| 1.19 | `RunBuilder`, `RunStore` wiring, `Agent.resume` | `src/define/RunBuilder.ts`, `src/adapters/run/*` | Integration: `wait` → persisted run → `resume` |
+| 1.20 | `buildEngineDeps`, `effectiveToolAllowlist`, registry exports for workers | `src/engine/buildEngineDeps.ts`, `src/define/effectiveToolAllowlist.ts` | Integration: `executeRun` with deps built like `RunBuilder` |
+| 1.21 | `RunBuilder.onWait` | `src/define/RunBuilder.ts` | Integration: in-process continuation after `wait` |
 
 **Gate:** `pnpm turbo build --filter=@agent-runtime/core && pnpm turbo test --filter=@agent-runtime/core` — all green. A test runs a mock agent through thought→action→observation→result with `InMemoryMemoryAdapter` and a mock `LLMAdapter` that returns scripted steps.
 
@@ -157,7 +158,7 @@ Use **`@agent-runtime/adapters-upstash`** when you want **HTTP-only** Redis (ser
 
 **Deps:** none (uses native `fetch`; optional OpenAI SDK not required).
 
-**Gate:** Unit tests with mocked `fetch` pass. Optional integration test (CI-only, `OPENAI_API_KEY`): `Agent.load` → `agent.run("hello")` → valid `result` step.
+**Gate:** Unit tests with mocked `fetch` pass. Optional integration test (CI-only, `OPENAI_API_KEY`): **`new AgentRuntime({ llmAdapter, memoryAdapter })`** → **`Agent.load(..., runtime, { session })`** → **`agent.run("hello")`** → valid `result` step.
 
 ---
 
@@ -169,7 +170,7 @@ Use **`@agent-runtime/adapters-upstash`** when you want **HTTP-only** Redis (ser
 
 | Step | Module | File(s) | Test |
 |------|--------|---------|------|
-| 4.1 | Hook wiring: `onThought`, `onAction`, `onObservation`, `onWait`, `onLLMResponse` fire at correct points | `src/engine/hooks.ts`, `Engine.ts` | Integration: mock hooks verify call order and arguments |
+| 4.1 | Hook wiring: `onThought`, `onAction`, `onObservation`, `onWait`, `onLLMResponse`, `onLLMAfterParse` fire at correct points | `src/engine/Engine.ts` | Integration: mock hooks verify call order and arguments |
 | 4.2 | Global run timeout (`runTimeoutMs`) → `RunTimeoutError` | `Engine.ts` | Integration: slow mock LLM triggers timeout |
 | 4.3 | Per-tool timeout in `ToolRunner` → error observation | `ToolRunner.ts` | Unit: slow mock tool triggers timeout |
 | 4.4 | `AbortSignal` propagation to LLM adapter and long tools | `Engine.ts` | Integration: external abort → `RunCancelledError` |
@@ -190,7 +191,7 @@ Use **`@agent-runtime/adapters-upstash`** when you want **HTTP-only** Redis (ser
 | 5.2 | Delayed jobs for `wait` with `reason: scheduled` | App enqueues **`addResume`** with `delay` / separate queue — not wrapped in-package | Documented pattern |
 | 5.3 | QStash alternative (HTTP callback to `POST /runs/:id/resume`) | Optional | Not in monorepo |
 
-**Gate:** **`pnpm turbo test --filter=@agent-runtime/adapters-bullmq`** passes. A worker using `createEngineWorker` + `dispatchEngineJob` can process `run` jobs end-to-end in a real deployment (your Redis + bootstrap).
+**Gate:** **`pnpm turbo test --filter=@agent-runtime/adapters-bullmq`** passes. A worker using **`createEngineWorker`** + **`dispatchEngineJob(runtime, job.data)`** (after **`AgentRuntime`** + **`Agent.define`**) can process `run` jobs end-to-end in a real deployment (your Redis + bootstrap).
 
 ---
 
@@ -222,10 +223,11 @@ Use **`@agent-runtime/adapters-upstash`** when you want **HTTP-only** Redis (ser
 |------|--------|---------|------|
 | 6c.1 | `vector_search`, `vector_upsert`, `vector_delete` tools | `core/src/tools/` | Integration: mock embedding + vector adapters |
 | 6c.2 | `file_read`, `file_ingest`, `file_list` tools | `rag/src/tools/` | Integration: mock utils + adapters, full pipeline |
+| 6c.2b | **`list_rag_sources`**, **`ingest_rag_source`**; **`registerRagToolsAndSkills()`**; **`registerRagCatalog(runtime, projectId, entries)`** (`@agent-runtime/rag`); per-project catalog on **`AgentRuntime`** (`validateRagFileCatalog`, `ragCatalogForProject`) | `rag/src/`, `core/src/runtime/AgentRuntime.ts`, `core/src/ragCatalogTypes.ts` | Integration: catalog + ingest + search; **`examples/rag`** |
 | 6c.3 | `rag` and `rag-reader` skills | `rag/src/skills/` | Unit: tool grouping, description |
 | 6c.4 | `SkillDefinitionPersisted`, `Skill.define(def, execute?)`, `Skill.defineBatch` (Redis/DB JSON + code `execute`) | `core/src/define/Skill.ts` | Unit: `tests/skill-define.test.ts` |
 
-**Gate:** `pnpm turbo build` builds all packages in topological order. Integration test: `file_ingest` a `.md` file → `vector_search` returns relevant chunks.
+**Gate:** `pnpm turbo build` builds all packages in topological order. Integration test: `file_ingest` a `.md` file → `vector_search` returns relevant chunks. Catalog path: register tools → **`registerRagCatalog(runtime, projectId, [...])`** → **`ingest_rag_source`** by id (see **`examples/rag`**).
 
 ---
 
@@ -270,7 +272,7 @@ Use **`@agent-runtime/adapters-upstash`** when you want **HTTP-only** Redis (ser
 | 9.1 | End-to-end: define tools + skills + agent → load → run with **TCP Redis** (`adapters-redis`) or Upstash REST + OpenAI | Full cycle completes, memory persists across runs |
 | 9.2 | End-user session: `endUserId` scoping — `longTerm` keyed by user, `shortTerm` by session | **`tests/memory-scope.test.ts`** — **`InMemoryMemoryAdapter`**; **TCP/Upstash** adapters still use one key prefix per scope (see `technical-debt`) |
 | 9.3 | `watchUsage` in production-like run — verify token accumulation, `organizationId`/`projectId` present | **`tests/watch-usage.test.ts`** — totals, **wasted** (recoverable + **fatal** **`StepSchemaError`**), **`getUsage()`** after run/reject |
-| 9.4 | Security: define with `end_user` principal fails; run with wrong `projectId` fails | `SecurityError` thrown |
+| 9.4 | Security: define with `end_user` principal fails; run with wrong `projectId` fails | **`SecurityError`** exists but is **not thrown** in core yet — enforce in host layer; see [`technical-debt.md`](./technical-debt.md) §7 |
 | 9.5 | Error resilience: LLM returns garbage → 1 re-prompt → valid step OR `StepSchemaError` | **`tests/parse-recovery.test.ts`** — recovery success + **`StepSchemaError`** when recovery exhausted |
 | 9.6 | Timeout: global run timeout triggers `RunTimeoutError`, abort triggers `RunCancelledError` | **`tests/runtime-limits.test.ts`** — `startedAtMs` in the past vs **`runTimeoutMs`**; **`AbortSignal`** already aborted |
 
@@ -311,7 +313,7 @@ Use **`@agent-runtime/adapters-upstash`** when you want **HTTP-only** Redis (ser
 | 3 | Same test passes with real OpenAI, `watchUsage` reports tokens |
 | 4 | Global `runTimeoutMs` + optional per-tool `toolTimeoutMs` (`ToolTimeoutError`); `AbortSignal` cancels run cleanly |
 | 5 | **`@agent-runtime/adapters-bullmq`**: `createEngineQueue` / `createEngineWorker` + `dispatchEngineJob` — jobs complete asynchronously on workers |
-| 6 | `file_ingest("policy.pdf")` → `vector_search("return policy")` returns chunks |
+| 6 | `file_ingest` / **`ingest_rag_source`** → **`vector_search`** returns chunks; optional declarative catalog via **`registerRagCatalog(runtime, …)`** |
 | 7 | Agent A asks Agent B a question, gets an answer back |
 | 8 | `npx @agent-runtime/cli init` produces a buildable project |
 | 9 | Full stack runs with real adapters, security, and usage tracking |

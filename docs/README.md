@@ -70,7 +70,9 @@ Tool.define()     →  stored in registry (global or per project)
 Skill.define()    →  stored, references tools by id
 Agent.define()    →  stored, references skills + tools + memory policy + LLM config
                              │
-                    Agent.load("id", { session })
+                  new AgentRuntime({ llmAdapter, memoryAdapter, … })
+                             │
+                    Agent.load("id", runtime, { session })
                              │
                     .run()  →  loop  →  .resume()
 ```
@@ -176,13 +178,18 @@ await Agent.define({
 ### 4. Load and run
 
 ```typescript
-import { Agent, Session } from "@agent-runtime/core";
+import { Agent, AgentRuntime, Session, InMemoryMemoryAdapter } from "@agent-runtime/core";
+
+const runtime = new AgentRuntime({
+  llmAdapter: chatAdapter, // your LLMAdapter (e.g. @agent-runtime/adapters-openai)
+  memoryAdapter: new InMemoryMemoryAdapter(),
+});
 
 // Session scopes memory and history — isolated per user or business cycle
 const session = new Session({ id: "queue-east-2026-04-02", projectId: "acme-corp" });
 
 // Loads the definition from the store, resolves skills and tools
-const agent = await Agent.load("ops-analyst", { session });
+const agent = await Agent.load("ops-analyst", runtime, { session });
 
 // Promise-style SDK with per-step hooks
 await agent

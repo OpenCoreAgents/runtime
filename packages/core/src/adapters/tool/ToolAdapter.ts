@@ -24,7 +24,7 @@ export interface ToolContext {
   messageBus?: MessageBus;
   /** From {@link AgentRuntime} `sendMessageTargetPolicy` when set. */
   sendMessageTargetPolicy?: SendMessageTargetPolicy;
-  /** Per-project RAG catalog from `AgentRuntime` when `registerRagCatalog` was called for `session.projectId`. */
+  /** Per-project RAG catalog when registered for `session.projectId` (`@agent-runtime/rag` / `AgentRuntime`). */
   ragFileCatalog?: ReadonlyArray<RagFileSourceEntry>;
 }
 

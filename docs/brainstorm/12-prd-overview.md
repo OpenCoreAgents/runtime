@@ -50,12 +50,12 @@ Create agents dynamically at runtime:
 - Configuration persists in Redis or DB — not only in code
 - Includes ID/slug, tools, skills, initial memory, and security rules
 - Compatible with multiple parallel sessions
-- Any process (SDK, CLI, REST) can `Agent.load("id")` without redeploy
+- Any process (SDK, CLI, REST) can `Agent.load("id", runtime, { session })` without redeploy (same **`AgentRuntime`** wiring + definitions on every node)
 
 ### Usage example
 
 ```typescript
-import { Tool, Skill, Agent, Session } from "@agent-runtime/core";
+import { Tool, Skill, Agent, AgentRuntime, Session, InMemoryMemoryAdapter } from "@agent-runtime/core";
 
 // 1. Register tools
 await Tool.define({
@@ -89,8 +89,12 @@ await Agent.define({
 // ✓ Saved to DB. No redeploy.
 
 // 4. Instantiate and run
+const runtime = new AgentRuntime({
+  llmAdapter: chatAdapter, // your LLMAdapter (e.g. @agent-runtime/adapters-openai)
+  memoryAdapter: new InMemoryMemoryAdapter(),
+});
 const session = new Session({ id: "queue-2026-04-01", projectId: "acme-corp" });
-const agent = await Agent.load("ops-analyst", { session });
+const agent = await Agent.load("ops-analyst", runtime, { session });
 
 await agent
   .run("Ticket #4412: refund still pending — what should we do next?")
@@ -112,19 +116,31 @@ await agent.resume(runId, { type: "text", content: "approved — escalate to bil
 | Adapter / service | Role in the runtime |
 |-------------------|---------------------|
 | **Upstash Redis** | `MemoryAdapter` for `longTerm` and `working`; store for definitions (agents, tools, skills); run history |
-| **Upstash Vector** | `MemoryAdapter` for `vectorMemory` — semantic search over relevant memory |
+| **Upstash Vector** | **`UpstashVectorAdapter`** — semantic search / RAG (`vector_*` tools); not a substitute for `MemoryAdapter` |
 | **BullMQ (primary)** | Redis job queues — **first implementation** for async `run`/`resume`, scheduled `wait`, optional MessageBus; workers call the same engine entry points as SDK/REST ([`core/05-adapters.md`](../core/05-adapters.md#job-queue-adapter-primary-bullmq)) |
 | **Upstash QStash (alternative)** | HTTP callback to `POST /runs/:id/resume` when BullMQ workers are not used — same wake semantics, serverless-oriented |
 
 ```typescript
-import { UpstashMemoryAdapter } from "@agent-runtime/adapters-upstash";
+import { Agent, AgentRuntime, Session } from "@agent-runtime/core";
+import {
+  UpstashRedisMemoryAdapter,
+  UpstashVectorAdapter,
+} from "@agent-runtime/adapters-upstash";
 
-const memory = new UpstashMemoryAdapter({
-  redis: { url: process.env.UPSTASH_REDIS_URL, token: process.env.UPSTASH_REDIS_TOKEN },
-  vector: { url: process.env.UPSTASH_VECTOR_URL, token: process.env.UPSTASH_VECTOR_TOKEN },
+const runtime = new AgentRuntime({
+  llmAdapter: chatAdapter, // your LLMAdapter
+  memoryAdapter: new UpstashRedisMemoryAdapter(
+    process.env.UPSTASH_REDIS_URL!,
+    process.env.UPSTASH_REDIS_TOKEN!,
+  ),
+  vectorAdapter: new UpstashVectorAdapter(
+    process.env.UPSTASH_VECTOR_URL!,
+    process.env.UPSTASH_VECTOR_TOKEN!,
+  ),
 });
 
-const agent = await Agent.load("ops-analyst", { session, memory });
+const session = new Session({ id: "queue-2026-04-01", projectId: "acme-corp" });
+const agent = await Agent.load("ops-analyst", runtime, { session });
 ```
 
 ---

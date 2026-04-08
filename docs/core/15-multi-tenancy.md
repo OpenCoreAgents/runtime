@@ -130,13 +130,20 @@ When `endUserId` is present in the session, the **MemoryAdapter** uses it as the
 ### 4.4 Session with end-user
 
 ```typescript
+import { Agent, AgentRuntime, Session, InMemoryMemoryAdapter } from "@agent-runtime/core";
+
+const runtime = new AgentRuntime({
+  llmAdapter: chatAdapter, // your LLMAdapter
+  memoryAdapter: new InMemoryMemoryAdapter(),
+});
+
 const session = new Session({
   id: "customer-456:conv-20260407-001",
   projectId: "acme-support",
   endUserId: "customer-456",
 });
 
-const agent = await Agent.load("support-bot", { session });
+const agent = await Agent.load("support-bot", runtime, { session });
 await agent.run("My order #8812 hasn't arrived");
 ```
 

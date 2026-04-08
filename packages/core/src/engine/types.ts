@@ -28,7 +28,7 @@ export interface EngineDeps {
   vectorAdapter?: VectorAdapter;
   messageBus?: MessageBus;
   sendMessageTargetPolicy?: SendMessageTargetPolicy;
-  /** From `AgentRuntime.registerRagCatalog(session.projectId, …)` when set (including `[]`). */
+  /** From per-project catalog (`registerRagCatalog` on `AgentRuntime` or `@agent-runtime/rag`) when set (including `[]`). */
   ragFileCatalog?: ReadonlyArray<RagFileSourceEntry>;
   toolRunner: import("../tools/ToolRunner.js").ToolRunner;
   toolRegistry: Map<string, ToolAdapter>;
