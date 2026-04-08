@@ -15,7 +15,7 @@ The monorepo implements the engine, adapters (OpenAI; **TCP Redis** via `@agent-
 | [03-execution-model.md](./03-execution-model.md) | Run, states, loop, wait/resume |
 | [04-protocol.md](./04-protocol.md) | Messages, envelope, engine rules |
 | [05-adapters.md](./05-adapters.md) | Memory and Tool adapters; **`adapters-bullmq`** (priority queue); **QStash** alternative; **`adapters-redis`** (TCP, default for clusters); Upstash REST + vector |
-| [06-mvp.md](./06-mvp.md) | Minimum engine scope and risks |
+| [06-mvp.md](./06-mvp.md) | Minimum engine scope, adapters, **RunStore** / cluster resume, risks |
 | [07-definition-syntax.md](./07-definition-syntax.md) | JSON + library `Tool.define` / `Skill.define` / `defineBatch` / `Agent.define`, `SkillDefinitionPersisted`, `load`, `run` |
 | [08-scope-and-security.md](./08-scope-and-security.md) | Scope (global, project, session, run) and **SecurityLayer** (authZ, control points) |
 | [09-communication-multiagent.md](./09-communication-multiagent.md) | **MessageBus**, `send_message` tool, request–reply patterns and `wait`/`resume` across agents |
