@@ -198,11 +198,11 @@ Aggregated view for logs or inspection API.
 
 ## 8. Tool definition (engine registry)
 
-What **ToolRunner** needs; not the same as the LLM’s `action` step.
+What **ToolRunner** needs; not the same as the LLM’s `action` step. The canonical key in code is **`id`** (matches `action.tool` in §5.2). Optional **`name`** is a display label only.
 
 ```json
 {
-  "name": "save_memory",
+  "id": "save_memory",
   "description": "Persists a fragment in the agent's memory.",
   "inputSchema": {
     "type": "object",
@@ -229,7 +229,7 @@ configureRuntime({ ... })  →  Tool.define (custom)  →  Skill.define  →  Ag
 
 Call **`configureRuntime`** once per process before `Agent.load`. It registers **built-in** tool handlers (`save_memory`, `get_memory`) and optionally vector / `send_message` handlers when the corresponding adapters are passed — you do **not** `Tool.define` those unless you are replacing defaults (advanced).
 
-The following objects are **conceptually equivalent** to the JSON in §1 and §8; `.define` persists definitions into the in-process registry (not an external document store unless your app adds one).
+The following objects are **conceptually equivalent** to the JSON in §1 and §8; `.define` persists definitions into the in-process registry. Your app may also load **serializable** metadata from Redis/Postgres and call **`Skill.define(def, execute?)`** or **`Skill.defineBatch`** so each worker hydrates the same local `Map`s — see §9.2b.
 
 ### 9.1 `Tool.define`
 
@@ -278,7 +278,7 @@ await Tool.define({
 
 ### 9.2 `Skill.define`
 
-Registers a reusable skill that references tools by `id`.
+Registers a reusable skill that references tools by `id`. In **TypeScript source**, put **`execute` on `def`** when the skill has imperative logic. The optional **second argument** exists only for **§9.2b** (JSON from Redis/DB): it attaches `execute` when the parsed row cannot carry a function. If `def` already includes `execute`, the second argument is **ignored**.
 
 ```typescript
 import { Skill } from "@agent-runtime/core";
@@ -301,13 +301,13 @@ await Skill.define({
 });
 ```
 
-If the skill includes versioned **imperative** logic:
+If the skill includes versioned **imperative** logic, define **`execute` on the object** (do not split it into a second argument in app code — that form is for §9.2b only):
 
 ```typescript
 await Skill.define({
   id: "workflowHandoff",
   projectId: "acme-corp",
-  tools: ["LLMAdapter", "upstash_trigger"],
+  tools: ["save_memory", "upstash_trigger"],
   execute: async ({ input, context }) => {
     // delegate to engine / LLM / tools per runtime policy
     return { suggestedPriority: "high" };
@@ -316,7 +316,37 @@ await Skill.define({
 });
 ```
 
-(`execute` is optional by design: skill as tool grouping + prompt template only.)
+`execute` is **optional**: a skill can be only tool grouping + description / prompt shaping, with no imperative handler.
+
+### 9.2b Skills from an external store (hybrid)
+
+Use type **`SkillDefinitionPersisted`** (`SkillDefinition` minus `execute`) as the JSON shape in Redis/Postgres. After `JSON.parse`, call **`Skill.define(row, skillExecutes[row.id])`** — omit the second argument for declarative-only skills — or **`Skill.defineBatch(rows, skillExecutes)`** where `skillExecutes` is `Partial<Record<string, SkillExecute>>` (only ids with imperative logic need an entry).
+
+Same **`Skill.define`** entry point as §9.2; the second argument is only meaningful when `def` has no `execute` (typical for parsed JSON).
+
+```typescript
+import {
+  Skill,
+  type SkillDefinitionPersisted,
+  type SkillExecute,
+} from "@agent-runtime/core";
+
+const skillExecutes: Partial<Record<string, SkillExecute>> = {
+  workflowHandoff: async ({ input, context }) => ({ suggestedPriority: "high" }),
+};
+
+const persisted = JSON.parse(
+  (await redis.get("skill:acme:workflowHandoff"))!,
+) as SkillDefinitionPersisted;
+await Skill.define(persisted, skillExecutes[persisted.id]);
+
+const list = JSON.parse((await redis.get("skills:acme"))!) as SkillDefinitionPersisted[];
+await Skill.defineBatch(list, skillExecutes);
+```
+
+Validate or schema-check parsed JSON in production before registering; `as SkillDefinitionPersisted` is only for the type checker.
+
+**Cluster**: each worker registers locally after reading the same data (boot or pub/sub). No Redis client in `@agent-runtime/core` — see [19-cluster-deployment.md](./19-cluster-deployment.md) §1.1.
 
 ### 9.3 `Agent.define`
 
@@ -468,6 +498,9 @@ interface SkillDefinition {
   execute?: SkillExecute;
 }
 
+/** JSON-safe skill row for Redis/DB; register with `Skill.define(row, skillExecutes[row.id])`. */
+type SkillDefinitionPersisted = Omit<SkillDefinition, "execute">;
+
 type SkillExecute = (args: {
   input: unknown;
   context: {
@@ -490,6 +523,7 @@ interface SessionOptions {
   id: string;
   projectId: string;
   endUserId?: string;
+  expiresAtMs?: number;
 }
 
 /** Injected by SecurityLayer before the engine runs */

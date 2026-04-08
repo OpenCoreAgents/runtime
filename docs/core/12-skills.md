@@ -2,7 +2,7 @@
 
 **Tools** are effects executed by **ToolRunner**. **Skills** are **higher-level capabilities**: they group intent, auxiliary prompts, and/or tool references; the runtime resolves them **before** or **alongside** the loop; they do not replace the `Step` protocol.
 
-Persisted definitions: [07-definition-syntax.md](./07-definition-syntax.md) (`Skill.define`). Execution adapters: [05-adapters.md](./05-adapters.md).
+Persisted definitions: [07-definition-syntax.md](./07-definition-syntax.md) (`Skill.define` / `defineBatch`, §9.2b). Execution adapters: [05-adapters.md](./05-adapters.md).
 
 ---
 
@@ -85,3 +85,11 @@ type SkillExecute = (args: {
 
 - **Declarative + template** skills only; no `execute` until tools and memory are stable.
 - One example skill that constrains system text to a domain (e.g. support or internal ops) and enables a subset of tools.
+
+---
+
+## 8. External store (Redis / DB) and in-process `execute`
+
+When skill metadata is **edited at runtime** or **shared from a central store**, persist only the JSON-safe fields (`id`, `projectId`, `tools`, `description`, `roles`, `scope`, `name`). Register with **`Skill.define(persisted, execute?)`** or **`Skill.defineBatch(list, executesById)`** (same pattern as tools: store describes *what* exists; the process supplies *how* it runs).
+
+Resolution (`getSkillDefinition(projectId, id)`) is unchanged: project-scoped entries override global. Every worker in a cluster must **re-hydrate** after deploy or after store updates so its in-memory registry matches policy. Details and examples: [07-definition-syntax.md](./07-definition-syntax.md) §9.2b, [19-cluster-deployment.md](./19-cluster-deployment.md) §1.1.

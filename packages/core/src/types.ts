@@ -11,6 +11,7 @@ export type {
   AgentDefinitionPersisted,
   ToolDefinition,
   SkillDefinition,
+  SkillDefinitionPersisted,
   SkillExecute,
 } from "./define/types.js";
 

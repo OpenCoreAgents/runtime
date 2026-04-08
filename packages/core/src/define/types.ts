@@ -38,6 +38,9 @@ export interface SkillDefinition {
   execute?: SkillExecute;
 }
 
+/** Serializable skill metadata (e.g. from Redis/DB). Attach `execute` in code when hydrating. */
+export type SkillDefinitionPersisted = Omit<SkillDefinition, "execute">;
+
 export type SkillExecute = (args: {
   input: unknown;
   context: {

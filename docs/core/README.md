@@ -16,12 +16,12 @@ The monorepo implements the engine, adapters (OpenAI; **TCP Redis** via `@agent-
 | [04-protocol.md](./04-protocol.md) | Messages, envelope, engine rules |
 | [05-adapters.md](./05-adapters.md) | Memory and Tool adapters; **`adapters-bullmq`** (priority queue); **QStash** alternative; **`adapters-redis`** (TCP, default for clusters); Upstash REST + vector |
 | [06-mvp.md](./06-mvp.md) | Minimum engine scope and risks |
-| [07-definition-syntax.md](./07-definition-syntax.md) | JSON + library `Tool.define` / `Skill.define` / `Agent.define`, `load`, `run` |
+| [07-definition-syntax.md](./07-definition-syntax.md) | JSON + library `Tool.define` / `Skill.define` / `defineBatch` / `Agent.define`, `SkillDefinitionPersisted`, `load`, `run` |
 | [08-scope-and-security.md](./08-scope-and-security.md) | Scope (global, project, session, run) and **SecurityLayer** (authZ, control points) |
 | [09-communication-multiagent.md](./09-communication-multiagent.md) | **MessageBus**, `send_message` tool, request–reply patterns and `wait`/`resume` across agents |
 | [10-llm-adapter.md](./10-llm-adapter.md) | **LLMAdapter** contract: request/response, errors, JSON, streaming, multi-provider |
 | [11-context-builder.md](./11-context-builder.md) | Prompt ordering, truncation, **SecurityContext** filtering, output to the LLM |
-| [12-skills.md](./12-skills.md) | **Skills** vs **tools**, resolution, model visibility, optional `execute` |
+| [12-skills.md](./12-skills.md) | **Skills** vs **tools**, resolution, model visibility, optional `execute`, Redis/DB hydration |
 | [13-errors-parsing-and-recovery.md](./13-errors-parsing-and-recovery.md) | Failures, **abort/timeout**, error taxonomy, parsing and **re-prompt** for `Step` |
 | [14-consumers.md](./14-consumers.md) | Engine **consumers**: SDK, CLI, REST, MCP, webhooks, cron (overview) |
 | [15-multi-tenancy.md](./15-multi-tenancy.md) | **Multi-tenancy**: organizations, projects, end-users, memory scoping |

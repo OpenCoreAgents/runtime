@@ -242,7 +242,7 @@ After scaffolding, the CLI prints a checklist:
 
 | Doc | Connection |
 |-----|------------|
-| [07-definition-syntax.md](./07-definition-syntax.md) | Scaffold generates files that follow `Tool.define`, `Skill.define`, `Agent.define` syntax. |
+| [07-definition-syntax.md](./07-definition-syntax.md) | Scaffold generates files that follow `Tool.define`, `Skill.define`, `Agent.define` syntax. Runtime-defined skills may use `SkillDefinitionPersisted` + `Skill.define(..., execute?)` (§9.2b there). |
 | [05-adapters.md](./05-adapters.md) | `config/runtime.ts` maps to adapter contracts; `--adapter` flag selects the preset. |
 | [08-scope-and-security.md](./08-scope-and-security.md) | `config/security.ts` bootstraps `SecurityLayer` defaults. |
 | [14-consumers.md](./14-consumers.md) | The CLI `init` and `generate` commands are consumer-level operations. |

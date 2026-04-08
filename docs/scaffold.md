@@ -268,7 +268,7 @@ agent-runtime/                    → repo root (Turborepo)
 │   │   │   ├── bus/                  → MessageBus interface + InProcessMessageBus
 │   │   │   ├── errors/               → Error classes and codes
 │   │   │   ├── config/               → RuntimeConfig type
-│   │   │   ├── define/               → Tool.define, Skill.define, Agent.define, Agent.load, registry
+│   │   │   ├── define/               → Tool.define, Skill.define (+ defineBatch), Agent.define, Agent.load, registry
 │   │   │   └── index.ts              → Public API barrel
 │   │   ├── tests/
 │   │   ├── package.json
@@ -1126,7 +1126,14 @@ class Tool {
 
 // packages/core/src/define/Skill.ts
 class Skill {
-  static async define(def: SkillDefinition): Promise<void>;
+  static async define(
+    def: SkillDefinitionPersisted | SkillDefinition,
+    execute?: SkillExecute,
+  ): Promise<void>;
+  static async defineBatch(
+    items: (SkillDefinitionPersisted | SkillDefinition)[],
+    executes?: Partial<Record<string, SkillExecute>>,
+  ): Promise<void>;
 }
 
 // packages/core/src/define/Agent.ts
@@ -1505,6 +1512,7 @@ export type {
   AgentDefinitionPersisted,
   ToolDefinition,
   SkillDefinition,
+  SkillDefinitionPersisted,
   SkillExecute,
   SessionOptions,
   SecurityContext,

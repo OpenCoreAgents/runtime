@@ -223,6 +223,7 @@ Use **`@agent-runtime/adapters-upstash`** when you want **HTTP-only** Redis (ser
 | 6c.1 | `vector_search`, `vector_upsert`, `vector_delete` tools | `core/src/tools/` | Integration: mock embedding + vector adapters |
 | 6c.2 | `file_read`, `file_ingest`, `file_list` tools | `rag/src/tools/` | Integration: mock utils + adapters, full pipeline |
 | 6c.3 | `rag` and `rag-reader` skills | `rag/src/skills/` | Unit: tool grouping, description |
+| 6c.4 | `SkillDefinitionPersisted`, `Skill.define(def, execute?)`, `Skill.defineBatch` (Redis/DB JSON + code `execute`) | `core/src/define/Skill.ts` | Unit: `tests/skill-define.test.ts` |
 
 **Gate:** `pnpm turbo build` builds all packages in topological order. Integration test: `file_ingest` a `.md` file → `vector_search` returns relevant chunks.
 

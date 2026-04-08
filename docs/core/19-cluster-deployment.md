@@ -47,13 +47,13 @@ Legend: **✓** = adapter(s) in repo. **○** = job queue layer not implemented 
 
 | Component | Why per-process | Cluster requirement |
 |-----------|----------------|---------------------|
-| **Definition registry** (`registry.ts`) | Module-level `Map`s — tool, skill, and agent definitions | Every worker must execute the **same** `Tool.define` / `Skill.define` / `Agent.define` calls at startup. Definitions are code-level; they do **not** sync across processes at runtime. |
+| **Definition registry** (`registry.ts`) | Module-level `Map`s — tool, skill, and agent definitions | Every worker must end up with the **same** registered definitions. Usually that means identical `Tool.define` / `Skill.define` / `Agent.define` at startup. Alternatively, load **JSON** from Redis/DB and call **`Skill.define`** / **`Skill.defineBatch`** so each process fills its own `Map` — still no cross-process live sync of the `Map` itself. |
 | **Runtime config** (`configureRuntime()`) | Singleton `let config` | Each worker calls `configureRuntime({ llmAdapter, memoryAdapter, ... })` at boot. Config is identical across nodes. |
 | **Tool handlers** | Registered via `registerToolHandler` into a process-local `Map` | Each worker registers the same handler set. Handlers contain code (functions), not serializable. |
 | **Engine loop** (`executeRun`) | Pure function: takes `Run` + `EngineDeps`, returns `Run` | Stateless — any worker can execute any run as long as it can read/write the `Run` from a shared store. |
 | **Built-in tools** (`save_memory`, `get_memory`) | Registered by `configureRuntime` | Same on every node — they delegate to the shared `MemoryAdapter`. |
 
-**Key rule**: definitions and handlers are **code deployed identically** to every node. There is no runtime "definition sync" protocol; if you add a new `Tool.define`, redeploy all workers.
+**Key rule**: **tool handlers** stay in-process (functions). For **definitions**, either ship them in code (redeploy all workers when they change) or **hydrate from a store** on boot (and on invalidation) so every node registers the same metadata. There is no magic replication of the module-level `Map`s — only identical bootstrap logic per worker. Skill JSON + code `execute`: [07-definition-syntax.md](./07-definition-syntax.md) §9.2b.
 
 ### 1.2 Shared (external infrastructure)
 

@@ -39,6 +39,8 @@ When the agent references `tools: ["save_memory", "upstash_trigger"]`:
 2. If missing, resolve **global** (`scope: "global"`).
 3. If `id` collides, the more **specific** wins (project over global) per explicit runtime policy.
 
+Definitions may be registered from **code** (`Tool.define` / `Skill.define` / `Agent.define`) or **hydrated** from a store into the same registry (`Skill.define` with JSON metadata + optional `execute`, or `Skill.defineBatch`); resolution rules are unchanged. See [07-definition-syntax.md](./07-definition-syntax.md) §9.2b.
+
 The **Context Builder** must only inject into the prompt tools **visible** after this resolution **and** after SecurityLayer filtering (§4).
 
 ---
