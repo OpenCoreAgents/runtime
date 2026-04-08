@@ -16,6 +16,12 @@ Stateful agent **engine** for Node.js: typed loop (`thought` → `action` → `o
 | `@agent-runtime/scaffold` | Programmatic project generation |
 | `@agent-runtime/cli` | `agent-runtime` CLI |
 
+## Examples
+
+- **Minimal `Agent.run()`:** [`examples/minimal-run`](examples/minimal-run/) — mock LLM + in-memory memory, no API keys (build `@agent-runtime/core` first).
+- **OpenAI + tool + skill:** [`examples/openai-tools-skill`](examples/openai-tools-skill/) — `OpenAILLMAdapter`, custom `roll_dice` tool, `dice-skill`, one run (requires `OPENAI_API_KEY`; build `core` + `adapters-openai`).
+- **Console `wait` + user input:** [`examples/console-wait`](examples/console-wait/) — mock LLM pauses, `onWait` reads a line from the terminal (build `core` first).
+
 ## Docs
 
 - **Product / overview:** [`docs/README.md`](docs/README.md)

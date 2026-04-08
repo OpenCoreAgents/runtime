@@ -12,19 +12,19 @@ Embedded use: `Agent.load`, `run`, `resume`, hooks. For **queue workers** or cus
 
 ## CLI
 
-Commands delegate to the SDK (`run`, `resume`, `define`, `memory`, `logs`, `send` between agents). Terminal output; optional local state (e.g. `.agent/`). More detail in [06-libreria-adapters-cli.md](../brainstorm/06-libreria-adapters-cli.md) (brainstorm, not core).
+Today the published binary is **scaffold-focused** (`init`, `generate`); runtime **`run` / `resume` / …** are roadmap. Planning doc: [**`plan-cli.md`**](../plan-cli.md). Brainstorm: [06-libreria-adapters-cli.md](../brainstorm/06-libreria-adapters-cli.md). Terminal output and optional local state (e.g. `.agent/`) remain the target for parity with the SDK.
 
 ---
 
 ## REST API
 
-HTTP/JSON: list agents, `POST` run/resume, memory, logs, inter-agent send, define. Same semantics as the SDK; auth and rate limits before the engine. Broader view: [../brainstorm/07-multi-agente-rest-sesiones.md](../brainstorm/07-multi-agente-rest-sesiones.md).
+HTTP/JSON: list agents, `POST` run/resume, memory, logs, inter-agent send, define. Same semantics as the SDK; auth and rate limits before the engine. **No reference server ships in the monorepo** — see planning doc [**`plan-rest.md`**](../plan-rest.md). Broader brainstorm: [07-multi-agente-rest-sesiones.md](../brainstorm/07-multi-agente-rest-sesiones.md).
 
 ---
 
 ## MCP (Model Context Protocol)
 
-**Does not** replace the engine: it is a **channel** through which a host (e.g. Cursor, Claude Desktop) exposes **tools** to the client model. An “MCP server” may **delegate** to your runtime (call your REST or library) or publish tools aligned with ToolRunner. The PDF/thread positions it as a **plug**, not the agent OS ([01-purpose.md](./01-purpose.md), layers).
+**Does not** replace the engine: it is a **channel** through which a host (e.g. Cursor, Claude Desktop) exposes **tools** to the client model. An “MCP server” may **delegate** to your runtime (call your REST or library) or publish tools aligned with ToolRunner. The PDF/thread positions it as a **plug**, not the agent OS ([01-purpose.md](./01-purpose.md), layers). Planning doc: [**`plan-mcp.md`**](../plan-mcp.md).
 
 ---
 

@@ -56,7 +56,7 @@ English-language register of **intentional deferrals**, **plan vs implementation
 | Item | Notes |
 |------|--------|
 | **Brainstorm vs `docs/core/`** | Older material under `docs/brainstorm/` may diverge from canonical `docs/core/` — treat `docs/core/` as source of truth. |
-| **REST / MCP product APIs** | [14-consumers.md](./core/14-consumers.md) describes patterns; there is no reference HTTP server in this repo. |
+| **REST / MCP product APIs** | [14-consumers.md](./core/14-consumers.md) describes patterns; there is no reference HTTP server in this repo. Roadmaps: [`plan-rest.md`](./plan-rest.md), [`plan-mcp.md`](./plan-mcp.md). |
 | **`docs/scaffold.md` size** | Very long single file — fine as reference; for ongoing changes, splitting or doc-only PRs can ease review. |
 
 ---

@@ -1,0 +1,31 @@
+# Minimal run example
+
+Single-file demo: **`configureRuntime`** with a **mock LLM** (no OpenAI key), **`InMemoryMemoryAdapter`**, **`Agent.define`** → **`Agent.load`** → **`run()`**.
+
+## Prerequisite
+
+Build core once (the example imports `dist` from `@agent-runtime/core`):
+
+```bash
+# from repository root
+pnpm turbo run build --filter=@agent-runtime/core
+```
+
+## Run
+
+```bash
+pnpm install
+pnpm --filter @agent-runtime/example-minimal-run start
+```
+
+Or from this directory after `pnpm install` at the repo root:
+
+```bash
+pnpm start
+```
+
+## Next steps
+
+- Swap **`DeterministicDemoLlm`** for **`OpenAILLMAdapter`** from `@agent-runtime/adapters-openai` and set `OPENAI_API_KEY`.
+- Add **`configureRuntime({ runStore })`** and exercise **`wait` / `resume`** — see [`docs/core/19-cluster-deployment.md`](../../docs/core/19-cluster-deployment.md).
+- Scaffold a full project: `pnpm exec agent-runtime init my-app` (from a package that installs `@agent-runtime/cli`).

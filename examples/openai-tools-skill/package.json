@@ -1,0 +1,19 @@
+{
+  "name": "@agent-runtime/example-openai-tools-skill",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "OpenAI chat + custom tool + skill (requires OPENAI_API_KEY).",
+  "scripts": {
+    "start": "tsx src/main.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@agent-runtime/adapters-openai": "workspace:*",
+    "@agent-runtime/core": "workspace:*"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.3",
+    "typescript": "^5.7.3"
+  }
+}

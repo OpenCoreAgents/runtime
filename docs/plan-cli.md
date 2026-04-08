@@ -1,0 +1,65 @@
+# CLI planning (`@agent-runtime/cli`)
+
+> Roadmap for the **command-line** surface: what exists today vs the **library-parity** CLI sketched in [`brainstorm/06-libreria-adapters-cli.md`](./brainstorm/06-libreria-adapters-cli.md). Complements [`plan.md`](./plan.md) (monorepo/engine) and [`core/14-consumers.md`](./core/14-consumers.md) §CLI.
+
+**Non-goals:** Reimplementing the engine loop in the CLI — all execution stays in **`packages/core`** via `configureRuntime`, `Agent.load`, `RunBuilder`, hooks.
+
+---
+
+## Current state (repository)
+
+| Area | Status |
+|------|--------|
+| **`agent-runtime` binary** | **Shipped** — `packages/cli`: `init`, `generate agent|tool|skill` delegating to `@agent-runtime/scaffold`. |
+| **Runtime commands** (`run`, `resume`, `memory`, `logs`, `list`, `send`) | **Not in monorepo** — brainstorm only; users run generated project scripts or embed the SDK. |
+
+See [`technical-debt.md`](./technical-debt.md) §4 (CLI and scaffold).
+
+---
+
+## Target experience (from brainstorm `06`)
+
+Same semantics as the SDK, for operators and debugging:
+
+```text
+agent-runtime list              # agents visible in project / registry
+agent-runtime run <agentId> --input "..."
+agent-runtime resume <runId> --input "..."
+agent-runtime memory <agentId> [--type shortTerm|…]
+agent-runtime logs <runId>
+agent-runtime send <from> <to> --message "..."   # when multi-agent / bus wired
+```
+
+Implementation notes:
+
+- **Session**: construct `Session` (optional `expiresAtMs`, `endUserId`) from flags or env; map **`SessionExpiredError`** to a clear exit code / stderr message.
+- **Persistence**: optional local state (e.g. `.agent/` — last `runId`, config) so `resume` and `logs` are usable without passing IDs by hand.
+- **Output**: stream or print **hooks** (`onThought`, `onAction`, …) for terminal-friendly inspection (align with [`watchUsage`](../packages/core/src/engine/watchUsage.ts) if billing-style metrics matter).
+
+---
+
+## Phased plan
+
+| Phase | Goal | Gate |
+|-------|------|------|
+| **C1 — Design** | Choose scope for v1 (which commands; how `configureRuntime` + env are loaded in a generated project). Document in [`scaffold.md`](./scaffold.md) or a short `docs/core/` CLI subsection. | Written contract; no engine API changes required for C2. |
+| **C2 — `run` + `resume`** | Thin wrapper: resolve agent definition + adapters from cwd, `Agent.load` + `run` / `resume`, hooks → stdout/stderr, exit codes on **`EngineError.code`**. | Integration test with **`InMemoryRunStore`** or test Redis; CI runs without API keys if LLM is mocked. |
+| **C3 — `memory` / `logs`** | Read path: query **`MemoryAdapter`** scopes / print **`Run`** history for a `runId` (format TBD: JSON lines vs human). | Tests + docs for flags. |
+| **C4 — `list` / `send`** | `list`: discover agents from project layout or registry. `send`: requires **`MessageBus`** + routing config — likely **after** C2 stable. | E2E optional; document cluster vs in-process bus. |
+
+---
+
+## Dependencies
+
+- **Engine**: stable **`Agent`**, **`RunBuilder`**, **`configureRuntime`**, **`Session`** (incl. expiry).
+- **Scaffold**: templates that expose a **single way** to load env + adapters so the CLI does not fork configuration logic.
+- **Multi-agent**: [`send_message`](../packages/core/src/tools/sendMessage.ts) + bus — CLI `send` is orchestration glue, not core.
+
+---
+
+## References
+
+- Runnable baseline without runtime subcommands: [`examples/minimal-run`](../examples/minimal-run/) (`Agent.run` + mock LLM).
+- Brainstorm: [`06-libreria-adapters-cli.md`](./brainstorm/06-libreria-adapters-cli.md) (folder layout, MVP bullets).
+- Multi-agent + CLI snippet: [`07-multi-agente-rest-sesiones.md`](./brainstorm/07-multi-agente-rest-sesiones.md) §Extra CLI.
+- Consumers overview: [`core/14-consumers.md`](./core/14-consumers.md).

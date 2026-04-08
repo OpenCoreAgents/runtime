@@ -2,6 +2,16 @@
 
 > Actionable step-by-step guide to build the `@agent-runtime` monorepo from zero. Each phase has a **gate** — criteria that must pass before moving on. Derived from `docs/scaffold.md` and `docs/core/`.
 
+**Related planning (consumer surfaces, not part of the core monorepo phases above):**
+
+| Doc | Topic |
+|-----|--------|
+| [`plan-cli.md`](./plan-cli.md) | **`@agent-runtime/cli`**: scaffold (done) vs future **`run` / `resume` / memory / logs** — ideas from [`brainstorm/06-libreria-adapters-cli.md`](./brainstorm/06-libreria-adapters-cli.md). |
+| [`plan-rest.md`](./plan-rest.md) | **HTTP/JSON API** — endpoints, async jobs, tenancy; brainstorm [`07-multi-agente-rest-sesiones.md`](./brainstorm/07-multi-agente-rest-sesiones.md). |
+| [`plan-mcp.md`](./plan-mcp.md) | **Model Context Protocol** — MCP server as channel over SDK or REST. |
+
+**Runnable examples:** [`examples/minimal-run`](../examples/minimal-run/) (mock LLM, no keys); [`examples/openai-tools-skill`](../examples/openai-tools-skill/) (`OpenAILLMAdapter` + tool + skill, **`OPENAI_API_KEY`**); [`examples/console-wait`](../examples/console-wait/) (**`onWait`** + stdin, mock LLM).
+
 ---
 
 ## Progress snapshot
