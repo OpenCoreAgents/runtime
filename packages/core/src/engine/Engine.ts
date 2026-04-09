@@ -64,6 +64,7 @@ function toolContext(deps: EngineDeps, run: Run): ToolContext {
     runId: run.runId,
     sessionId: deps.session.id,
     endUserId: deps.session.endUserId,
+    sessionContext: deps.session.sessionContext,
     memoryAdapter: deps.memoryAdapter,
     securityContext: deps.securityContext,
     fileReadRoot: deps.fileReadRoot ?? deps.session.fileReadRoot,

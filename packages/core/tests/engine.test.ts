@@ -246,6 +246,58 @@ describe("engine", () => {
     expect(obs?.content).toEqual({ echoed: "hi" });
   });
 
+  it("forwards Session.sessionContext into tool execute context", async () => {
+    class OneToolCall implements LLMAdapter {
+      private i = 0;
+      async generate(): Promise<LLMResponse> {
+        if (this.i++ === 0) {
+          return {
+            content: "",
+            toolCalls: [{ name: "ctx_echo", arguments: JSON.stringify({}) }],
+          };
+        }
+        return { content: JSON.stringify({ type: "result", content: "done" }) };
+      }
+    }
+
+    const rt = new AgentRuntime({
+      llmAdapter: new OneToolCall(),
+      memoryAdapter: new InMemoryMemoryAdapter(),
+      maxIterations: 10,
+    });
+
+    await Tool.define({
+      id: "ctx_echo",
+      scope: "global",
+      description: "Echo sessionContext",
+      inputSchema: { type: "object", properties: {} },
+      execute: async (_input, ctx) => ({
+        locale: ctx.sessionContext?.locale,
+        tier: ctx.sessionContext?.tier,
+      }),
+    });
+
+    await Agent.define({
+      id: "a-ctx",
+      projectId: "p1",
+      systemPrompt: "Test.",
+      tools: ["ctx_echo"],
+      llm: { provider: "openai", model: "gpt-4o" },
+    });
+
+    const session = new Session({
+      id: "s-ctx",
+      projectId: "p1",
+      sessionContext: { locale: "es", tier: "pro" },
+    });
+    const agent = await Agent.load("a-ctx", rt, { session });
+    const run = await agent.run("go");
+
+    expect(run.status).toBe("completed");
+    const obs = run.history.find((h) => h.type === "observation");
+    expect(obs?.content).toEqual({ locale: "es", tier: "pro" });
+  });
+
   it("persists wait and resumes with runStore", async () => {
     const mem = new InMemoryMemoryAdapter();
     const store = new InMemoryRunStore();

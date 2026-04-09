@@ -11,6 +11,8 @@ export type EngineRunJobPayload = {
   sessionId: string;
   /** When set, forwarded to {@link Session} for B2B2C memory (`longTerm` / `vectorMemory` scoping). */
   endUserId?: string;
+  /** Forwarded to {@link Session.sessionContext} (e.g. claims, locale, support email). */
+  sessionContext?: Readonly<Record<string, unknown>>;
   /** When set, `dispatchEngineJob` throws if `Date.now()` exceeds this (Unix ms). */
   expiresAtMs?: number;
   /** Forwarded to `Session` for sandboxed `system_file_read` / `system_file_ingest` local paths. */
@@ -28,6 +30,8 @@ export type EngineResumeJobPayload = {
   sessionId: string;
   /** When set, forwarded to {@link Session} for B2B2C memory (`longTerm` / `vectorMemory` scoping). */
   endUserId?: string;
+  /** Forwarded to {@link Session.sessionContext} (e.g. claims, locale, support email). */
+  sessionContext?: Readonly<Record<string, unknown>>;
   /** When set, `dispatchEngineJob` throws if `Date.now()` exceeds this (Unix ms). */
   expiresAtMs?: number;
   fileReadRoot?: string;

@@ -110,6 +110,7 @@ Swap **`DemoLlm`** for **`OpenAILLMAdapter`** from **`@agent-runtime/adapters-op
 - **OpenAI + tool + skill:** [`examples/openai-tools-skill`](examples/openai-tools-skill/) — requires `OPENAI_API_KEY`.
 - **Console `wait` + stdin:** [`examples/console-wait`](examples/console-wait/).
 - **RAG + catalog:** [`examples/rag`](examples/rag/).
+- **RAG + support ticket tool:** [`examples/rag-contact-support`](examples/rag-contact-support/) — `contact_support` after KB search (scripted LLM).
 - **Multi-agent (in-process bus):** [`examples/multi-agent`](examples/multi-agent/).
 
 ---

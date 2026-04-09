@@ -10,6 +10,8 @@ export interface ToolContext {
   runId: string;
   sessionId: string;
   endUserId?: string;
+  /** Copied from {@link Session.sessionContext}; treat as read-only in tool handlers. */
+  sessionContext?: Readonly<Record<string, unknown>>;
   memoryAdapter: MemoryAdapter;
   securityContext: SecurityContext;
   /** Effective sandbox root: session overrides `AgentRuntime` config (see {@link buildEngineDeps}). */

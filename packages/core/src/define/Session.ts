@@ -4,6 +4,8 @@ export class Session {
   readonly id: string;
   readonly projectId: string;
   readonly endUserId?: string;
+  /** Host-owned bag; see {@link SessionOptions.sessionContext}. */
+  readonly sessionContext?: Readonly<Record<string, unknown>>;
   readonly expiresAtMs?: number;
   readonly fileReadRoot?: string;
   readonly allowFileReadOutsideRoot?: boolean;
@@ -14,6 +16,7 @@ export class Session {
     this.id = opts.id;
     this.projectId = opts.projectId;
     this.endUserId = opts.endUserId;
+    this.sessionContext = opts.sessionContext;
     this.expiresAtMs = opts.expiresAtMs;
     this.fileReadRoot = opts.fileReadRoot;
     this.allowFileReadOutsideRoot = opts.allowFileReadOutsideRoot;

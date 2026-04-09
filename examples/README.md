@@ -19,6 +19,7 @@ For production or any shared runtime, swap to **`RedisMemoryAdapter`** (`@agent-
 | `@agent-runtime/example-console-wait` | [`console-wait/`](./console-wait/) | Interactive **terminal**: mock LLM emits **`wait`**, **`RunBuilder.onWait`** reads stdin (`readline`), then continues in-process. No API keys. |
 | `@agent-runtime/example-rag` | [`rag/`](./rag/) | **`registerRagCatalog(runtime, …)`** (per project) + **`system_ingest_rag_source`** / **`system_vector_search`**; in-memory vector + hash embeddings (no API keys); optional OpenAI script. |
 | `@agent-runtime/example-multi-agent` | [`multi-agent/`](./multi-agent/) | **`InProcessMessageBus`** + **`system_send_message`**: fire-and-forget **event**, then **request** / **reply** with **`correlationId`** (mock LLM; no keys). |
+| `@agent-runtime/example-rag-contact-support` | [`rag-contact-support/`](./rag-contact-support/) | **RAG** + custom **`contact_support`** tool: ingest handbook, **`system_vector_search`**, demo ticket (scripted LLM; no keys). |
 
 ### `minimal-run` — `@agent-runtime/example-minimal-run`
 
@@ -71,6 +72,16 @@ For production or any shared runtime, swap to **`RedisMemoryAdapter`** (`@agent-
 | **Run** | `pnpm --filter @agent-runtime/example-multi-agent start` |
 | **Docs** | [multi-agent/README.md](./multi-agent/README.md) |
 
+### `rag-contact-support` — `@agent-runtime/example-rag-contact-support`
+
+| | |
+|--|--|
+| **Workspace deps** | `@agent-runtime/core`, `@agent-runtime/rag` |
+| **Scripts** | `pnpm start` → `tsx src/main.ts`; `pnpm typecheck` |
+| **Build first** | `pnpm turbo run build --filter=@agent-runtime/core --filter=@agent-runtime/rag` |
+| **Run** | `pnpm --filter @agent-runtime/example-rag-contact-support start` |
+| **Docs** | [rag-contact-support/README.md](./rag-contact-support/README.md) |
+
 ---
 
 ## Backlog — ideas for more examples (TODO)
@@ -94,6 +105,7 @@ Prioritize by what you want to teach (operators vs integrators). None of these e
 
 - [ ] **Built-in memory tools** — `system_save_memory` / `system_get_memory` with **`InMemoryMemoryAdapter`** or Redis-backed memory; show scopes (`shortTerm` / `working` / `longTerm`).
 - [x] **`@agent-runtime/rag`** — covered by [`rag/`](./rag/) (**`registerRagCatalog(runtime, projectId, sources)`**, catalog ingest tools, in-memory vector); swap embeddings/vector/OpenAI per [rag/README.md](./rag/README.md).
+- [x] **RAG + custom escalation tool** — [`rag-contact-support/`](./rag-contact-support/) (`contact_support` + **`skills: ["rag", "contact-support-skill"]`**).
 - [ ] **Vector tools only** — `system_vector_upsert` / `system_vector_search` with **`UpstashVectorAdapter`** or another **`VectorAdapter`** implementation.
 
 ### Multi-agent

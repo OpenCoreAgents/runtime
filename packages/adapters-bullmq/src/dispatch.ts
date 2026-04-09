@@ -28,6 +28,7 @@ export async function dispatchEngineJob(
     id: payload.sessionId,
     projectId: payload.projectId,
     endUserId: payload.endUserId,
+    sessionContext: payload.sessionContext,
     fileReadRoot: payload.fileReadRoot,
     allowFileReadOutsideRoot: payload.allowFileReadOutsideRoot,
     allowHttpFileSources: payload.allowHttpFileSources,

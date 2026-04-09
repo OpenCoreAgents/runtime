@@ -1,0 +1,19 @@
+{
+  "name": "@agent-runtime/example-rag-contact-support",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "RAG + custom contact_support tool: ingest handbook, vector search, then escalate to support (scripted LLM; no API keys).",
+  "scripts": {
+    "start": "tsx src/main.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@agent-runtime/core": "workspace:*",
+    "@agent-runtime/rag": "workspace:*"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.3",
+    "typescript": "^5.7.3"
+  }
+}

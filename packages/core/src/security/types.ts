@@ -2,6 +2,12 @@ export interface SessionOptions {
   id: string;
   projectId: string;
   endUserId?: string;
+  /**
+   * Arbitrary host-resolved context (JWT claims, form intake, BFF headers, etc.). Copied to
+   * {@link import("../adapters/tool/ToolAdapter.js").ToolContext.sessionContext} for every tool call.
+   * Prefer plain JSON-serializable values so workers/queues can persist the same shape.
+   */
+  sessionContext?: Readonly<Record<string, unknown>>;
   /** When set, runs and resumes are rejected after this instant (Unix ms, same as `Date.now()`). */
   expiresAtMs?: number;
   /**

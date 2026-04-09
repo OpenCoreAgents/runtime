@@ -107,6 +107,22 @@ importers:
         specifier: ^5.7.3
         version: 5.9.3
 
+  examples/rag-contact-support:
+    dependencies:
+      '@agent-runtime/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@agent-runtime/rag':
+        specifier: workspace:*
+        version: link:../../packages/rag
+    devDependencies:
+      tsx:
+        specifier: ^4.19.3
+        version: 4.21.0
+      typescript:
+        specifier: ^5.7.3
+        version: 5.9.3
+
   packages/adapters-bullmq:
     dependencies:
       '@agent-runtime/core':
