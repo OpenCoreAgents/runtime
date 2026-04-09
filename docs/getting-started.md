@@ -11,9 +11,10 @@ This guide explains what the agents framework is, how it behaves architecturally
 The agents framework is **not a simple wrapper around an LLM**. It is a **stateful workflow engine** built from:
 
 - **Runtime:** Orchestrates agent executions.
+- **Session:** Identifies a conversation and **tenant** (`projectId`) when you load an agent — memory scopes and policies apply per session.
 - **Tools:** Atomic actions agents can perform.
 - **Skills:** Reusable groupings of tools.
-- **Agents:** Combine skills, tools, and a system prompt.
+- **Agents:** Combine skills, tools, and a system prompt (definitions include **`projectId`** for isolation).
 - **Protocol:** Structured LLM responses (`thought`, `action`, `wait`, `result`).
 - **RunStore:** Optional persistence for resumable workflows.
 - **Hooks:** Observability and auditing of agent behavior.
@@ -102,14 +103,16 @@ Tool.define()
    ↓
 Skill.define()
    ↓
-Agent.define()
+Agent.define()   ← includes projectId
    ↓
-Agent.load()
+new Session({ id, projectId })   ← projectId matches the agent
+   ↓
+Agent.load(id, runtime, { session })
    ↓
 agent.run(input)
 ```
 
-Tools and skills **must** exist before the agent that references them. Hooks and durable storage are optional but recommended for production-style workflows.
+Tools and skills **must** exist before the agent that references them. **`Session.projectId`** must match the **`projectId`** on **`Agent.define`** for that agent. Hooks and durable storage are optional but recommended for production-style workflows.
 
 ---
 
@@ -192,6 +195,7 @@ import { Agent } from "@your-scope/agents";
 
 await Agent.define({
   id: "support-agent",
+  projectId: "demo-project",
   systemPrompt: `
     You are a support agent.
     Respond using structured steps: thought, action, wait, result.
@@ -204,13 +208,23 @@ await Agent.define({
 
 ---
 
-## 10. Load and run an agent
+## 10. Session, load, and run
+
+Each **`Agent.load`** is scoped with a **`Session`**: a stable **`id`** for the conversation (e.g. end-user or thread) and a **`projectId`** that must match the agent definition so memory and registry lookups stay in the right tenant.
 
 ```ts
-const agent = await Agent.load("support-agent", runtime);
+import { Session } from "@your-scope/agents";
 
-const runResult = await agent.run("Lookup ticket #123");
-console.log(runResult.output);
+const session = new Session({
+  id: "user-thread-1",
+  projectId: "demo-project",
+});
+
+const agent = await Agent.load("support-agent", runtime, { session });
+
+const run = await agent.run("Lookup ticket #123");
+const resultMsg = run.history.find((h) => h.type === "result");
+console.log(resultMsg?.content);
 ```
 
 ---
@@ -250,6 +264,7 @@ agent.onResult((result) => console.log("Result:", result.output));
 ## 14. Summary
 
 - **Runtime** orchestrates agents; **RunStore** enables resume.
+- **Session** (`id` + **`projectId`**) is required when loading an agent so runs and memory are scoped correctly; **`projectId`** on **`Agent.define`** and **`Session`** must align.
 - **Tools** and **skills** are registered before **agents**.
 - **Protocol:** structured steps (`thought`, `action`, `wait`, `result`); observations follow tool execution in the loop.
 - **Hooks** support debugging and audit trails.
