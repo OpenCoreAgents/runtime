@@ -112,6 +112,7 @@ Swap **`DemoLlm`** for **`OpenAILLMAdapter`** from **`@agent-runtime/adapters-op
 - **RAG + catalog:** [`examples/rag`](examples/rag/).
 - **RAG + support ticket tool:** [`examples/rag-contact-support`](examples/rag-contact-support/) — `contact_support` after KB search (scripted LLM).
 - **Multi-agent (in-process bus):** [`examples/multi-agent`](examples/multi-agent/).
+- **Express HTTP API (chat, SSE hook stream, `/status`, run + session status, wait/resume):** [`examples/real-world-with-express`](examples/real-world-with-express/).
 
 ---
 

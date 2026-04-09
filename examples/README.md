@@ -20,11 +20,13 @@ For production or any shared runtime, swap to **`RedisMemoryAdapter`** (`@agent-
 | Learn **RAG only**: **catalog**, **`system_ingest_rag_source`**, **`system_vector_search`**, demo embeddings | [`rag/`](./rag/) |
 | Combine **RAG** with a **custom tool**, **`Session.sessionContext`** (e.g. email), **`contact_support`**, and **`Agent.resume`** after **`wait`** (**`InMemoryRunStore`**) | [`rag-contact-support/`](./rag-contact-support/) |
 | Wire **multi-agent** messaging: **`InProcessMessageBus`**, **`system_send_message`**, request/reply | [`multi-agent/`](./multi-agent/) |
+| **Express** BFF: **`POST /v1/chat`**, **`POST /v1/chat/stream`** (SSE hooks), **`GET /status`**, **`GET /v1/runs/:runId`**, **`GET /v1/sessions/:sessionId/status`**, **`wait`** + **`resume`** over HTTP (optional **`OPENAI_API_KEY`**) | [`real-world-with-express/`](./real-world-with-express/) |
 
 **Notes**
 
 - **`rag-contact-support`** runs **two** user turns (warranty-style KB question, then a refund/ticket scenario), uses a **scripted LLM** (no API keys), and is best run **interactively** in a terminal (see [rag-contact-support/README.md](./rag-contact-support/README.md)).
 - For **`wait` + `resume`** across separate workers or processes, pair a **`RunStore`** (Redis, etc.) with the same **`Agent.resume(runId, …)`** pattern shown in that example; see [`docs/core/19-cluster-deployment.md`](../docs/core/19-cluster-deployment.md).
+- **`real-world-with-express`** — **`RunStore`**-backed **`GET`** endpoints show persisted state **after** each engine segment finishes (not step-by-step while **`executeRun`** is in flight); use **`POST /v1/chat/stream`** for live hook events. Concurrent **`POST /v1/chat`** calls are **not** queued per session (parallel runs, shared in-process memory). **`GET /health`** (minimal) and **`GET /status`** (process metadata) are outside **`API_KEY`**; **`/v1/*`** may require **`API_KEY`** when set. See [real-world-with-express/README.md](./real-world-with-express/README.md).
 
 ---
 
@@ -38,6 +40,7 @@ For production or any shared runtime, swap to **`RedisMemoryAdapter`** (`@agent-
 | `@agent-runtime/example-rag` | [`rag/`](./rag/) | **`registerRagCatalog(runtime, …)`** (per project) + **`system_ingest_rag_source`** / **`system_vector_search`**; in-memory vector + hash embeddings (no API keys); optional OpenAI script. |
 | `@agent-runtime/example-multi-agent` | [`multi-agent/`](./multi-agent/) | **`InProcessMessageBus`** + **`system_send_message`**: fire-and-forget **event**, then **request** / **reply** with **`correlationId`** (mock LLM; no keys). |
 | `@agent-runtime/example-rag-contact-support` | [`rag-contact-support/`](./rag-contact-support/) | **RAG** + **`contact_support`**, **`Session.sessionContext`**, two CLI turns (KB vs ticket), **`wait`** + **`Agent.resume`** with **`InMemoryRunStore`** (scripted LLM; no keys). |
+| `@agent-runtime/example-real-world-with-express` | [`real-world-with-express/`](./real-world-with-express/) | **Express** BFF: JSON chat + **SSE** (`/v1/chat/stream`), **`GET /status`**, run + **session** status, wait/resume; **`API_KEY`**, CORS, **`X-Request-Id`**, SIGTERM shutdown; **`InMemoryRunStore`**; mock or **OpenAI**. |
 
 ### `minimal-run` — `@agent-runtime/example-minimal-run`
 
@@ -100,6 +103,18 @@ For production or any shared runtime, swap to **`RedisMemoryAdapter`** (`@agent-
 | **Run** | `pnpm --filter @agent-runtime/example-rag-contact-support start` (**interactive** terminal recommended) |
 | **Docs** | [rag-contact-support/README.md](./rag-contact-support/README.md) |
 
+### `real-world-with-express` — `@agent-runtime/example-real-world-with-express`
+
+| | |
+|--|--|
+| **Workspace deps** | `@agent-runtime/core`, `@agent-runtime/adapters-openai`, `express`, `cors` |
+| **Scripts** | `pnpm start` → `tsx src/server.ts`; `pnpm typecheck` |
+| **Env** | Optional `OPENAI_API_KEY` / `OPENAI_MODEL`; optional `PORT`; optional `API_KEY` (bearer for `/v1/*`, not `/health` or `/status`); optional `SHUTDOWN_TIMEOUT_MS` |
+| **Build first** | `pnpm turbo run build --filter=@agent-runtime/core --filter=@agent-runtime/adapters-openai` |
+| **Run** | `pnpm --filter @agent-runtime/example-real-world-with-express start` |
+| **Endpoints (v1)** | `POST /chat`, `POST /chat/stream`, `GET /runs/:runId`, `GET /sessions/:sessionId/status`, `POST /runs/wait-demo`, `POST /runs/:runId/resume` |
+| **Docs** | [real-world-with-express/README.md](./real-world-with-express/README.md), [real-world-with-express/.env.example](./real-world-with-express/.env.example) |
+
 ---
 
 ## Backlog — ideas for more examples (TODO)
@@ -108,7 +123,7 @@ Prioritize by what you want to teach (operators vs integrators). None of these e
 
 ### Engine loop & lifecycle
 
-- [x] **`wait` + `resume` (same process)** — [`rag-contact-support/`](./rag-contact-support/) uses **`InMemoryRunStore`** and **`Agent.resume(runId, { type: "text", content })`** after **`wait`**. A **second worker or HTTP handler** resuming the same run ID with a shared **`RedisRunStore`** (or similar) is still a good dedicated example; see [`docs/core/19-cluster-deployment.md`](../docs/core/19-cluster-deployment.md).
+- [x] **`wait` + `resume` (same process)** — [`rag-contact-support/`](./rag-contact-support/) uses **`InMemoryRunStore`** and **`Agent.resume(runId, { type: "text", content })`** after **`wait`**. **HTTP resume** — [`real-world-with-express/`](./real-world-with-express/) (`POST …/resume`). A **second worker** resuming the same run ID with a shared **`RedisRunStore`** (or similar) remains a good follow-up; see [`docs/core/19-cluster-deployment.md`](../docs/core/19-cluster-deployment.md).
 - [x] **`RunBuilder.onWait`** (in-process) — covered by [`console-wait/`](./console-wait/) (stdin).
 - [ ] **Session expiry** — `Session({ expiresAtMs })` + **`SessionExpiredError`** on `run` / `resume` after expiry.
 - [ ] **Hooks + `watchUsage`** — `onThought` / `onAction` logging; token totals and “wasted” tokens after failed parses.
@@ -134,11 +149,11 @@ Prioritize by what you want to teach (operators vs integrators). None of these e
 
 - [ ] **OpenAI + memory** — extend the OpenAI example with long-lived **`Session`** + `system_save_memory` / `system_get_memory` in the prompt loop.
 - [ ] **Anthropic** — if/when an `@agent-runtime/adapters-anthropic` (or similar) exists; same protocol JSON in `content`.
-- [ ] **Streaming / SSE** — optional: demo HTTP server that streams hook events (product code; not in `core` today — see [`docs/plan-rest.md`](../docs/plan-rest.md)).
+- [x] **Streaming / SSE (hook events)** — [`real-world-with-express/`](./real-world-with-express/) **`POST /v1/chat/stream`** streams **`RunBuilder`** hooks (`step`, `observation`, `done`). Token streaming from the provider is separate — see [`docs/plan-rest.md`](../docs/plan-rest.md).
 
 ### Ops & testing
 
-- [ ] **Graceful shutdown** — worker handles SIGTERM; finish in-flight `executeRun` (pattern in cluster docs).
+- [x] **Graceful HTTP shutdown** — [`real-world-with-express/`](./real-world-with-express/) closes the server on SIGINT/SIGTERM (in-flight HTTP handlers finish; long **`executeRun`** is not aborted — see example **`shutdown.ts`**). Workers/queues: [`docs/core/19-cluster-deployment.md`](../docs/core/19-cluster-deployment.md).
 - [ ] **CI-friendly** — example that uses only mocks / Docker Redis service (no paid API), runnable in GitHub Actions as a smoke job.
 
 ---
