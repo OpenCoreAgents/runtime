@@ -18,6 +18,7 @@ For production or any shared runtime, swap to **`RedisMemoryAdapter`** (`@agent-
 | `@agent-runtime/example-openai-tools-skill` | [`openai-tools-skill/`](./openai-tools-skill/) | **`OpenAILLMAdapter`** (engine maps native `tool_calls` when `content` is empty), custom **`Tool.define`** (`roll_dice`), **`Skill.define`**, **`Agent.define`**. Requires **`OPENAI_API_KEY`**. |
 | `@agent-runtime/example-console-wait` | [`console-wait/`](./console-wait/) | Interactive **terminal**: mock LLM emits **`wait`**, **`RunBuilder.onWait`** reads stdin (`readline`), then continues in-process. No API keys. |
 | `@agent-runtime/example-rag` | [`rag/`](./rag/) | **`registerRagCatalog(runtime, …)`** (per project) + **`ingest_rag_source`** / **`vector_search`**; in-memory vector + hash embeddings (no API keys); optional OpenAI script. |
+| `@agent-runtime/example-multi-agent` | [`multi-agent/`](./multi-agent/) | **`InProcessMessageBus`** + **`send_message`**: fire-and-forget **event**, then **request** / **reply** with **`correlationId`** (mock LLM; no keys). |
 
 ### `minimal-run` — `@agent-runtime/example-minimal-run`
 
@@ -60,6 +61,16 @@ For production or any shared runtime, swap to **`RedisMemoryAdapter`** (`@agent-
 | **Run** | `pnpm --filter @agent-runtime/example-rag start` (no keys); optional `pnpm --filter @agent-runtime/example-rag run start:openai` + `OPENAI_API_KEY` |
 | **Docs** | [rag/README.md](./rag/README.md) |
 
+### `multi-agent` — `@agent-runtime/example-multi-agent`
+
+| | |
+|--|--|
+| **Workspace deps** | `@agent-runtime/core` |
+| **Scripts** | `pnpm start` → `tsx src/main.ts`; `pnpm typecheck` |
+| **Build first** | `pnpm turbo run build --filter=@agent-runtime/core` |
+| **Run** | `pnpm --filter @agent-runtime/example-multi-agent start` |
+| **Docs** | [multi-agent/README.md](./multi-agent/README.md) |
+
 ---
 
 ## Backlog — ideas for more examples (TODO)
@@ -87,7 +98,7 @@ Prioritize by what you want to teach (operators vs integrators). None of these e
 
 ### Multi-agent
 
-- [ ] **`InProcessMessageBus` + `send_message`** — two agents in one process; agent A requests something from B; correlate with **`correlationId`** (see [`docs/core/09-communication-multiagent.md`](../docs/core/09-communication-multiagent.md)).
+- [x] **`InProcessMessageBus` + `send_message`** — [`multi-agent/`](./multi-agent/) (event + request/reply; see [`docs/core/09-communication-multiagent.md`](../docs/core/09-communication-multiagent.md)).
 
 ### Providers & UX
 

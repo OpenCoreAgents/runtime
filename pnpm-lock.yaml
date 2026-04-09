@@ -59,6 +59,19 @@ importers:
         specifier: ^5.7.3
         version: 5.9.3
 
+  examples/multi-agent:
+    dependencies:
+      '@agent-runtime/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+    devDependencies:
+      tsx:
+        specifier: ^4.19.3
+        version: 4.21.0
+      typescript:
+        specifier: ^5.7.3
+        version: 5.9.3
+
   examples/openai-tools-skill:
     dependencies:
       '@agent-runtime/adapters-openai':
