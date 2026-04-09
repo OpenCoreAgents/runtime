@@ -20,13 +20,13 @@ For production or any shared runtime, swap to **`RedisMemoryAdapter`** (`@agent-
 | Learn **RAG only**: **catalog**, **`system_ingest_rag_source`**, **`system_vector_search`**, demo embeddings | [`rag/`](./rag/) |
 | Combine **RAG** with a **custom tool**, **`Session.sessionContext`** (e.g. email), **`contact_support`**, and **`Agent.resume`** after **`wait`** (**`InMemoryRunStore`**) | [`rag-contact-support/`](./rag-contact-support/) |
 | Wire **multi-agent** messaging: **`InProcessMessageBus`**, **`system_send_message`**, request/reply | [`multi-agent/`](./multi-agent/) |
-| **Express** BFF: **`POST /v1/chat`**, **`POST /v1/chat/stream`** (SSE hooks), **`GET /status`**, **`GET /v1/runs/:runId`**, **`GET /v1/sessions/:sessionId/status`**, **`wait`** + **`resume`** over HTTP (optional **`OPENAI_API_KEY`**) | [`real-world-with-express/`](./real-world-with-express/) |
+| **Express** BFF + **browser UI** (`public/`): **`POST /v1/chat`**, **`POST /v1/chat/stream`** (SSE hooks), **`GET /status`**, run + session status, **`wait`** + **`resume`** (optional **`OPENAI_API_KEY`** / **`ANTHROPIC_API_KEY`**) | [`real-world-with-express/`](./real-world-with-express/) |
 
 **Notes**
 
 - **`rag-contact-support`** runs **two** user turns (warranty-style KB question, then a refund/ticket scenario), uses a **scripted LLM** (no API keys), and is best run **interactively** in a terminal (see [rag-contact-support/README.md](./rag-contact-support/README.md)).
 - For **`wait` + `resume`** across separate workers or processes, pair a **`RunStore`** (Redis, etc.) with the same **`Agent.resume(runId, …)`** pattern shown in that example; see [`docs/core/19-cluster-deployment.md`](../docs/core/19-cluster-deployment.md).
-- **`real-world-with-express`** — **`RunStore`**-backed **`GET`** endpoints show persisted state **after** each engine segment finishes (not step-by-step while **`executeRun`** is in flight); use **`POST /v1/chat/stream`** for live hook events. Concurrent **`POST /v1/chat`** calls are **not** queued per session (parallel runs, shared in-process memory). **`GET /health`** (minimal) and **`GET /status`** (process metadata) are outside **`API_KEY`**; **`/v1/*`** may require **`API_KEY`** when set. See [real-world-with-express/README.md](./real-world-with-express/README.md).
+- **`real-world-with-express`** — **`GET /`** serves a small **HTML/JS** demo from **`public/`** (same-origin **`fetch`**). **`RunStore`**-backed **`GET`** endpoints show persisted state **after** each engine segment finishes (not step-by-step while **`executeRun`** is in flight); use **`POST /v1/chat/stream`** for live hook events. Concurrent **`POST /v1/chat`** calls are **not** queued per session (parallel runs, shared in-process memory). **`GET /health`** (minimal) and **`GET /status`** (process metadata) are outside **`API_KEY`**; **`/v1/*`** may require **`API_KEY`** when set. See [real-world-with-express/README.md](./real-world-with-express/README.md).
 
 ---
 
@@ -40,7 +40,7 @@ For production or any shared runtime, swap to **`RedisMemoryAdapter`** (`@agent-
 | `@agent-runtime/example-rag` | [`rag/`](./rag/) | **`registerRagCatalog(runtime, …)`** (per project) + **`system_ingest_rag_source`** / **`system_vector_search`**; in-memory vector + hash embeddings (no API keys); optional OpenAI script. |
 | `@agent-runtime/example-multi-agent` | [`multi-agent/`](./multi-agent/) | **`InProcessMessageBus`** + **`system_send_message`**: fire-and-forget **event**, then **request** / **reply** with **`correlationId`** (mock LLM; no keys). |
 | `@agent-runtime/example-rag-contact-support` | [`rag-contact-support/`](./rag-contact-support/) | **RAG** + **`contact_support`**, **`Session.sessionContext`**, two CLI turns (KB vs ticket), **`wait`** + **`Agent.resume`** with **`InMemoryRunStore`** (scripted LLM; no keys). |
-| `@agent-runtime/example-real-world-with-express` | [`real-world-with-express/`](./real-world-with-express/) | **Express** BFF: JSON chat + **SSE** (`/v1/chat/stream`), **`GET /status`**, run + **session** status, wait/resume; **`API_KEY`**, CORS, **`X-Request-Id`**, SIGTERM shutdown; **`InMemoryRunStore`**; mock or **OpenAI**. |
+| `@agent-runtime/example-real-world-with-express` | [`real-world-with-express/`](./real-world-with-express/) | **Express** BFF + **`public/`** HTML/JS UI: JSON chat + **SSE**, **`GET /status`**, run + session status, wait/resume; **`API_KEY`**, CORS, **`X-Request-Id`**, SIGTERM shutdown; **`InMemoryRunStore`**; mock or **OpenAI** / **Anthropic**. |
 
 ### `minimal-run` — `@agent-runtime/example-minimal-run`
 
@@ -107,11 +107,12 @@ For production or any shared runtime, swap to **`RedisMemoryAdapter`** (`@agent-
 
 | | |
 |--|--|
-| **Workspace deps** | `@agent-runtime/core`, `@agent-runtime/adapters-openai`, `express`, `cors` |
+| **Workspace deps** | `@agent-runtime/core`, `@agent-runtime/adapters-openai`, `@agent-runtime/adapters-anthropic`, `express`, `cors` |
 | **Scripts** | `pnpm start` → `tsx src/server.ts`; `pnpm typecheck` |
-| **Env** | Optional `OPENAI_API_KEY` / `OPENAI_MODEL`; optional `PORT`; optional `API_KEY` (bearer for `/v1/*`, not `/health` or `/status`); optional `SHUTDOWN_TIMEOUT_MS` |
-| **Build first** | `pnpm turbo run build --filter=@agent-runtime/core --filter=@agent-runtime/adapters-openai` |
+| **Env** | Optional `OPENAI_*` / `ANTHROPIC_*`; optional `EXPRESS_LLM_PROVIDER` (`openai` \| `anthropic`); optional `PORT`; optional `API_KEY` (bearer for `/v1/*`, not `/health` or `/status`); optional `SHUTDOWN_TIMEOUT_MS` |
+| **Build first** | `pnpm turbo run build --filter=@agent-runtime/core --filter=@agent-runtime/adapters-openai --filter=@agent-runtime/adapters-anthropic` |
 | **Run** | `pnpm --filter @agent-runtime/example-real-world-with-express start` |
+| **UI** | Static **`public/`** (`GET /`) — same-origin demo for **`/v1/*`** |
 | **Endpoints (v1)** | `POST /chat`, `POST /chat/stream`, `GET /runs/:runId`, `GET /sessions/:sessionId/status`, `POST /runs/wait-demo`, `POST /runs/:runId/resume` |
 | **Docs** | [real-world-with-express/README.md](./real-world-with-express/README.md), [real-world-with-express/.env.example](./real-world-with-express/.env.example) |
 

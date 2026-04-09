@@ -1,14 +1,19 @@
 /**
- * Express **host** in front of **AgentRuntime**: one process-global runtime, JSON API, optional OpenAI.
+ * Express **host** in front of **AgentRuntime**: one process-global runtime, JSON API, optional OpenAI or Anthropic.
  *
- * “Real” touches here (not in the engine): **CORS**, **security headers**, **X-Request-Id**, optional
- * **`API_KEY`** bearer auth on **`/v1/*`**, **SSE** (`POST /v1/chat/stream`), **`GET /status`**, **`GET /v1/runs/:runId`**, **`GET /v1/sessions/:sessionId/status`**, **404**, **graceful shutdown**.
+ * “Real” touches here (not in the engine): **CORS**, **security headers**, **`public/`** static UI, **X-Request-Id**, optional
+ * **`API_KEY`** bearer auth on **`/v1/*`**, **SSE** (`POST /v1/chat/stream`), **`GET /status`**, **`GET /v1/runs/:runId`**, **`GET /v1/sessions/:sessionId/status`** (per-run **`userInput`**, **`historyStepCount`**, optional **`?detail=1`**), **404**, **graceful shutdown**.
  * Still not multi-tenant authZ —
  * see docs/core/08-scope-and-security.md.
  */
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import express from "express";
 import type { Server } from "node:http";
 import { randomUUID } from "node:crypto";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const PUBLIC_DIR = path.join(__dirname, "..", "public");
 import {
   Agent,
   AgentRuntime,
@@ -21,6 +26,7 @@ import {
 
 import {
   createExpressDemoLlm,
+  expressLlmConfig,
   EXPRESS_TAG_CHAT,
   EXPRESS_TAG_WAIT,
 } from "./llm.js";
@@ -37,7 +43,6 @@ const PROJECT_ID = "express-demo";
 const AGENT_CHAT = "api-chat";
 const AGENT_WAIT = "api-wait-demo";
 
-const MODEL = process.env.OPENAI_MODEL?.trim() || "gpt-4o-mini";
 const PORT = Number(process.env.PORT) || 3000;
 const API_KEY = process.env.API_KEY?.trim();
 
@@ -61,6 +66,38 @@ function lastWaitReason(run: Run): string | undefined {
   return undefined;
 }
 
+/** Texts from **`Agent.resume`** / in-process resume after **`wait`** (stored on **`run.state.resumeInputs`**). */
+function resumeInputsFromState(run: Run): string[] | undefined {
+  const ri = run.state.resumeInputs;
+  return Array.isArray(ri) && ri.length > 0 ? ri : undefined;
+}
+
+/**
+ * Timeline for API/UI: same as persisted **`history`**, plus one synthetic **`observation`**
+ * after each **`wait`** so **`resume`** text appears between wait and **`result`** (not stored in **`RunStore`**).
+ */
+function historyWithResumeTimeline(run: Run): Run["history"] {
+  const inputs = run.state.resumeInputs;
+  const h = run.history;
+  if (!Array.isArray(inputs) || inputs.length === 0) {
+    return h;
+  }
+  const out: Run["history"] = [];
+  let ri = 0;
+  for (const msg of h) {
+    out.push(msg);
+    if (msg.type === "wait" && ri < inputs.length) {
+      const text = inputs[ri++]!;
+      out.push({
+        type: "observation",
+        content: { kind: "resume_input", text },
+        meta: { ts: msg.meta.ts, source: "engine" },
+      });
+    }
+  }
+  return out;
+}
+
 /** Runs persisted in **`RunStore`** for this session (both agents — chat + wait-demo). */
 async function loadRunsForSession(
   store: InMemoryRunStore,
@@ -78,6 +115,8 @@ function emptyStatusCounts(): Record<RunStatus, number> {
 }
 
 async function bootstrap(): Promise<void> {
+  const llmCfg = expressLlmConfig();
+
   // Persists `waiting` runs so a later HTTP call can `resume` by `runId` (same process only).
   const runStore = new InMemoryRunStore();
 
@@ -89,7 +128,7 @@ async function bootstrap(): Promise<void> {
     maxIterations: 20,
   });
 
-  // Tags in systemPrompt are read by `createExpressDemoLlm()` to route OpenAI vs mock vs wait script.
+  // Tags in systemPrompt are read by `createExpressDemoLlm()` to route provider vs mock vs wait script.
   await Agent.define({
     id: AGENT_CHAT,
     projectId: PROJECT_ID,
@@ -98,7 +137,7 @@ async function bootstrap(): Promise<void> {
       EXPRESS_TAG_CHAT,
     ].join(" "),
     tools: [],
-    llm: { provider: "openai", model: MODEL },
+    llm: { provider: llmCfg.provider, model: llmCfg.model },
   });
 
   await Agent.define({
@@ -109,7 +148,7 @@ async function bootstrap(): Promise<void> {
       EXPRESS_TAG_WAIT,
     ].join(" "),
     tools: [],
-    llm: { provider: "openai", model: MODEL },
+    llm: { provider: llmCfg.provider, model: llmCfg.model },
   });
 
   const app = express();
@@ -123,10 +162,13 @@ async function bootstrap(): Promise<void> {
   app.use(express.json({ limit: "512kb" }));
 
   app.get("/health", (_req, res) => {
+    const llm = expressLlmConfig();
     res.json({
       ok: true,
       service: "agent-runtime-express-example",
+      expressLlm: llm.backend,
       openaiConfigured: Boolean(process.env.OPENAI_API_KEY?.trim()),
+      anthropicConfigured: Boolean(process.env.ANTHROPIC_API_KEY?.trim()),
       apiKeyRequired: Boolean(API_KEY),
     });
   });
@@ -144,11 +186,15 @@ async function bootstrap(): Promise<void> {
     });
   });
 
+  /** Vanilla demo UI: **`GET /`** → **`public/index.html`**. */
+  app.use(express.static(PUBLIC_DIR, { index: "index.html", maxAge: 0 }));
+
   const v1 = express.Router();
   v1.use(optionalBearerAuth(API_KEY));
 
   /**
    * GET /v1/runs/:runId?sessionId=… — load persisted run from **`RunStore`** (same **`sessionId`** as **`run`** / **`resume`**).
+   * Includes **`userInput`**, **`resumeInputs`**, and **`history`** (protocol steps; resume text is inserted after each **`wait`** for display).
    */
   v1.get("/runs/:runId", async (req, res) => {
     const { runId } = req.params;
@@ -169,19 +215,27 @@ async function bootstrap(): Promise<void> {
       return;
     }
 
+    const userInput =
+      typeof run.state.userInput === "string" ? run.state.userInput : undefined;
+    const resumeInputs = resumeInputsFromState(run);
+
     res.json({
       runId: run.runId,
       agentId: run.agentId,
       sessionId: run.sessionId,
       status: run.status,
+      userInput,
+      ...(resumeInputs ? { resumeInputs } : {}),
       reply: resultText(run),
       ...(run.status === "waiting" ? { waitReason: lastWaitReason(run) } : {}),
       iteration: run.state.iteration,
+      history: historyWithResumeTimeline(run),
     });
   });
 
   /**
    * GET /v1/sessions/:sessionId/status — all persisted **`Run`s** for this **`Session`** (poll UX / dashboards).
+   * Each run includes **`history`** (with resume steps spliced after **`wait`**) unless **`?light=1`** (omit **`history`** to save bytes).
    */
   v1.get("/sessions/:sessionId/status", async (req, res) => {
     const sessionId = req.params.sessionId?.trim() ?? "";
@@ -189,6 +243,11 @@ async function bootstrap(): Promise<void> {
       res.status(400).json({ error: "sessionId is required" });
       return;
     }
+
+    const light =
+      req.query.light === "1" ||
+      req.query.light === "true" ||
+      req.query.light === "yes";
 
     const runs = await loadRunsForSession(runStore, sessionId);
     const byStatus = emptyStatusCounts();
@@ -199,14 +258,24 @@ async function bootstrap(): Promise<void> {
     res.json({
       sessionId,
       projectId: PROJECT_ID,
-      runs: runs.map((r) => ({
-        runId: r.runId,
-        agentId: r.agentId,
-        status: r.status,
-        reply: resultText(r),
-        ...(r.status === "waiting" ? { waitReason: lastWaitReason(r) } : {}),
-        iteration: r.state.iteration,
-      })),
+      runs: runs.map((r) => {
+        const userInput =
+          typeof r.state.userInput === "string" ? r.state.userInput : undefined;
+        const resumeInputs = resumeInputsFromState(r);
+        const merged = historyWithResumeTimeline(r);
+        const base = {
+          runId: r.runId,
+          agentId: r.agentId,
+          status: r.status,
+          userInput,
+          ...(resumeInputs ? { resumeInputs } : {}),
+          historyStepCount: merged.length,
+          reply: resultText(r),
+          ...(r.status === "waiting" ? { waitReason: lastWaitReason(r) } : {}),
+          iteration: r.state.iteration,
+        };
+        return light ? base : { ...base, history: merged };
+      }),
       summary: { total: runs.length, byStatus },
     });
   });
@@ -304,6 +373,27 @@ async function bootstrap(): Promise<void> {
         : randomUUID();
 
     try {
+      const existing = await loadRunsForSession(runStore, sessionId);
+      const waitingDemo = existing.find(
+        (r) => r.agentId === AGENT_WAIT && r.status === "waiting",
+      );
+      if (waitingDemo) {
+        res.status(409).json({
+          error:
+            "This session already has a waiting wait-demo run; POST /resume that run or use another session.",
+          sessionId,
+          runId: waitingDemo.runId,
+          status: waitingDemo.status,
+          waitReason: lastWaitReason(waitingDemo),
+          resumeWith: {
+            method: "POST",
+            path: `/v1/runs/${waitingDemo.runId}/resume`,
+            body: { sessionId, text: "<user name or follow-up>" },
+          },
+        });
+        return;
+      }
+
       const session = new Session({ id: sessionId, projectId: PROJECT_ID });
       const agent = await Agent.load(AGENT_WAIT, runtime, { session });
       const run = await agent.run("Start wait/resume demo for HTTP client.");
@@ -399,8 +489,15 @@ async function bootstrap(): Promise<void> {
   );
 
   const server: Server = app.listen(PORT, () => {
+    const llm = expressLlmConfig();
+    const chatLabel =
+      llm.backend === "openai"
+        ? "OpenAI"
+        : llm.backend === "anthropic"
+          ? "Anthropic"
+          : "mock";
     console.log(
-      `Express + agent-runtime on http://127.0.0.1:${PORT} | OPENAI_API_KEY ${process.env.OPENAI_API_KEY?.trim() ? "set" : "unset"} (chat: ${process.env.OPENAI_API_KEY?.trim() ? "OpenAI" : "mock"}) | API_KEY ${API_KEY ? "required for /v1" : "not set (open /v1)"}`,
+      `Express + agent-runtime on http://127.0.0.1:${PORT} (UI: http://127.0.0.1:${PORT}/) | chat: ${chatLabel} (${llm.provider}/${llm.model}) | API_KEY ${API_KEY ? "required for /v1" : "not set (open /v1)"}`,
     );
   });
 

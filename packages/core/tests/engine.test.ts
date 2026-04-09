@@ -339,6 +339,7 @@ describe("engine", () => {
     expect(
       done.history.some((h) => h.type === "result" && h.content === "resumed"),
     ).toBe(true);
+    expect(done.state.resumeInputs).toEqual(["here"]);
   });
 
   it("resume rejects when sessionId does not match stored run", async () => {

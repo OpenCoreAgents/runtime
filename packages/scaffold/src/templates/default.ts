@@ -23,7 +23,11 @@ export function defaultTemplateFiles(opts: {
         },
         dependencies: {
           "@agent-runtime/core": "^0.0.0",
-          ...(llm === "openai" ? { "@agent-runtime/adapters-openai": "^0.0.0" } : {}),
+          ...(llm === "openai"
+            ? { "@agent-runtime/adapters-openai": "^0.0.0" }
+            : llm === "anthropic"
+              ? { "@agent-runtime/adapters-anthropic": "^0.0.0" }
+              : {}),
           ...(adapter === "redis"
             ? { "@agent-runtime/adapters-redis": "^0.0.0", ioredis: "^5" }
             : {}),
@@ -64,8 +68,9 @@ export function defaultTemplateFiles(opts: {
     ),
 
     ".env.example": `# Copy to .env and fill values
-# LLM
+# LLM (use the key that matches your provider)
 OPENAI_API_KEY=
+ANTHROPIC_API_KEY=
 
 # Upstash Redis (memory) — when using adapter preset "upstash"
 UPSTASH_REDIS_URL=
@@ -101,7 +106,7 @@ export async function registerExampleAgent(): Promise<void> {
     skills: ["exampleSkill"],
     tools: ["system_save_memory", "system_get_memory"],
     llm: { provider: "${llm === "openai" ? "openai" : llm === "anthropic" ? "anthropic" : "custom"}", model: "${
-      llm === "openai" ? "gpt-4o" : llm === "anthropic" ? "claude-3-5-sonnet-20241022" : "custom"
+      llm === "openai" ? "gpt-4o" : llm === "anthropic" ? "claude-sonnet-4-6" : "custom"
     }", temperature: 0.2 },
     security: { roles: ["agent"] },
   });

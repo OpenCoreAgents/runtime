@@ -28,6 +28,10 @@ export interface Run {
     parseAttempts?: number;
     /** Latest user text for this run (first turn). */
     userInput?: string;
+    /**
+     * Text from each **`resume`** after a **`wait`** (HTTP or in-process), in order — not duplicated in **`history`**.
+     */
+    resumeInputs?: string[];
     [key: string]: unknown;
   };
 }

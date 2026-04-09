@@ -57,6 +57,11 @@ After each `generate` call, **`executeRun`** runs **`normalizeLlmStepContent`**:
 
 You must set **`llmAdapter`** and/or a **non-empty** provider map. Helpers can call **`resolveLlmAdapterForProvider`** (exported from `@agent-runtime/core`) with the same config shape.
 
+Reference implementations in this repository:
+
+- **`@agent-runtime/adapters-openai`** — `OpenAILLMAdapter`, `OpenAIEmbeddingAdapter`
+- **`@agent-runtime/adapters-anthropic`** — `AnthropicLLMAdapter`
+
 ---
 
 ## 3. JSON mode for the loop

@@ -110,8 +110,26 @@ export function createRun(
  * Prefer {@link buildEngineDeps} for the static part of {@link EngineDeps}, then add
  * `startedAtMs` and optional `resumeMessages`. Adapters come from {@link AgentRuntime}.
  */
+const RESUME_USER_PREFIX = /^\[resume:[^\]]+\]\s*([\s\S]*)$/;
+
+function appendResumeInputsFromMessages(
+  run: Run,
+  msgs: Array<{ role: string; content: string }> | undefined,
+): void {
+  if (!msgs?.length) return;
+  const raw = msgs[0]?.content;
+  if (typeof raw !== "string") return;
+  const m = RESUME_USER_PREFIX.exec(raw);
+  if (!m) return;
+  const text = m[1]?.trimEnd() ?? "";
+  const list = run.state.resumeInputs ?? [];
+  list.push(text);
+  run.state.resumeInputs = list;
+}
+
 export async function executeRun(run: Run, deps: EngineDeps): Promise<Run> {
   run.status = "running";
+  appendResumeInputsFromMessages(run, deps.resumeMessages);
   const { limits } = deps;
   let firstBuild = true;
 

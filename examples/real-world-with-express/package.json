@@ -3,12 +3,13 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "description": "Express HTTP API: Agent.load + run, optional OpenAI, wait/resume with InMemoryRunStore.",
+  "description": "Express HTTP API: Agent.load + run, optional OpenAI or Anthropic, wait/resume with InMemoryRunStore.",
   "scripts": {
     "start": "tsx src/server.ts",
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
+    "@agent-runtime/adapters-anthropic": "workspace:*",
     "@agent-runtime/adapters-openai": "workspace:*",
     "@agent-runtime/core": "workspace:*",
     "cors": "^2.8.6",

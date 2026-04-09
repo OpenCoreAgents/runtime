@@ -86,7 +86,7 @@ async function main() {
     systemPrompt: SYSTEM,
     tools: [],
     llm: { provider: "${llm === "openai" ? "openai" : "anthropic"}", model: "${
-      llm === "openai" ? "gpt-4o" : "claude-3-5-sonnet-20241022"
+      llm === "openai" ? "gpt-4o" : "claude-sonnet-4-6"
     }", temperature: 0.2 },
   });
 

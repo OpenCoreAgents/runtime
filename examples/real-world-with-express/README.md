@@ -2,14 +2,15 @@
 
 **Express** server that wires **`AgentRuntime`** once per process and exposes JSON routes:
 
-- **`POST /v1/chat`** — `Agent.load` + **`run(message)`** (optional **`OPENAI_API_KEY`**, otherwise a deterministic mock).
+- **`POST /v1/chat`** — `Agent.load` + **`run(message)`** (optional **`OPENAI_API_KEY`** or **`ANTHROPIC_API_KEY`**, otherwise a deterministic mock; see **`EXPRESS_LLM_PROVIDER`** in [`.env.example`](./.env.example)).
 - **`POST /v1/chat/stream`** — same body, **`text/event-stream`** (SSE): **`step`** (thought/action), **`observation`**, then **`done`** with `reply` (hooks from **`RunBuilder`** — not token streaming from the LLM).
 - **`GET /status`** — process uptime, PID, Node version (public, like **`/health`**).
 - **`GET /v1/runs/:runId?sessionId=`** — read persisted run state from **`RunStore`** (poll after **`wait`** or inspect completed runs).
-- **`GET /v1/sessions/:sessionId/status`** — list all persisted runs for that **`sessionId`** (chat + wait-demo agents) plus **`summary.byStatus`** counts.
+- **`GET /v1/sessions/:sessionId/status`** — list all persisted runs for that **`sessionId`** (chat + wait-demo agents), **`userInput`**, **`resumeInputs`**, **`history`** (resume text spliced after each **`wait`** in the timeline), **`summary.byStatus`**. Use **`?light=1`** to omit **`history`** per run.
 - **`POST /v1/runs/wait-demo`** + **`POST /v1/runs/:runId/resume`** — same **`InMemoryRunStore`** pattern as [`rag-contact-support`](../rag-contact-support/), but the “host” is HTTP instead of stdin.
+- **`GET /`** — static demo UI ([`public/index.html`](./public/index.html), [`public/app.js`](./public/app.js)): chat, SSE stream, wait/resume, session status (same-origin **`fetch`**, no build step).
 
-**Host-layer behavior (typical BFF):** **`X-Request-Id`**, minimal **security headers**, **CORS** (reflecting `Origin` for dev), optional **`API_KEY`** bearer auth on **`/v1/*`** (`/health` stays unauthenticated for probes), **404** JSON, **graceful shutdown** on SIGINT/SIGTERM. See [`src/middleware.ts`](./src/middleware.ts) and [`src/shutdown.ts`](./src/shutdown.ts).
+**Host-layer behavior (typical BFF):** **`public/`** via **`express.static`**, **`X-Request-Id`**, minimal **security headers**, **CORS** (reflecting `Origin` for dev), optional **`API_KEY`** bearer auth on **`/v1/*`** (`/health` stays unauthenticated for probes), **404** JSON, **graceful shutdown** on SIGINT/SIGTERM. See [`src/middleware.ts`](./src/middleware.ts) and [`src/shutdown.ts`](./src/shutdown.ts).
 
 Still **not** full production: no per-tenant authZ, no rate limits, **`InMemoryRunStore`** is single-process — see [`docs/core/08-scope-and-security.md`](../../docs/core/08-scope-and-security.md) and [`docs/core/14-consumers.md`](../../docs/core/14-consumers.md). For multiple workers, use **`RedisRunStore`** and align sessions ([`docs/core/19-cluster-deployment.md`](../../docs/core/19-cluster-deployment.md)).
 
@@ -19,10 +20,10 @@ From the repository root:
 
 ```bash
 pnpm install
-pnpm turbo run build --filter=@agent-runtime/core --filter=@agent-runtime/adapters-openai
+pnpm turbo run build --filter=@agent-runtime/core --filter=@agent-runtime/adapters-openai --filter=@agent-runtime/adapters-anthropic
 ```
 
-Optional: copy [`.env.example`](./.env.example) to `.env`. Set **`OPENAI_API_KEY`** for real chat; set **`API_KEY`** to require `Authorization: Bearer …` on **`/v1/*`**.
+Optional: copy [`.env.example`](./.env.example) to `.env`. Set **`OPENAI_API_KEY`** and/or **`ANTHROPIC_API_KEY`** for real chat (if both are set, OpenAI is used unless **`EXPRESS_LLM_PROVIDER=anthropic`**); set **`API_KEY`** to require `Authorization: Bearer …` on **`/v1/*`**.
 
 ## Run
 
@@ -30,7 +31,7 @@ Optional: copy [`.env.example`](./.env.example) to `.env`. Set **`OPENAI_API_KEY
 pnpm --filter @agent-runtime/example-real-world-with-express start
 ```
 
-Default URL: `http://127.0.0.1:3000` (override with **`PORT`**).
+Default URL: `http://127.0.0.1:3000` (override with **`PORT`**). Open **`http://127.0.0.1:3000/`** in a browser for the **HTML/JS** demo (paste **`API_KEY`** in the page if the server requires it).
 
 ## Try it
 
@@ -52,13 +53,14 @@ curl -s http://127.0.0.1:3000/status | jq .
 curl -s "http://127.0.0.1:3000/v1/runs/$RUN_ID?sessionId=$SESSION" | jq .
 ```
 
-**Session status** (all runs in **`RunStore`** for that session — useful after **`wait-demo`** + **`chat`**)
+**Session status** (all runs in **`RunStore`** for that session — useful after **`wait-demo`** + **`chat`**). Each run includes **`history`** by default (with **`resume`** text in the timeline). **`?light=1`** omits **`history`**.
 
 ```bash
 curl -s "http://127.0.0.1:3000/v1/sessions/$SESSION/status" | jq .
+curl -s "http://127.0.0.1:3000/v1/sessions/$SESSION/status?light=1" | jq .
 ```
 
-**Chat** (mock LLM if no OpenAI key)
+**Chat** (mock LLM if no provider key)
 
 ```bash
 curl -s -X POST http://127.0.0.1:3000/v1/chat \

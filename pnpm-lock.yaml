@@ -125,6 +125,9 @@ importers:
 
   examples/real-world-with-express:
     dependencies:
+      '@agent-runtime/adapters-anthropic':
+        specifier: workspace:*
+        version: link:../../packages/adapters-anthropic
       '@agent-runtime/adapters-openai':
         specifier: workspace:*
         version: link:../../packages/adapters-openai
@@ -150,6 +153,12 @@ importers:
       typescript:
         specifier: ^5.7.3
         version: 5.9.3
+
+  packages/adapters-anthropic:
+    dependencies:
+      '@agent-runtime/core':
+        specifier: workspace:*
+        version: link:../core
 
   packages/adapters-bullmq:
     dependencies:

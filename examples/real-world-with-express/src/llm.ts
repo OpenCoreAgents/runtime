@@ -1,7 +1,8 @@
 /**
- * Demo LLM: routes by agent system prompt tag. Chat uses OpenAI when OPENAI_API_KEY is set,
- * otherwise a stateless mock. Wait/resume demo is fully scripted from the message list.
+ * Demo LLM: routes by agent system prompt tag. Chat uses OpenAI or Anthropic when a key is set
+ * (see `expressLlmConfig`), otherwise a stateless mock. Wait/resume demo is fully scripted from the message list.
  */
+import { AnthropicLLMAdapter } from "@agent-runtime/adapters-anthropic";
 import { OpenAILLMAdapter } from "@agent-runtime/adapters-openai";
 import type { LLMAdapter, LLMRequest, LLMResponse } from "@agent-runtime/core";
 
@@ -10,6 +11,49 @@ export const EXPRESS_TAG_CHAT = "[EXPRESS_CHAT]";
 export const EXPRESS_TAG_WAIT = "[EXPRESS_WAIT]";
 
 const RESUME_PREFIX = "[resume:text]";
+
+export type ExpressLlmBackend = "mock" | "openai" | "anthropic";
+
+/**
+ * Which vendor backs **`EXPRESS_TAG_CHAT`** and the matching **`llm.provider` / `llm.model`** for agents.
+ *
+ * - **`EXPRESS_LLM_PROVIDER=openai`** — requires **`OPENAI_API_KEY`** (ignores Anthropic unless unset and you use default routing).
+ * - **`EXPRESS_LLM_PROVIDER=anthropic`** — requires **`ANTHROPIC_API_KEY`**.
+ * - If unset: **`OPENAI_API_KEY`** wins when present; else **`ANTHROPIC_API_KEY`** selects Anthropic.
+ */
+export function expressLlmConfig(): {
+  backend: ExpressLlmBackend;
+  provider: "openai" | "anthropic";
+  model: string;
+} {
+  const openaiKey = process.env.OPENAI_API_KEY?.trim();
+  const anthropicKey = process.env.ANTHROPIC_API_KEY?.trim();
+  const pref = (process.env.EXPRESS_LLM_PROVIDER ?? "").trim().toLowerCase();
+
+  const openaiModel = process.env.OPENAI_MODEL?.trim() || "gpt-4o-mini";
+  const anthropicModel =
+    process.env.ANTHROPIC_MODEL?.trim() || "claude-sonnet-4-6";
+
+  if (pref === "anthropic") {
+    if (anthropicKey) {
+      return { backend: "anthropic", provider: "anthropic", model: anthropicModel };
+    }
+    return { backend: "mock", provider: "openai", model: openaiModel };
+  }
+  if (pref === "openai") {
+    if (openaiKey) {
+      return { backend: "openai", provider: "openai", model: openaiModel };
+    }
+    return { backend: "mock", provider: "openai", model: openaiModel };
+  }
+  if (openaiKey) {
+    return { backend: "openai", provider: "openai", model: openaiModel };
+  }
+  if (anthropicKey) {
+    return { backend: "anthropic", provider: "anthropic", model: anthropicModel };
+  }
+  return { backend: "mock", provider: "openai", model: openaiModel };
+}
 
 function stripExpressTags(req: LLMRequest): LLMRequest {
   const messages = req.messages.map((m) => {
@@ -58,7 +102,7 @@ function chatMockGenerate(req: LLMRequest): LLMResponse {
     content: JSON.stringify({
       type: "result",
       content:
-        "Hello from the Express + agent-runtime example (mock LLM — set OPENAI_API_KEY for a real model).",
+        "Hello from the Express + agent-runtime example (mock LLM — set OPENAI_API_KEY or ANTHROPIC_API_KEY; see README).",
     }),
   };
 }
@@ -82,8 +126,15 @@ function waitDemoGenerate(req: LLMRequest): LLMResponse {
 }
 
 export function createExpressDemoLlm(): LLMAdapter {
-  const apiKey = process.env.OPENAI_API_KEY?.trim();
-  const openai = apiKey ? new OpenAILLMAdapter(apiKey) : null;
+  const cfg = expressLlmConfig();
+  const openai =
+    cfg.backend === "openai" && process.env.OPENAI_API_KEY?.trim()
+      ? new OpenAILLMAdapter(process.env.OPENAI_API_KEY.trim())
+      : null;
+  const anthropic =
+    cfg.backend === "anthropic" && process.env.ANTHROPIC_API_KEY?.trim()
+      ? new AnthropicLLMAdapter(process.env.ANTHROPIC_API_KEY.trim())
+      : null;
 
   return {
     async generate(req: LLMRequest): Promise<LLMResponse> {
@@ -97,6 +148,9 @@ export function createExpressDemoLlm(): LLMAdapter {
       if (raw.includes(EXPRESS_TAG_CHAT)) {
         if (openai) {
           return openai.generate(stripExpressTags(req));
+        }
+        if (anthropic) {
+          return anthropic.generate(stripExpressTags(req));
         }
         return chatMockGenerate(req);
       }

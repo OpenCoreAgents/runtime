@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>agent-runtime — express demo</title>
+    <style>
+      :root {
+        font-family: system-ui, sans-serif;
+        line-height: 1.45;
+        color: #1a1a1a;
+        background: #f6f6f6;
+      }
+      body {
+        max-width: 44rem;
+        margin: 0 auto;
+        padding: 1.25rem;
+      }
+      h1 {
+        font-size: 1.25rem;
+        font-weight: 600;
+      }
+      h2 {
+        font-size: 0.95rem;
+        margin: 1.25rem 0 0.5rem;
+        color: #333;
+      }
+      section {
+        background: #fff;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+      }
+      label {
+        display: block;
+        font-size: 0.8rem;
+        color: #555;
+        margin-bottom: 0.25rem;
+      }
+      input[type="text"],
+      input[type="password"],
+      textarea {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 0.5rem 0.6rem;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        font: inherit;
+      }
+      textarea {
+        min-height: 4rem;
+        resize: vertical;
+      }
+      button {
+        font: inherit;
+        padding: 0.45rem 0.85rem;
+        border-radius: 6px;
+        border: 1px solid #333;
+        background: #222;
+        color: #fff;
+        cursor: pointer;
+        margin: 0.35rem 0.35rem 0 0;
+      }
+      button.secondary {
+        background: #fff;
+        color: #222;
+      }
+      button:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+      }
+      pre,
+      .out {
+        font-size: 0.8rem;
+        background: #f0f0f0;
+        padding: 0.65rem;
+        border-radius: 6px;
+        overflow-x: auto;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+      .muted {
+        font-size: 0.8rem;
+        color: #666;
+      }
+      .row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        align-items: flex-end;
+        margin-bottom: 0.5rem;
+      }
+      .row > div {
+        flex: 1;
+        min-width: 8rem;
+      }
+      a {
+        color: #06c;
+      }
+      .session-toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 0.75rem;
+      }
+      .session-toolbar label {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        margin: 0;
+        font-size: 0.85rem;
+        cursor: pointer;
+      }
+      .run-card {
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 0.75rem 0.85rem;
+        margin-top: 0.65rem;
+        background: #fafafa;
+      }
+      .run-card h3 {
+        font-size: 0.82rem;
+        font-weight: 600;
+        margin: 0 0 0.45rem;
+        color: #333;
+      }
+      .run-meta {
+        font-size: 0.78rem;
+        color: #444;
+        margin: 0.2rem 0;
+      }
+      .run-meta code {
+        font-size: 0.75rem;
+        background: #eee;
+        padding: 0.1rem 0.25rem;
+        border-radius: 4px;
+      }
+      .hist-step {
+        border-left: 3px solid #bbb;
+        padding: 0.35rem 0 0.35rem 0.6rem;
+        margin: 0.4rem 0;
+        font-size: 0.78rem;
+        background: #fff;
+        border-radius: 0 4px 4px 0;
+      }
+      .hist-step .step-type {
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 0.2rem;
+      }
+      .hist-step pre {
+        margin: 0.25rem 0 0;
+        font-size: 0.72rem;
+        background: #f3f3f3;
+      }
+      details.raw-json {
+        margin-top: 0.75rem;
+      }
+      details.raw-json summary {
+        cursor: pointer;
+        font-size: 0.85rem;
+      }
+      .section-help {
+        font-size: 0.82rem;
+        color: #555;
+        margin: 0 0 0.75rem;
+        line-height: 1.5;
+      }
+      .section-help code {
+        font-size: 0.78rem;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>agent-runtime · Express demo UI</h1>
+    <p class="section-help">
+      This page is a <strong>browser front-end</strong> for the example Express server: it calls the same JSON routes as any API client. The engine runs an
+      <strong>agent loop</strong> (LLM → parsed steps → optional tools) and can <strong>pause in a <code>wait</code> state</strong> until you <strong>resume</strong> with new text.
+      Nothing here is “chat streaming” from the model token-by-token unless you add that separately — the SSE section only streams <strong>engine hook events</strong> (thoughts, actions, observations).
+    </p>
+    <p class="muted">
+      Vanilla HTML/JS, same origin as the API. Optional <code>API_KEY</code> in <code>.env</code>: paste the bearer token below (saved in <code>sessionStorage</code> for this tab only).
+    </p>
+
+    <section>
+      <h2>Connection</h2>
+      <p class="section-help">
+        <strong>Session ID</strong> ties every request to one logical conversation: chat runs, wait-demo runs, and <code>GET /v1/sessions/…/status</code> all filter by it. Use <strong>New session</strong> to start clean.
+        The line below shows <code>/health</code> (LLM keys configured, whether <code>/v1</code> needs auth).
+      </p>
+      <div class="row">
+        <div>
+          <label for="apiKey">Bearer token (if <code>API_KEY</code> is set)</label>
+          <input id="apiKey" type="password" autocomplete="off" placeholder="Bearer secret" />
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <label for="sessionId">Session ID</label>
+          <input id="sessionId" type="text" />
+        </div>
+        <div>
+          <label>&nbsp;</label>
+          <button type="button" class="secondary" id="newSession">New session</button>
+        </div>
+      </div>
+      <p class="muted" id="healthLine">Loading /health …</p>
+    </section>
+
+    <section>
+      <h2>Chat <span class="muted">POST /v1/chat</span></h2>
+      <p class="section-help">
+        Sends one <strong>user message</strong> to the <strong>chat agent</strong> and waits until the run finishes (<code>completed</code>, <code>failed</code>, or <code>waiting</code>). The JSON body includes your <strong>Session ID</strong> so the run is stored under that session. Response contains <code>reply</code> (final <code>result</code> text from the protocol).
+      </p>
+      <label for="chatMsg">Message</label>
+      <textarea id="chatMsg" placeholder="Say hello…"></textarea>
+      <button type="button" id="sendChat">Send</button>
+      <h2 class="muted" style="margin-top: 0.75rem">Response</h2>
+      <pre id="chatOut">—</pre>
+    </section>
+
+    <section>
+      <h2>Chat stream (SSE hooks) <span class="muted">POST /v1/chat/stream</span></h2>
+      <p class="section-help">
+        Same message as Chat, but the server responds with <strong>Server-Sent Events</strong>: each event is a <strong>hook</strong> from the run (e.g. a <code>thought</code> or <code>action</code> step, an <code>observation</code> after a tool). That is <strong>not</strong> raw LLM token streaming — it is structured steps from the agent runtime. Use <code>fetch</code> + readable stream (as this page does), not browser <code>EventSource</code> (GET-only).
+      </p>
+      <button type="button" id="sendStream">Send &amp; stream</button>
+      <h2 class="muted" style="margin-top: 0.75rem">Events</h2>
+      <pre id="streamOut">—</pre>
+    </section>
+
+    <section>
+      <h2>Wait / resume <span class="muted">POST /v1/runs/wait-demo · …/resume</span></h2>
+      <p class="section-help">
+        <strong>Wait-demo agent</strong> uses a scripted LLM: first response is <code>wait</code> (run saved as <strong>waiting</strong> in the in-memory store). You then <strong>Resume</strong> with text (e.g. your name); the run continues and returns a <code>result</code>.
+        If this session already has a <strong>waiting</strong> wait-demo run, the server returns <strong>409</strong> — use Resume on that run or switch session. This models external approvals or human-in-the-loop steps, not a second chat thread.
+      </p>
+      <button type="button" id="waitDemo">Start wait-demo</button>
+      <p class="muted" id="waitLine">No waiting run.</p>
+      <label for="resumeText">Resume text</label>
+      <input id="resumeText" type="text" placeholder="Your name" />
+      <button type="button" id="resumeBtn" disabled>Resume</button>
+      <h2 class="muted" style="margin-top: 0.75rem">Last response</h2>
+      <pre id="waitOut">—</pre>
+    </section>
+
+    <section>
+      <h2>Session runs <span class="muted">GET /v1/sessions/:id/status</span></h2>
+      <p class="section-help">
+        Lists <strong>all persisted runs</strong> for the current Session ID (chat + wait-demo). Each run shows <code>userInput</code> (first message), <code>resumeInputs</code> (text sent after each <code>wait</code>), <code>reply</code>, and a <strong>step timeline</strong> (<code>history</code>): wait / result / tool observations, plus a synthetic <strong>resume</strong> step so you see your resume text in order.
+        <strong>Thin response</strong> checks <code>?light=1</code> to skip per-run <code>history</code> (smaller payload). Expand <em>Raw JSON</em> for the exact API response.
+      </p>
+      <div class="session-toolbar">
+        <label>
+          <input type="checkbox" id="sessionLight" />
+          Thin response (<code>?light=1</code> — omit per-run <code>history</code>)
+        </label>
+        <button type="button" class="secondary" id="refreshSession">Refresh</button>
+      </div>
+      <div id="sessionPanel" class="muted">Click Refresh to load runs for the Session ID above.</div>
+      <details class="raw-json">
+        <summary>Raw JSON response</summary>
+        <pre id="sessionRaw">—</pre>
+      </details>
+    </section>
+
+    <p class="section-help">
+      <a href="/health"><code>/health</code></a> — process + LLM configuration probe (no auth).<br />
+      <a href="/status"><code>/status</code></a> — uptime, PID, Node version (no auth).
+    </p>
+
+    <script src="/app.js" defer></script>
+  </body>
+</html>

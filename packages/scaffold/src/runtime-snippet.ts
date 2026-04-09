@@ -43,7 +43,7 @@ export function buildRuntimeTs(opts: {
       : llm === "anthropic"
         ? `  llm: {
     provider: "anthropic",
-    model: "claude-3-5-sonnet-20241022",
+    model: "claude-sonnet-4-6",
     apiKey: process.env.ANTHROPIC_API_KEY!,
   },`
         : `  llm: {
@@ -88,7 +88,21 @@ export function buildRuntimeTs(opts: {
       : {}),
   });
 }`
-      : `export function createAgentRuntime(): AgentRuntime {
+      : llm === "anthropic"
+        ? `export function createAgentRuntime(): AgentRuntime {
+  ${memoryInit}
+  const llmAdapter = new AnthropicLLMAdapter(process.env.ANTHROPIC_API_KEY!);
+  return new AgentRuntime({
+    llmAdapter,
+    memoryAdapter,
+    maxIterations: config.limits.maxIterations,
+    runTimeoutMs: config.limits.runTimeoutMs,
+    ...(config.allowedToolIds != null && config.allowedToolIds !== "*"
+      ? { allowedToolIds: config.allowedToolIds }
+      : {}),
+  });
+}`
+        : `export function createAgentRuntime(): AgentRuntime {
   throw new Error(
     "Implement createAgentRuntime(): construct new AgentRuntime({ llmAdapter, memoryAdapter, ... }) for your LLM provider.",
   );
@@ -96,6 +110,9 @@ export function buildRuntimeTs(opts: {
 
   if (llm === "openai") {
     imports.push(`import { OpenAILLMAdapter } from "@agent-runtime/adapters-openai";`);
+  }
+  if (llm === "anthropic") {
+    imports.push(`import { AnthropicLLMAdapter } from "@agent-runtime/adapters-anthropic";`);
   }
 
   const configDecl = `const config = {
