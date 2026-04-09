@@ -59,7 +59,7 @@ import { Tool, Skill, Agent, AgentRuntime, Session, InMemoryMemoryAdapter } from
 
 // 1. Register tools
 await Tool.define({
-  id: "save_memory",
+  id: "system_save_memory",
   scope: "global",
   description: "Persists a fragment in the agent's memory.",
   inputSchema: { /* ... */ },
@@ -69,7 +69,7 @@ await Tool.define({
 await Skill.define({
   id: "intakeSummary",
   projectId: "acme-corp",
-  tools: ["save_memory", "get_memory"],
+  tools: ["system_save_memory", "system_get_memory"],
   description: "Summarizes intake and persists notes.",
 });
 
@@ -81,7 +81,7 @@ await Agent.define({
   description: "Triage tickets and operational tasks.",
   systemPrompt: "You triage operational intake. Respond with one JSON Step per turn.",
   skills: ["intakeSummary"],
-  tools: ["save_memory", "get_memory"],
+  tools: ["system_save_memory", "system_get_memory"],
   defaultMemory: { notes: [] },
   llm: { provider: "openai", model: "gpt-4o", temperature: 0.2 },
   security: { roles: ["operator", "admin"] },

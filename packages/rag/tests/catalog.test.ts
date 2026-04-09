@@ -41,7 +41,7 @@ describe("RAG file catalog", () => {
     ).toThrow(/Duplicate RAG catalog id/);
   });
 
-  it("list_rag_sources omits filesystem paths from the payload", async () => {
+  it("system_list_rag_sources omits filesystem paths from the payload", async () => {
     registerRagFileCatalog([{ id: "handbook", description: "Policy", source: "secret/path.md" }]);
     const out = (await listRagSourcesTool.execute(
       {},
@@ -51,7 +51,7 @@ describe("RAG file catalog", () => {
     expect(JSON.stringify(out)).not.toContain("secret");
   });
 
-  it("ingest_rag_source rejects unknown id", async () => {
+  it("system_ingest_rag_source rejects unknown id", async () => {
     registerRagFileCatalog([]);
     const out = (await ingestRagSourceTool.execute(
       { id: "nope" },

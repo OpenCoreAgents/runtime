@@ -25,7 +25,7 @@ function requireAdapter<T>(ctx: ToolContext, key: string): T {
 }
 
 const vectorSearch: ToolAdapter = {
-  name: "vector_search",
+  name: "system_vector_search",
   description: "Searches the knowledge base for semantically relevant fragments.",
   validate(input: unknown): boolean {
     if (!input || typeof input !== "object") return false;
@@ -55,7 +55,7 @@ const vectorSearch: ToolAdapter = {
 };
 
 const vectorUpsert: ToolAdapter = {
-  name: "vector_upsert",
+  name: "system_vector_upsert",
   description: "Stores text fragments with embeddings in the knowledge base.",
   validate(input: unknown): boolean {
     if (!input || typeof input !== "object") return false;
@@ -90,7 +90,7 @@ const vectorUpsert: ToolAdapter = {
 };
 
 const vectorDelete: ToolAdapter = {
-  name: "vector_delete",
+  name: "system_vector_delete",
   description: "Deletes fragments from the knowledge base by ID or metadata filter.",
   validate: isValidVectorDeleteInput,
   async execute(input: unknown, ctx: ToolContext): Promise<unknown> {
@@ -109,7 +109,7 @@ const vectorDelete: ToolAdapter = {
 
 export function registerVectorToolHandlers(): void {
   registerToolDefinition({
-    id: "vector_search",
+    id: "system_vector_search",
     scope: "global",
     description: vectorSearch.description!,
     inputSchema: {
@@ -125,7 +125,7 @@ export function registerVectorToolHandlers(): void {
     roles: ["agent"],
   });
   registerToolDefinition({
-    id: "vector_upsert",
+    id: "system_vector_upsert",
     scope: "global",
     description: vectorUpsert.description!,
     inputSchema: {
@@ -149,7 +149,7 @@ export function registerVectorToolHandlers(): void {
     roles: ["agent"],
   });
   registerToolDefinition({
-    id: "vector_delete",
+    id: "system_vector_delete",
     scope: "global",
     description: vectorDelete.description!,
     inputSchema: {

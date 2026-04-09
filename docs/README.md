@@ -89,7 +89,7 @@ import { Tool } from "@agent-runtime/core";
 
 // Global: available to any agent in any project
 await Tool.define({
-  id: "save_memory",
+  id: "system_save_memory",
   scope: "global",
   description: "Persists a fragment in the agent's memory.",
   inputSchema: {
@@ -130,7 +130,7 @@ import { Skill } from "@agent-runtime/core";
 await Skill.define({
   id: "intakeSummary",
   scope: "global",
-  tools: ["save_memory", "get_memory"],
+  tools: ["system_save_memory", "system_get_memory"],
   description: "Summarizes structured intake (tickets, forms, events) and may persist notes.",
 });
 
@@ -138,7 +138,7 @@ await Skill.define({
 await Skill.define({
   id: "priorityEstimate",
   projectId: "acme-corp",
-  tools: ["save_memory"],
+  tools: ["system_save_memory"],
   execute: async ({ input, context }) => {
     const ageHours = (input as any).ticketAgeHours ?? 0;
     return { suggestedPriority: ageHours > 24 ? "high" : "normal" };
@@ -162,7 +162,7 @@ await Agent.define({
     "You triage operational intake (tickets, tasks, alerts). Each turn respond with a single JSON Step object " +
     "(type: thought | action | wait | result).",
   skills: ["intakeSummary", "priorityEstimate"],
-  tools: ["save_memory", "get_memory", "trigger_workflow"],
+  tools: ["system_save_memory", "system_get_memory", "trigger_workflow"],
   memoryConfig: {
     shortTerm: { maxTurns: 10 },
     longTerm: true,
@@ -250,7 +250,7 @@ The engine never couples to a specific store. Swap adapters in the factory; the 
 await Skill.define({
   id: "policyGuard",
   projectId: "acme-corp",
-  tools: ["get_memory"],
+  tools: ["system_get_memory"],
   description: "Only recommend actions that pass policy thresholds.",
   roles: ["operator"],
 });
@@ -259,7 +259,7 @@ await Skill.define({
 await Skill.define({
   id: "priorityEstimate",
   projectId: "acme-corp",
-  tools: ["save_memory"],
+  tools: ["system_save_memory"],
   execute: async ({ input, context }) => {
     const ageHours = (input as any).ticketAgeHours ?? 0;
     return { suggestedPriority: ageHours > 24 ? "high" : "normal" };
@@ -279,7 +279,7 @@ Agents communicate via a **MessageBus** — not shared state, not a mega-model w
 ```
 Agent A                MessageBus              Agent B
    │                       │                      │
-   ├──action send_message──►│                      │
+   ├──action system_send_message──►│                      │
    │                       ├──deliver message──────►│
    ├──step wait ───────────►│                      │
    │  (status: waiting)     │                 B processes
@@ -314,9 +314,9 @@ The engine uses **interfaces**; production usually constructs **`AgentRuntime`**
 
 | Piece | Typical choice |
 |-------|----------------|
-| **TCP Redis** (`ioredis`) | `RedisMemoryAdapter`, `RedisRunStore`, `RedisMessageBus` in `@agent-runtime/adapters-redis` — **default** for cluster memory, `wait`/`resume` across workers, and `send_message`. |
+| **TCP Redis** (`ioredis`) | `RedisMemoryAdapter`, `RedisRunStore`, `RedisMessageBus` in `@agent-runtime/adapters-redis` — **default** for cluster memory, `wait`/`resume` across workers, and `system_send_message`. |
 | **Upstash REST** | `UpstashRedisMemoryAdapter`, `UpstashRunStore`, `UpstashRedisMessageBus` when you want HTTP-only Redis. |
-| **Upstash Vector** | `UpstashVectorAdapter` for `vector_search` / RAG — lives in `@agent-runtime/adapters-upstash`. |
+| **Upstash Vector** | `UpstashVectorAdapter` for `system_vector_search` / RAG — lives in `@agent-runtime/adapters-upstash`. |
 | **BullMQ (primary job queue)** | **`@agent-runtime/adapters-bullmq`** — `dispatchEngineJob(runtime, payload)` or `buildEngineDeps` + `executeRun` — [`core/05-adapters.md`](./core/05-adapters.md#job-queue-adapter-primary-bullmq). |
 | **Upstash QStash (alternative)** | HTTP callback to `resume` after a scheduled `wait` if you skip BullMQ workers — same wake semantics, different ops model. |
 
@@ -436,7 +436,7 @@ Client (SDK / CLI / REST / MCP)
 Context Builder   ToolRunner   ← name → ToolAdapter
     │               │
     │          Tool adapters
-    ▼          (memory, http, send_message, …)
+    ▼          (memory, http, system_send_message, …)
 MemoryAdapter  ← shortTerm / working / longTerm / vector
     │
 Run store      ← runId, status, history, state (wait/resume)
@@ -488,8 +488,7 @@ src/
     memory/
       InMemoryAdapter.ts
   tools/
-    save_memory.ts
-    get_memory.ts
+    builtins.ts          # system_save_memory, system_get_memory (registered by AgentRuntime)
 ```
 
 **MVP success criteria:**
@@ -505,7 +504,7 @@ src/
 | [`core/02-architecture.md`](./core/02-architecture.md) | Internal components and responsibilities |
 | [`core/07-definition-syntax.md`](./core/07-definition-syntax.md) | Full `Tool.define` / `Skill.define` / `Agent.define` shapes and types |
 | [`core/08-scope-and-security.md`](./core/08-scope-and-security.md) | Multi-tenant scopes and SecurityLayer |
-| [`core/09-communication-multiagent.md`](./core/09-communication-multiagent.md) | MessageBus, `send_message`, request-reply patterns |
+| [`core/09-communication-multiagent.md`](./core/09-communication-multiagent.md) | MessageBus, `system_send_message`, request-reply patterns |
 | [`core/10-llm-adapter.md`](./core/10-llm-adapter.md) | LLMAdapter contract — multi-provider, streaming, errors |
 | [`core/11-context-builder.md`](./core/11-context-builder.md) | Prompt assembly, truncation, **effectiveToolAllowlist**; **SecurityContext** not used to filter prompt tools yet ([`08-scope-and-security.md`](./core/08-scope-and-security.md) §2) |
 | [`core/12-skills.md`](./core/12-skills.md) | Skills vs tools — resolution, model visibility, imperative execute |

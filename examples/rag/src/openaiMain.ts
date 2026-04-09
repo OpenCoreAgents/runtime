@@ -45,7 +45,7 @@ async function main(): Promise<void> {
     id: "rag-openai-agent",
     projectId: PROJECT_ID,
     systemPrompt:
-      "You are a retrieval assistant. Use list_rag_sources / ingest_rag_source (catalog ids only; paths are server-defined) / vector_search as needed.",
+      "You are a retrieval assistant. Use system_list_rag_sources / system_ingest_rag_source (catalog ids only; paths are server-defined) / system_vector_search as needed.",
     tools: [],
     skills: ["rag"],
     llm: { provider: "openai", model: chatModel },

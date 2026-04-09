@@ -37,7 +37,7 @@ describe("engine", () => {
     await Skill.define({
       id: "sk-merge",
       projectId: "p1",
-      tools: ["save_memory"],
+      tools: ["system_save_memory"],
     });
     const agent: AgentDefinitionPersisted = {
       id: "a-merge",
@@ -48,7 +48,7 @@ describe("engine", () => {
       llm: { provider: "openai", model: "gpt-4o" },
     };
     const allow = effectiveToolAllowlist(agent, "p1");
-    expect(allow.has("save_memory")).toBe(true);
+    expect(allow.has("system_save_memory")).toBe(true);
   });
 
   it("exports createRun and executeRun", () => {
@@ -164,12 +164,12 @@ describe("engine", () => {
     expect(run.history.some((h) => h.type === "result")).toBe(true);
   });
 
-  it("executes save_memory action", async () => {
+  it("executes system_save_memory action", async () => {
     const mem = new InMemoryMemoryAdapter();
     const llm = new QueueLLM([
       JSON.stringify({
         type: "action",
-        tool: "save_memory",
+        tool: "system_save_memory",
         input: { memoryType: "working", content: { note: "x" } },
       }),
       JSON.stringify({ type: "result", content: "saved" }),
@@ -180,7 +180,7 @@ describe("engine", () => {
       id: "a2",
       projectId: "p1",
       systemPrompt: "Test.",
-      tools: ["save_memory"],
+      tools: ["system_save_memory"],
       llm: { provider: "openai", model: "gpt-4o" },
     });
 

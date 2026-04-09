@@ -66,7 +66,7 @@ Detail: [`04-protocol.md`](../core/04-protocol.md). JSON shapes and `Step`: [`07
 - **MemoryAdapter**: `save` / `query` / `delete` / `getState` by logical type (`shortTerm`, `working`, `longTerm`, optional `vectorMemory`).
 - **ToolAdapter**: `name`, `execute`, `validate?`; observation enters history.
 - **Hooks vs adapters**: hooks observe; adapters are the **authorized** path for effects from a valid `action`.
-- Multi-agent: **MessageBus** does not replace ToolRunner; usually materialized as tool (`send_message`) or service in `context`.
+- Multi-agent: **MessageBus** does not replace ToolRunner; usually materialized as tool (`system_send_message`) or service in `context`.
 
 Detail: [`05-adapters.md`](../core/05-adapters.md).
 
@@ -75,7 +75,7 @@ Detail: [`05-adapters.md`](../core/05-adapters.md).
 ## Engine MVP (minimum scope)
 
 - One reference agent + **AgentExecution** with loop, **iteration limit**, validated LLM JSON output.
-- Minimal MemoryAdapter (in-memory + optional persistent); ToolRunner with at least memory (`save_memory` / `get_memory` or equivalent).
+- Minimal MemoryAdapter (in-memory + optional persistent); ToolRunner with at least memory (`system_save_memory` / `system_get_memory` or equivalent).
 - **running / waiting / completed / failed** states + **resume**.
 - Basic hooks.
 - **Out** of engine MVP: visual builder, mandatory distributed `Agent.define`, MCP as hard requirement, complex parallel multi-agent.
@@ -108,7 +108,7 @@ Detail: [`08-scope-and-security.md`](../core/08-scope-and-security.md).
 
 ## Multi-agent
 
-- One loop per agent; coordination via **async messages** (tool `send_message` + **MessageBus**).
+- One loop per agent; coordination via **async messages** (tool `system_send_message` + **MessageBus**).
 - Request–reply pattern: correlation + `wait` on A + `resume` when B replies on the bus.
 - Isolation by `projectId`; risks: deadlock, orphan messages, timeouts.
 
@@ -163,7 +163,7 @@ Detail: [`14-consumers.md`](../core/14-consumers.md).
 | `06` | MVP, risks, Upstash |
 | `07` | JSON + `Tool/Skill/Agent.define`, `load`, `run` |
 | `08` | Scope, SecurityLayer |
-| `09` | MessageBus, `send_message` |
+| `09` | MessageBus, `system_send_message` |
 | `10` | LLMAdapter |
 | `11` | Context Builder |
 | `12` | Skills vs tools |

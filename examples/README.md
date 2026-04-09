@@ -17,8 +17,8 @@ For production or any shared runtime, swap to **`RedisMemoryAdapter`** (`@agent-
 | `@agent-runtime/example-minimal-run` | [`minimal-run/`](./minimal-run/) | **`Agent.run()`** end-to-end with a **deterministic mock LLM** and **`InMemoryMemoryAdapter`**. No network, no API keys. |
 | `@agent-runtime/example-openai-tools-skill` | [`openai-tools-skill/`](./openai-tools-skill/) | **`OpenAILLMAdapter`** (engine maps native `tool_calls` when `content` is empty), custom **`Tool.define`** (`roll_dice`), **`Skill.define`**, **`Agent.define`**. Requires **`OPENAI_API_KEY`**. |
 | `@agent-runtime/example-console-wait` | [`console-wait/`](./console-wait/) | Interactive **terminal**: mock LLM emits **`wait`**, **`RunBuilder.onWait`** reads stdin (`readline`), then continues in-process. No API keys. |
-| `@agent-runtime/example-rag` | [`rag/`](./rag/) | **`registerRagCatalog(runtime, …)`** (per project) + **`ingest_rag_source`** / **`vector_search`**; in-memory vector + hash embeddings (no API keys); optional OpenAI script. |
-| `@agent-runtime/example-multi-agent` | [`multi-agent/`](./multi-agent/) | **`InProcessMessageBus`** + **`send_message`**: fire-and-forget **event**, then **request** / **reply** with **`correlationId`** (mock LLM; no keys). |
+| `@agent-runtime/example-rag` | [`rag/`](./rag/) | **`registerRagCatalog(runtime, …)`** (per project) + **`system_ingest_rag_source`** / **`system_vector_search`**; in-memory vector + hash embeddings (no API keys); optional OpenAI script. |
+| `@agent-runtime/example-multi-agent` | [`multi-agent/`](./multi-agent/) | **`InProcessMessageBus`** + **`system_send_message`**: fire-and-forget **event**, then **request** / **reply** with **`correlationId`** (mock LLM; no keys). |
 
 ### `minimal-run` — `@agent-runtime/example-minimal-run`
 
@@ -92,17 +92,17 @@ Prioritize by what you want to teach (operators vs integrators). None of these e
 
 ### Tools, memory, RAG
 
-- [ ] **Built-in memory tools** — `save_memory` / `get_memory` with **`InMemoryMemoryAdapter`** or Redis-backed memory; show scopes (`shortTerm` / `working` / `longTerm`).
+- [ ] **Built-in memory tools** — `system_save_memory` / `system_get_memory` with **`InMemoryMemoryAdapter`** or Redis-backed memory; show scopes (`shortTerm` / `working` / `longTerm`).
 - [x] **`@agent-runtime/rag`** — covered by [`rag/`](./rag/) (**`registerRagCatalog(runtime, projectId, sources)`**, catalog ingest tools, in-memory vector); swap embeddings/vector/OpenAI per [rag/README.md](./rag/README.md).
-- [ ] **Vector tools only** — `vector_upsert` / `vector_search` with **`UpstashVectorAdapter`** or another **`VectorAdapter`** implementation.
+- [ ] **Vector tools only** — `system_vector_upsert` / `system_vector_search` with **`UpstashVectorAdapter`** or another **`VectorAdapter`** implementation.
 
 ### Multi-agent
 
-- [x] **`InProcessMessageBus` + `send_message`** — [`multi-agent/`](./multi-agent/) (event + request/reply; see [`docs/core/09-communication-multiagent.md`](../docs/core/09-communication-multiagent.md)).
+- [x] **`InProcessMessageBus` + `system_send_message`** — [`multi-agent/`](./multi-agent/) (event + request/reply; see [`docs/core/09-communication-multiagent.md`](../docs/core/09-communication-multiagent.md)).
 
 ### Providers & UX
 
-- [ ] **OpenAI + memory** — extend the OpenAI example with long-lived **`Session`** + `save_memory` / `get_memory` in the prompt loop.
+- [ ] **OpenAI + memory** — extend the OpenAI example with long-lived **`Session`** + `system_save_memory` / `system_get_memory` in the prompt loop.
 - [ ] **Anthropic** — if/when an `@agent-runtime/adapters-anthropic` (or similar) exists; same protocol JSON in `content`.
 - [ ] **Streaming / SSE** — optional: demo HTTP server that streams hook events (product code; not in `core` today — see [`docs/plan-rest.md`](../docs/plan-rest.md)).
 

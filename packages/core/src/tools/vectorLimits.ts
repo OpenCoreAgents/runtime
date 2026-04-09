@@ -1,10 +1,10 @@
-/** Hard cap on `vector_search` `topK` to limit embedding/vector API cost under adversarial or buggy prompts. */
+/** Hard cap on `system_vector_search` `topK` to limit embedding/vector API cost under adversarial or buggy prompts. */
 export const MAX_VECTOR_TOPK = 50;
 
-/** Max documents per `vector_upsert` call (batch size). */
+/** Max documents per `system_vector_upsert` call (batch size). */
 export const MAX_VECTOR_UPSERT_DOCS = 100;
 
-/** Max IDs per `vector_delete` when using the `ids` selector. */
+/** Max IDs per `system_vector_delete` when using the `ids` selector. */
 export const MAX_VECTOR_DELETE_IDS = 100;
 
 export function clampVectorTopK(raw: unknown): number {

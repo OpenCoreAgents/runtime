@@ -25,7 +25,7 @@ export interface FileIngestOptions {
 
 /**
  * Shared pipeline: resolve → parse → chunk → embed → upsert.
- * Used by `file_ingest` and `ingest_rag_source`.
+ * Used by `system_file_ingest` and `system_ingest_rag_source`.
  */
 export async function runFileIngestPipeline(
   ctx: ToolContext,

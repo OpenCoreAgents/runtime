@@ -31,7 +31,7 @@ POST /agent/run
   "systemPrompt": "...",
   "skills": ["parse_intake", "check_sla"],
   "memory": { "type": "vector + short_term" },
-  "tools": ["memory_search", "save_memory"]
+  "tools": ["memory_search", "system_save_memory"]
 }
 ```
 
@@ -50,7 +50,7 @@ Named modules with description and handler; they can use LLM, pure logic, or bot
 ## Example tools
 
 - `memory_search`: search memory (e.g. vector).
-- `save_memory`: persist insights.
+- `system_save_memory`: persist insights.
 - `update_state`: update working memory.
 
 ## Agent loop (high level)

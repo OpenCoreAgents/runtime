@@ -8,7 +8,7 @@ Everything that **starts** or **observes** runs shares the same core: **Security
 
 ## Library / SDK (Node or other runtime)
 
-Embedded use: **`Agent.load(agentId, runtime, { session })`**, `run`, `resume`, hooks. Every worker constructs **`new AgentRuntime({ … })`** once (**`llmAdapter`**, **`memoryAdapter`**, optional **`runStore`** for cluster **`wait`/`resume`**, **`messageBus`** for cross-worker **`send_message`**, etc.) before handling jobs — [19-cluster-deployment.md §2](./19-cluster-deployment.md).
+Embedded use: **`Agent.load(agentId, runtime, { session })`**, `run`, `resume`, hooks. Every worker constructs **`new AgentRuntime({ … })`** once (**`llmAdapter`**, **`memoryAdapter`**, optional **`runStore`** for cluster **`wait`/`resume`**, **`messageBus`** for cross-worker **`system_send_message`**, etc.) before handling jobs — [19-cluster-deployment.md §2](./19-cluster-deployment.md).
 
 For **queue workers** or custom orchestration, call **`buildEngineDeps(agent, session, runtime)`**, then **`createRun`** + **`executeRun`** (add **`startedAtMs`**; optional **`resumeMessages`**). When **`runStore`** is set, **persist** the returned **`Run`** after each **`executeRun`** (including **`waiting`**). You can assemble `EngineDeps` manually with **`ContextBuilder`**, **`ToolRunner`**, **`resolveToolRegistry`**, **`getAgentDefinition`**, **`effectiveToolAllowlist`**, and values from **`runtime.config`** if you need a custom layout. Syntax reference: [07-definition-syntax.md](./07-definition-syntax.md) §9. Cluster: [19-cluster-deployment.md](./19-cluster-deployment.md).
 

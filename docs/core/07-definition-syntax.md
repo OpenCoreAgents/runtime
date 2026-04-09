@@ -15,7 +15,7 @@ Related: [19-cluster-deployment.md §2](./19-cluster-deployment.md) (bootstrap �
   "id": "ops-analyst",
   "systemPrompt": "You triage operational intake; respond with only one JSON step object per turn.",
   "skills": ["intakeSummary"],
-  "tools": ["save_memory", "get_memory"],
+  "tools": ["system_save_memory", "system_get_memory"],
   "memoryConfig": {
     "shortTerm": { "maxTurns": 10 },
     "longTerm": true,
@@ -123,7 +123,7 @@ Validation, errors, and re-prompt when JSON is invalid: [13-errors-parsing-and-r
 ```json
 {
   "type": "action",
-  "tool": "save_memory",
+  "tool": "system_save_memory",
   "input": {
     "memoryType": "longTerm",
     "content": { "event": "sla_at_risk" }
@@ -189,7 +189,7 @@ Aggregated view for logs or inspection API.
   "sessionId": "optional",
   "messages": [],
   "state": {},
-  "toolNames": ["save_memory", "get_memory"],
+  "toolNames": ["system_save_memory", "system_get_memory"],
   "status": "running | waiting | completed | failed"
 }
 ```
@@ -202,7 +202,7 @@ What **ToolRunner** needs; not the same as the LLM’s `action` step. The canoni
 
 ```json
 {
-  "id": "save_memory",
+  "id": "system_save_memory",
   "description": "Persists a fragment in the agent's memory.",
   "inputSchema": {
     "type": "object",
@@ -227,7 +227,16 @@ Typical registration order:
 new AgentRuntime({ ... })  →  Tool.define (custom)  →  Skill.define  →  Agent.define  →  Agent.load(id, runtime, { session }) + run
 ```
 
-Construct **`AgentRuntime`** once per worker (or process) before **`Agent.load`**. Its constructor registers **built-in** tool handlers (`save_memory`, `get_memory`) and optionally vector / `send_message` handlers when the corresponding adapters are passed — you do **not** `Tool.define` those unless you are replacing defaults (advanced).
+Construct **`AgentRuntime`** once per worker (or process) before **`Agent.load`**. Its constructor registers **built-in** memory tools **`system_save_memory`** and **`system_get_memory`**; with **`embeddingAdapter`** and **`vectorAdapter`**, also **`system_vector_search`**, **`system_vector_upsert`**, and **`system_vector_delete`**; with **`messageBus`**, **`system_send_message`**. **`@agent-runtime/rag`** (e.g. **`registerRagToolsAndSkills()`**) adds catalog and file tools with the same **`system_`** prefix: **`system_list_rag_sources`**, **`system_ingest_rag_source`**, **`system_file_read`**, **`system_file_ingest`**, **`system_file_list`**. You do **not** `Tool.define` these unless you are replacing defaults (advanced).
+
+### 9.0 `system_*` tool ids (reference)
+
+| Package | Constants | Ids |
+|---------|-----------|-----|
+| **`@agent-runtime/core`** | **`CORE_SYSTEM_TOOL_IDS`**, **`isCoreSystemToolId()`** | **`system_save_memory`**, **`system_get_memory`**, **`system_vector_search`**, **`system_vector_upsert`**, **`system_vector_delete`**, **`system_send_message`** |
+| **`@agent-runtime/rag`** | **`RAG_SYSTEM_TOOL_IDS`**, **`isRagSystemToolId()`** | **`system_list_rag_sources`**, **`system_ingest_rag_source`**, **`system_file_read`**, **`system_file_ingest`**, **`system_file_list`** |
+
+Handlers for vector and messaging tools are registered only when the corresponding **`AgentRuntime`** options are set; the id list is still stable for allowlists and prompts.
 
 The following objects are **conceptually equivalent** to the JSON in §1 and §8; `.define` persists definitions into the in-process registry. Your app may also load **serializable** metadata from Redis/Postgres and call **`Skill.define(def, execute?)`** or **`Skill.defineBatch`** so each worker hydrates the same local `Map`s — see §9.2b.
 
@@ -252,7 +261,7 @@ await Tool.define({
   execute: async (input) => ({ ticket: { id: (input as { id: string }).id, status: "open" } }),
 });
 
-// Built-ins: `save_memory` / `get_memory` match the shapes in §8 — registered by AgentRuntime construction, not re-defined here.
+// Built-ins: memory + vector + messaging from AgentRuntime; RAG/file tools from @agent-runtime/rag — all `system_*` ids; shapes in §8 / 17-rag-pipeline.md; not re-defined here unless you replace defaults.
 
 // Project-scoped tool (multi-tenant)
 await Tool.define({
@@ -287,7 +296,7 @@ await Skill.define({
   id: "intakeSummary",
   name: "Intake summary",
   scope: "global",
-  tools: ["save_memory"],
+  tools: ["system_save_memory"],
   description: "Summarizes intake context and may persist notes.",
   roles: ["agent"],
 });
@@ -296,7 +305,7 @@ await Skill.define({
   id: "workflowHandoff",
   name: "Workflow handoff",
   projectId: "acme-corp",
-  tools: ["save_memory", "upstash_trigger"],
+  tools: ["system_save_memory", "upstash_trigger"],
   roles: ["operator", "analyst"],
 });
 ```
@@ -307,7 +316,7 @@ If the skill includes versioned **imperative** logic, define **`execute` on the 
 await Skill.define({
   id: "workflowHandoff",
   projectId: "acme-corp",
-  tools: ["save_memory", "upstash_trigger"],
+  tools: ["system_save_memory", "upstash_trigger"],
   execute: async ({ input, context }) => {
     // delegate to engine / LLM / tools per runtime policy
     return { suggestedPriority: "high" };
@@ -362,7 +371,7 @@ await Agent.define({
   systemPrompt:
     "You triage operational intake; each turn respond with a single JSON Step object (type thought|action|wait|result).",
   skills: ["intakeSummary", "workflowHandoff"],
-  tools: ["save_memory", "get_memory", "upstash_trigger"],
+  tools: ["system_save_memory", "system_get_memory", "upstash_trigger"],
   memoryConfig: {
     shortTerm: { maxTurns: 10 },
     longTerm: true,

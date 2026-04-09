@@ -13,7 +13,7 @@ export type EngineRunJobPayload = {
   endUserId?: string;
   /** When set, `dispatchEngineJob` throws if `Date.now()` exceeds this (Unix ms). */
   expiresAtMs?: number;
-  /** Forwarded to `Session` for sandboxed `file_read` / `file_ingest` local paths. */
+  /** Forwarded to `Session` for sandboxed `system_file_read` / `system_file_ingest` local paths. */
   fileReadRoot?: string;
   allowFileReadOutsideRoot?: boolean;
   allowHttpFileSources?: boolean;

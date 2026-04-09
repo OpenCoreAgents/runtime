@@ -32,12 +32,12 @@ describe("runCli", () => {
       "--cwd",
       root,
       "--tools",
-      "save_memory",
+      "system_save_memory",
     ]);
     expect(code).toBe(0);
     const { readFile } = await import("node:fs/promises");
     const src = await readFile(path.join(root, "agents/support-bot.ts"), "utf8");
     expect(src).toContain("support-bot");
-    expect(src).toContain("save_memory");
+    expect(src).toContain("system_save_memory");
   });
 });

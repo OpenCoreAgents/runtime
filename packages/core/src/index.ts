@@ -7,6 +7,11 @@ export { RunBuilder } from "./define/RunBuilder.js";
 export { ContextBuilder } from "./context/ContextBuilder.js";
 export { ToolRunner, type ToolRunnerOptions } from "./tools/ToolRunner.js";
 export {
+  CORE_SYSTEM_TOOL_IDS,
+  type CoreSystemToolId,
+  isCoreSystemToolId,
+} from "./tools/systemToolIds.js";
+export {
   applyRuntimeToolAllowlist,
   effectiveToolAllowlist,
 } from "./define/effectiveToolAllowlist.js";

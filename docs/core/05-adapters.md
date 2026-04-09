@@ -84,7 +84,7 @@ interface ToolContext {
 
 | Tool | Role |
 |------|------|
-| `save_memory` / `get_memory` | Bridge to MemoryAdapter. |
+| `system_save_memory` / `system_get_memory` | Bridge to MemoryAdapter. |
 | `update_state` | Bounded working memory. |
 
 Others (`http_request`, messages to other agents) are extensions: the **loop** stays the same.
@@ -104,7 +104,7 @@ Persists **`Run`** snapshots so a **`waiting`** run can be **resumed** later —
 
 ## Multi-agent (engine note)
 
-A **MessageBus** does not replace ToolRunner: it is usually **another tool** (`send_message`) or a service injected in `context`. The engine remains one loop per agent; coordination is policy on top of the same `action` / `wait` / `resume` model. Detail: [09-communication-multiagent.md](./09-communication-multiagent.md).
+A **MessageBus** does not replace ToolRunner: it is usually **another tool** (`system_send_message`) or a service injected in `context`. The engine remains one loop per agent; coordination is policy on top of the same `action` / `wait` / `resume` model. Detail: [09-communication-multiagent.md](./09-communication-multiagent.md).
 
 ## Job queue adapter (primary: BullMQ)
 
@@ -116,7 +116,7 @@ This is **not** a third core contract inside the loop (unlike `MemoryAdapter` / 
 |-----|------|
 | **Background runs** | API or webhook enqueues work; worker invokes the engine — avoids HTTP timeouts, adds retries and DLQ. |
 | **Scheduled `wait`** | Delayed or repeatable jobs call `resume(runId, …)` when `reason: scheduled`. |
-| **MessageBus backend** | Optional: one queue (or set of queues) per agent / `projectId` for `send_message` delivery with ordering and retries — still exposed to the engine as the same bus contract ([09-communication-multiagent.md](./09-communication-multiagent.md)). |
+| **MessageBus backend** | Optional: one queue (or set of queues) per agent / `projectId` for `system_send_message` delivery with ordering and retries — still exposed to the engine as the same bus contract ([09-communication-multiagent.md](./09-communication-multiagent.md)). |
 
 **Redis:** BullMQ expects a Redis deployment that supports its commands and connection model. If you already use Redis for `MemoryAdapter`, you can use the **same cluster** or a **dedicated** Redis for queues; validate provider compatibility (some serverless Redis products differ — test before committing). Full cluster deployment model: [19-cluster-deployment.md](./19-cluster-deployment.md).
 

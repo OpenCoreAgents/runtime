@@ -53,7 +53,7 @@ Implementation notes:
 
 - **Engine**: stable **`Agent`**, **`RunBuilder`**, **`AgentRuntime`**, **`Session`** (incl. expiry).
 - **Scaffold**: templates that expose a **single way** to load env + adapters so the CLI does not fork configuration logic.
-- **Multi-agent**: [`send_message`](../packages/core/src/tools/sendMessage.ts) + bus — CLI `send` is orchestration glue, not core.
+- **Multi-agent**: [`system_send_message`](../packages/core/src/tools/sendMessage.ts) + bus — CLI `send` is orchestration glue, not core.
 
 ---
 

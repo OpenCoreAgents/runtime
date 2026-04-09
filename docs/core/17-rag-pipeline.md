@@ -105,13 +105,13 @@ const vectorAdapter = new UpstashVectorAdapter({
 
 Tools are what the LLM can invoke via `action`. Each tool orchestrates **utils** (parsing, chunking) and **adapters** (embedding, vector) internally.
 
-### 2.1 `vector_search`
+### 2.1 `system_vector_search`
 
 Semantic search over the knowledge base.
 
 ```typescript
 await Tool.define({
-  id: "vector_search",
+  id: "system_vector_search",
   scope: "global",
   description:
     "Searches the knowledge base for semantically relevant fragments. " +
@@ -137,13 +137,13 @@ await Tool.define({
 
 The namespace is built from `ToolContext.projectId` + `ToolContext.agentId` (and optionally `endUserId` for per-user knowledge).
 
-### 2.2 `vector_upsert`
+### 2.2 `system_vector_upsert`
 
 Store new fragments with embeddings.
 
 ```typescript
 await Tool.define({
-  id: "vector_upsert",
+  id: "system_vector_upsert",
   scope: "global",
   description:
     "Stores one or more text fragments with their embeddings in the knowledge base.",
@@ -174,13 +174,13 @@ await Tool.define({
 2. `vectorAdapter.upsert(namespace, documents)` → stored.
 3. Return `{ stored: N }`.
 
-### 2.3 `vector_delete`
+### 2.3 `system_vector_delete`
 
 Remove fragments by ID or metadata filter.
 
 ```typescript
 await Tool.define({
-  id: "vector_delete",
+  id: "system_vector_delete",
   scope: "global",
   description: "Deletes fragments from the knowledge base by ID or metadata filter.",
   inputSchema: {
@@ -194,13 +194,13 @@ await Tool.define({
 });
 ```
 
-### 2.4 `file_read`
+### 2.4 `system_file_read`
 
 Read and extract text from a file.
 
 ```typescript
 await Tool.define({
-  id: "file_read",
+  id: "system_file_read",
   scope: "global",
   description:
     "Reads a file and returns its extracted text content. " +
@@ -224,13 +224,13 @@ await Tool.define({
 
 No embeddings, no vector store — this tool only reads. Useful when the agent needs to inspect a file before deciding whether to ingest it.
 
-### 2.5 `file_ingest`
+### 2.5 `system_file_ingest`
 
 Full pipeline: read → parse → chunk → embed → store.
 
 ```typescript
 await Tool.define({
-  id: "file_ingest",
+  id: "system_file_ingest",
   scope: "global",
   description:
     "Ingests a file into the vector knowledge base. " +
@@ -264,13 +264,13 @@ await Tool.define({
 5. `vectorAdapter.upsert(namespace, documents)` → stored. *(adapter)*
 6. Return `{ chunksCreated, documentId, status: "completed" }`.
 
-### 2.6 `file_list`
+### 2.6 `system_file_list`
 
 List ingested documents.
 
 ```typescript
 await Tool.define({
-  id: "file_list",
+  id: "system_file_list",
   scope: "global",
   description: "Lists documents that have been ingested into the knowledge base.",
   inputSchema: {
@@ -288,14 +288,14 @@ Requires a **document registry** (metadata stored in `MemoryAdapter` under `long
 
 ### 2.7 Registered file catalog (`@agent-runtime/rag`)
 
-The **`@agent-runtime/rag`** package adds **`list_rag_sources`** and **`ingest_rag_source`**: the app registers a **declarative catalog** (stable `id`, human `description`, server-side `source` path or URL) per **`projectId`**, and the model only sees ids from the list tool — not raw filenames.
+The **`@agent-runtime/rag`** package adds **`system_list_rag_sources`** and **`system_ingest_rag_source`**: the app registers a **declarative catalog** (stable `id`, human `description`, server-side `source` path or URL) per **`projectId`**, and the model only sees ids from the list tool — not raw filenames.
 
 **Bootstrap** (order matters — core warns in dev if tools are missing):
 
 1. **`await registerRagToolsAndSkills()`** — registers RAG tools and the shipped **`rag`** / **`rag-reader`** skills.
 2. **`registerRagCatalog(runtime, projectId, entries)`** from **`@agent-runtime/rag`** — same as **`runtime.registerRagCatalog(projectId, entries)`** on **`AgentRuntime`**. Pass **`[]`** to pin an empty catalog for that project (no fallback to the legacy global map).
 
-**File sandbox**: set **`fileReadRoot`** on **`AgentRuntime`** and/or **`Session`** (session wins when both are set); same resolution rules as **`file_ingest`**. See [07-definition-syntax.md](./07-definition-syntax.md) §9 and **`examples/rag`**.
+**File sandbox**: set **`fileReadRoot`** on **`AgentRuntime`** and/or **`Session`** (session wins when both are set); same resolution rules as **`system_file_ingest`**. See [07-definition-syntax.md](./07-definition-syntax.md) §9 and **`examples/rag`**.
 
 **Legacy**: **`registerRagFileCatalog(entries)`** replaces a **process-wide** catalog used only when no per-project catalog was registered for the session’s project.
 
@@ -305,21 +305,21 @@ The **`@agent-runtime/rag`** package adds **`list_rag_sources`** and **`ingest_r
 
 Groups RAG tools and provides context instructions to the agent.
 
-**In-repo:** **`@agent-runtime/rag`** defines **`rag`** and **`rag-reader`** with **`list_rag_sources`**, **`ingest_rag_source`**, and the vector / file tools below — use **`registerRagToolsAndSkills()`** instead of redefining them unless you replace behavior. The snippets in this section are **conceptual** shapes; the shipped skill tool lists match **`packages/rag/src/skills/rag.ts`**.
+**In-repo:** **`@agent-runtime/rag`** defines **`rag`** and **`rag-reader`** with **`system_list_rag_sources`**, **`system_ingest_rag_source`**, and the vector / file tools below — use **`registerRagToolsAndSkills()`** instead of redefining them unless you replace behavior. The snippets in this section are **conceptual** shapes; the shipped skill tool lists match **`packages/rag/src/skills/rag.ts`**.
 
 ```typescript
 await Skill.define({
   id: "rag",
   scope: "global",
   tools: [
-    "list_rag_sources",
-    "ingest_rag_source",
-    "vector_search",
-    "vector_upsert",
-    "vector_delete",
-    "file_read",
-    "file_ingest",
-    "file_list",
+    "system_list_rag_sources",
+    "system_ingest_rag_source",
+    "system_vector_search",
+    "system_vector_upsert",
+    "system_vector_delete",
+    "system_file_read",
+    "system_file_ingest",
+    "system_file_list",
   ],
   description:
     "Retrieval-Augmented Generation: list and ingest preregistered sources, search the knowledge base, " +
@@ -333,7 +333,7 @@ Agents that only need **read** access to the knowledge base can reference a subs
 await Skill.define({
   id: "rag-reader",
   scope: "global",
-  tools: ["list_rag_sources", "vector_search"],
+  tools: ["system_list_rag_sources", "system_vector_search"],
   description:
     "List registered RAG sources (id + description) and search the knowledge base for context.",
 });
@@ -353,11 +353,11 @@ await Agent.define({
   projectId: "acme-corp",
   systemPrompt:
     "You answer questions using the company knowledge base. " +
-    "ALWAYS use vector_search before answering factual questions. " +
+    "ALWAYS use system_vector_search before answering factual questions. " +
     "If no relevant results are found, say so clearly. " +
     "Each turn respond with a single JSON Step object.",
   skills: ["rag-reader"],
-  tools: ["vector_search", "get_memory", "save_memory"],
+  tools: ["system_vector_search", "system_get_memory", "system_save_memory"],
   memoryConfig: {
     shortTerm: { maxTurns: 15 },
     longTerm: true,
@@ -373,7 +373,7 @@ await Agent.define({
 User: "What is the return policy for international orders?"
 
 thought  → "I need to search the knowledge base for return policy information."
-action   → vector_search({ query: "return policy international orders", topK: 5 })
+action   → system_vector_search({ query: "return policy international orders", topK: 5 })
 observation → [{ content: "International returns: 30-day window...", score: 0.94 }, ...]
 thought  → "Found relevant policy. Synthesizing answer."
 result   → "According to the company policy, international orders can be returned within 30 days..."
@@ -391,9 +391,9 @@ await Agent.define({
     "You manage the company knowledge base. You can search, ingest new documents, " +
     "and remove outdated content. Each turn respond with a single JSON Step object.",
   skills: ["rag"],
-  tools: ["vector_search", "vector_upsert", "vector_delete",
-          "file_read", "file_ingest", "file_list",
-          "save_memory", "get_memory"],
+  tools: ["system_vector_search", "system_vector_upsert", "system_vector_delete",
+          "system_file_read", "system_file_ingest", "system_file_list",
+          "system_save_memory", "system_get_memory"],
   memoryConfig: {
     shortTerm: { maxTurns: 10 },
     longTerm: true,
@@ -413,11 +413,11 @@ await Agent.define({
   id: "support-rag",
   projectId: "acme-support",
   systemPrompt:
-    "You are a support agent. Use vector_search to find relevant help articles. " +
+    "You are a support agent. Use system_vector_search to find relevant help articles. " +
     "You also have access to this customer's history via long-term memory. " +
     "Each turn respond with a single JSON Step object.",
   skills: ["rag-reader"],
-  tools: ["vector_search", "get_memory", "save_memory"],
+  tools: ["system_vector_search", "system_get_memory", "system_save_memory"],
   memoryConfig: {
     shortTerm: { maxTurns: 20 },
     longTerm: true,
@@ -456,12 +456,12 @@ A router agent delegates to specialized agents, each with its own knowledge base
 
 ```
 Agent: router
-  ├── send_message → Agent: legal-kb    (vector_search on legal docs)
-  ├── send_message → Agent: technical-kb (vector_search on technical docs)
+  ├── system_send_message → Agent: legal-kb    (system_vector_search on legal docs)
+  ├── system_send_message → Agent: technical-kb (system_vector_search on technical docs)
   └── result: combined answer
 ```
 
-Each agent has its own `projectId` or namespace, so vector stores are isolated. Coordination uses the standard `send_message` / `wait` / `resume` pattern from [09-communication-multiagent.md](./09-communication-multiagent.md).
+Each agent has its own `projectId` or namespace, so vector stores are isolated. Coordination uses the standard `system_send_message` / `wait` / `resume` pattern from [09-communication-multiagent.md](./09-communication-multiagent.md).
 
 ---
 
@@ -496,7 +496,7 @@ async function ingestDirectory(dir: string, projectId: string, agentId: string) 
 }
 ```
 
-This reuses the exact same utils and adapters as the `file_ingest` tool — the only difference is no LLM loop involved. The engine loop is for agents; batch scripts are for operators.
+This reuses the exact same utils and adapters as the `system_file_ingest` tool — the only difference is no LLM loop involved. The engine loop is for agents; batch scripts are for operators.
 
 ---
 
@@ -506,7 +506,7 @@ The Context Builder already supports RAG through its recommended prompt order ([
 
 > 3. **Long-term** (retrieved chunks): RAG or persisted facts; **bounded** in size.
 
-When the agent calls `vector_search`, the retrieved chunks appear as an `observation` in the protocol history. The Context Builder includes them in subsequent LLM calls as part of the conversation flow. No special handling is needed — RAG results flow through the same `action → observation` pattern as any other tool.
+When the agent calls `system_vector_search`, the retrieved chunks appear as an `observation` in the protocol history. The Context Builder includes them in subsequent LLM calls as part of the conversation flow. No special handling is needed — RAG results flow through the same `action → observation` pattern as any other tool.
 
 For **automatic retrieval** (pre-loop, without the LLM deciding), a future imperative skill could inject vector search results into the context before the first LLM call. This is explicitly deferred past MVP ([12-skills.md](./12-skills.md) §7).
 
@@ -524,12 +524,12 @@ src/
       VectorAdapter.ts          → interface
       UpstashVectorAdapter.ts   → reference implementation
   tools/
-    vector_search.ts
-    vector_upsert.ts
-    vector_delete.ts
-    file_read.ts
-    file_ingest.ts
-    file_list.ts
+    system_vector_search.ts
+    system_vector_upsert.ts
+    system_vector_delete.ts
+    fileRead.ts      # system_file_read
+    fileIngest.ts    # system_file_ingest
+    fileList.ts      # system_file_list
   utils/                        → see 16-utils.md
     parsers/
     chunking/
@@ -544,12 +544,12 @@ src/
 |-----------|-----|------|----|
 | `EmbeddingAdapter` (OpenAI) | **yes** | | |
 | `VectorAdapter` (Upstash Vector) | **yes** | | |
-| `vector_search` tool | **yes** | | |
-| `vector_upsert` tool | **yes** | | |
-| `vector_delete` tool | | **yes** | |
-| `file_read` tool | | **yes** | |
-| `file_ingest` tool | | **yes** | |
-| `file_list` tool | | **yes** | |
+| `system_vector_search` tool | **yes** | | |
+| `system_vector_upsert` tool | **yes** | | |
+| `system_vector_delete` tool | | **yes** | |
+| `system_file_read` tool | | **yes** | |
+| `system_file_ingest` tool | | **yes** | |
+| `system_file_list` tool | | **yes** | |
 | Batch ingest script | | **yes** | |
 | `parsers/` (txt, md, json) | **yes** | | |
 | `parsers/` (pdf, docx, csv, html) | | **yes** | |

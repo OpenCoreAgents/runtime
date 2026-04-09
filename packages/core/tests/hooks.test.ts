@@ -35,7 +35,7 @@ describe("EngineHooks ordering", () => {
       JSON.stringify({ type: "thought", content: "t1" }),
       JSON.stringify({
         type: "action",
-        tool: "save_memory",
+        tool: "system_save_memory",
         input: { memoryType: "working", content: { n: 1 } },
       }),
       JSON.stringify({ type: "result", content: "done" }),
@@ -46,7 +46,7 @@ describe("EngineHooks ordering", () => {
       id: "hook-agent",
       projectId: "p-hooks",
       systemPrompt: "Test.",
-      tools: ["save_memory"],
+      tools: ["system_save_memory"],
       llm: { provider: "openai", model: "gpt-4o" },
     });
 

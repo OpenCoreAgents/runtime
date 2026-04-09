@@ -20,7 +20,7 @@ export interface ToolContext {
   allowHttpFileSources?: boolean;
   /** Copied from {@link Session.httpFileSourceHostsAllowlist}. */
   httpFileSourceHostsAllowlist?: string[];
-  /** Set when {@link AgentRuntime} provides `messageBus` (e.g. for `send_message`). */
+  /** Set when {@link AgentRuntime} provides `messageBus` (e.g. for `system_send_message`). */
   messageBus?: MessageBus;
   /** From {@link AgentRuntime} `sendMessageTargetPolicy` when set. */
   sendMessageTargetPolicy?: SendMessageTargetPolicy;

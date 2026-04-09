@@ -1,8 +1,8 @@
-# Multi-agent example (`InProcessMessageBus` + `send_message`)
+# Multi-agent example (`InProcessMessageBus` + `system_send_message`)
 
 Two small demos in one script:
 
-1. **Fire-and-forget** — one agent emits a **`send_message`** **`event`**; another agent id is only an **inbox** you **`waitFor`** in application code.
+1. **Fire-and-forget** — one agent emits a **`system_send_message`** **`event`**; another agent id is only an **inbox** you **`waitFor`** in application code.
 2. **Request–reply** — agent A sends a **`request`** with a **`correlationId`**; a background handler simulates agent B and **`bus.send`**s a **`reply`**; the main script **`waitFor`**s the reply on A’s inbox.
 
 Uses a **deterministic mock LLM** (no `OPENAI_API_KEY`). **`InProcessMessageBus`** is **single-process only** — for Redis-backed delivery across workers, see [`docs/core/09-communication-multiagent.md`](../../docs/core/09-communication-multiagent.md) and [`docs/core/19-cluster-deployment.md`](../../docs/core/19-cluster-deployment.md).
@@ -11,7 +11,7 @@ Full runnable code: [`src/main.ts`](./src/main.ts) (two demos), scripted steps: 
 
 ## Example: using the same pattern
 
-**1. Wire the bus** — without `messageBus` on `AgentRuntime`, the `send_message` tool throws.
+**1. Wire the bus** — without `messageBus` on `AgentRuntime`, the `system_send_message` tool throws.
 
 ```typescript
 import {
@@ -32,14 +32,14 @@ const runtime = new AgentRuntime({
 });
 ```
 
-**2. Define an agent that may call `send_message`** — tool id must be in `tools`.
+**2. Define an agent that may call `system_send_message`** — tool id must be in `tools`.
 
 ```typescript
 await Agent.define({
   id: "agent-a",
   projectId: "my-project",
-  systemPrompt: "Use send_message to notify other agents when appropriate.",
-  tools: ["send_message"],
+  systemPrompt: "Use system_send_message to notify other agents when appropriate.",
+  tools: ["system_send_message"],
   llm: { provider: "openai", model: "gpt-4o-mini" },
 });
 ```
@@ -92,4 +92,4 @@ pnpm start
 ## Next steps
 
 - Enforce allowed targets with **`AgentRuntime({ sendMessageTargetPolicy: … })`** — see [`docs/core/08-scope-and-security.md`](../../docs/core/08-scope-and-security.md).
-- Replace the mock LLM with **`OpenAILLMAdapter`** and give agents real **`systemPrompt`** instructions to use **`send_message`** when appropriate.
+- Replace the mock LLM with **`OpenAILLMAdapter`** and give agents real **`systemPrompt`** instructions to use **`system_send_message`** when appropriate.

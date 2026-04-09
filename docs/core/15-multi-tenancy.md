@@ -156,7 +156,7 @@ await Agent.define({
   id: "support-bot",
   projectId: "acme-support",
   systemPrompt: "You are Acme's support agent. Help customers with orders and account issues...",
-  tools: ["get_memory", "save_memory", "get_order_status", "create_ticket"],
+  tools: ["system_get_memory", "system_save_memory", "get_order_status", "create_ticket"],
   memoryConfig: {
     shortTerm: { maxTurns: 20 },
     longTerm: true,
@@ -172,7 +172,7 @@ At runtime the agent can:
 2. Call `get_order_status` → external tool querying the org's order API.
 3. Emit `wait` with `reason: "user_input"` → "Would you like a refund or a replacement?"
 4. On `resume` with end-user's answer → call `create_ticket` and return `result`.
-5. Call `save_memory` to `longTerm` → persists that this customer received a refund.
+5. Call `system_save_memory` to `longTerm` → persists that this customer received a refund.
 
 The next time this end-user opens a new conversation (different `sessionId`, same `endUserId`), the agent already knows their history.
 

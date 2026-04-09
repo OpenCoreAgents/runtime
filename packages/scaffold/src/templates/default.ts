@@ -99,7 +99,7 @@ export async function registerExampleAgent(): Promise<void> {
     name: "Example agent",
     systemPrompt: SYSTEM,
     skills: ["exampleSkill"],
-    tools: ["save_memory", "get_memory"],
+    tools: ["system_save_memory", "system_get_memory"],
     llm: { provider: "${llm === "openai" ? "openai" : llm === "anthropic" ? "anthropic" : "custom"}", model: "${
       llm === "openai" ? "gpt-4o" : llm === "anthropic" ? "claude-3-5-sonnet-20241022" : "custom"
     }", temperature: 0.2 },
@@ -117,7 +117,7 @@ export async function loadExampleAgent(runtime: AgentRuntime, sessionOpts: Sessi
 
 export async function registerSaveMemoryTool(): Promise<void> {
   await Tool.define({
-    id: "save_memory",
+    id: "system_save_memory",
     name: "Save memory",
     scope: "global",
     description: "Persists content in the agent's memory.",
@@ -147,7 +147,7 @@ export async function registerExampleSkill(): Promise<void> {
     id: "exampleSkill",
     name: "Example skill",
     scope: "global",
-    tools: ["save_memory"],
+    tools: ["system_save_memory"],
     description: "Starter skill referencing memory tools.",
     roles: ["agent"],
   });

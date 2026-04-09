@@ -12,7 +12,7 @@ import { validateRagFileCatalog } from "../ragCatalogTypes.js";
 import { resolveToolRegistry } from "../define/registry.js";
 
 function ragCatalogToolsLookRegistered(): boolean {
-  return resolveToolRegistry("").has("list_rag_sources");
+  return resolveToolRegistry("").has("system_list_rag_sources");
 }
 
 function shouldEmitRagCatalogDevWarning(): boolean {
@@ -52,7 +52,7 @@ function normalizeRagEntries(
  *
  * RAG file catalogs are per **`projectId`**: call **`registerRagCatalog(projectId, entries)`** (or
  * **`registerRagCatalog(runtime, projectId, entries)`** from **`@agent-runtime/rag`**) so
- * `list_rag_sources` / `ingest_rag_source` use that list for sessions in that project; if a project
+ * `system_list_rag_sources` / `system_ingest_rag_source` use that list for sessions in that project; if a project
  * was never registered, tools fall back to the process-global map in `@agent-runtime/rag`.
  */
 export class AgentRuntime {
@@ -93,7 +93,7 @@ export class AgentRuntime {
     ) {
       this._warnedMissingRagTools = true;
       console.warn(
-        "[AgentRuntime] registerRagCatalog: `list_rag_sources` is not registered yet. " +
+        "[AgentRuntime] registerRagCatalog: `system_list_rag_sources` is not registered yet. " +
           "Call `registerRagToolsAndSkills()` from `@agent-runtime/rag` (or register RAG tools) before `registerRagCatalog` to avoid this warning and ensure catalog tools run.",
       );
     }

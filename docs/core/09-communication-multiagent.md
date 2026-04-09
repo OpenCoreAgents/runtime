@@ -4,6 +4,8 @@ How multiple agents **send messages** and **coordinate** without leaving the eng
 
 Related: [05-adapters.md](./05-adapters.md) (buses + Redis packages), [08-scope-and-security.md](./08-scope-and-security.md) (isolation), [14-consumers.md](./14-consumers.md), [19-cluster-deployment.md](./19-cluster-deployment.md) (**`messageBus`** on **`AgentRuntime`** on every worker for cross-process delivery; **`runStore`** when **`wait`** spans workers). Optional brainstorm: [../brainstorm/07-multi-agente-rest-sesiones.md](../brainstorm/07-multi-agente-rest-sesiones.md).
 
+**Tool id:** **`system_send_message`**. Like other engine primitives, it uses the **`system_`** prefix so it stays distinct from app-defined tools and is easy to spot in allowlists and protocol traces.
+
 ---
 
 ## 1. Principle
@@ -57,7 +59,7 @@ Implementations in this repo: **`InProcessMessageBus`** (single process); **`Red
 
 ---
 
-## 3. `send_message` tool
+## 3. `system_send_message` tool
 
 The LLM does **not** talk to the other agent directly: it emits an `action` that **ToolRunner** maps to this tool.
 
@@ -95,9 +97,9 @@ Agent A sends an event to B and continues its run to `result` without waiting. U
 
 ### 4.2 Request–reply (recommended with `wait`)
 
-1. A generates `correlationId`, runs `send_message` to B.
+1. A generates `correlationId`, runs `system_send_message` to B.
 2. A emits `wait` with `reason: external_event` or `agent_reply` convention, storing `correlationId` in `state.pending`.
-3. B, in its run, processes the message, runs its LLM, then uses `send_message` **reply** with the same `correlationId`.
+3. B, in its run, processes the message, runs its LLM, then uses `system_send_message` **reply** with the same `correlationId`.
 4. A’s runtime (or a light **watcher** on the bus) sees the reply and **resume**s A’s run with the payload.
 
 This preserves core semantics: **wait** persists the run; **resume** continues the loop.
@@ -131,14 +133,14 @@ sequenceDiagram
   participant MB as MessageBus
   participant B as Agent B run
 
-  A->>TR: action send_message
+  A->>TR: action system_send_message
   TR->>MB: send(to B)
   MB-->>TR: observation ok
   A->>A: step wait (correlationId)
   Note over A: run status waiting
   MB->>B: deliver message
   B->>B: loop processes and decides
-  B->>TR: action send_message reply
+  B->>TR: action system_send_message reply
   TR->>MB: send(to A, correlationId)
   MB->>A: resume(runId, payload)
   A->>A: loop continues → result
@@ -148,7 +150,7 @@ sequenceDiagram
 
 ## 6. Security and scope
 
-- **Same `projectId` only** by default; validate in `send_message` and in the bus ([08-scope-and-security.md](./08-scope-and-security.md)).
+- **Same `projectId` only** by default; validate in `system_send_message` and in the bus ([08-scope-and-security.md](./08-scope-and-security.md)).
 - **SecurityLayer** should limit which principals may trigger inter-agent messages (scope like `agents:send`).
 - Do not put other tenants’ data in model B’s prompt even if `fromAgentId` is trusted: filter `payload` by policy.
 
@@ -182,6 +184,6 @@ Body aligned with bus payload; server validates project and permissions before `
 ## 9. Multi-agent MVP (engine)
 
 - One in-process or Redis **MessageBus**.
-- **`send_message`** tool registered and allowed only where the product requires it.
+- **`system_send_message`** tool registered and allowed only where the product requires it.
 - **One** documented request–reply flow + tests.
 - No complex graphical orchestration until the bus and cross-`wait`/`resume` are stable.

@@ -12,7 +12,7 @@
 | [`plan-rest.md`](./plan-rest.md) | **HTTP/JSON API** — endpoints, async jobs, tenancy. |
 | [`plan-mcp.md`](./plan-mcp.md) | **Model Context Protocol** — MCP server as channel over SDK or REST. |
 
-**Runnable examples:** [`examples/minimal-run`](../examples/minimal-run/) (mock LLM, **`AgentRuntime`**, no keys); [`examples/openai-tools-skill`](../examples/openai-tools-skill/) (`OpenAILLMAdapter` + tool + skill, **`OPENAI_API_KEY`**); [`examples/console-wait`](../examples/console-wait/) (**`onWait`** + stdin); [`examples/rag`](../examples/rag/) (**`registerRagToolsAndSkills`**, **`registerRagCatalog(runtime, …)`**, **`ingest_rag_source`** / **`vector_search`**; optional **`start:openai`**).
+**Runnable examples:** [`examples/minimal-run`](../examples/minimal-run/) (mock LLM, **`AgentRuntime`**, no keys); [`examples/openai-tools-skill`](../examples/openai-tools-skill/) (`OpenAILLMAdapter` + tool + skill, **`OPENAI_API_KEY`**); [`examples/console-wait`](../examples/console-wait/) (**`onWait`** + stdin); [`examples/rag`](../examples/rag/) (**`registerRagToolsAndSkills`**, **`registerRagCatalog(runtime, …)`**, **`system_ingest_rag_source`** / **`system_vector_search`**; optional **`start:openai`**).
 
 ---
 
@@ -25,7 +25,7 @@
 | **Worker / direct engine API** (`buildEngineDeps(agent, session, runtime)`, `createRun`, `executeRun`, `dispatchEngineJob(runtime, payload)`, `effectiveToolAllowlist`, optional **`AgentRuntime.allowedToolIds`**, `getAgentDefinition`, `resolveToolRegistry`, `securityContextForAgent`) | **Done** — same loop as `RunBuilder`; BullMQ: `packages/adapters-bullmq`; tests: `packages/core/tests/engine.test.ts`, `adapters-bullmq/tests/dispatch.test.ts` |
 | **`RunBuilder.onWait`** (in-process continuation after `wait` when callback returns text) | **Done** |
 | **Per-tool timeout** (`toolTimeoutMs` on **`AgentRuntime`**, `ToolTimeoutError` / `TOOL_TIMEOUT`) | **Done** — [`ToolRunner`](../packages/core/src/tools/ToolRunner.ts) |
-| **Phases 6–8** (RAG pipeline, multi-agent `MessageBus` + `send_message`, CLI + scaffold) | **Done** |
+| **Phases 6–8** (RAG pipeline, multi-agent `MessageBus` + `system_send_message`, CLI + scaffold) | **Done** |
 | **Phase 5** (**BullMQ priority**) | **`@agent-runtime/adapters-bullmq` shipped** — typed `createEngineQueue` / `createEngineWorker` + `dispatchEngineJob`; **QStash** still not in monorepo; delayed-job orchestration for `wait` remains app-specific on top of BullMQ |
 | **Phase 2** (`@agent-runtime/adapters-redis` — **preferred** for `REDIS_URL` / BullMQ-style stacks) | **Done** — TCP `ioredis`: memory, RunStore, MessageBus. Vector stays in **Phase 2a** / **`UpstashVectorAdapter`** unless you swap `VectorAdapter`. |
 | **Phase 2a** (`@agent-runtime/adapters-upstash` — REST + vector) | **Done** — `UpstashRedisMemoryAdapter`, `UpstashRunStore`, `UpstashRedisMessageBus`, `UpstashVectorAdapter` for serverless/edge or when you want HTTP-only Redis. |
@@ -84,7 +84,7 @@ For package-level detail, see **`docs/scaffold.md` §0.8** and **§12**. Known g
 | 1.8 | `SecurityContext` + `SessionOptions`; embedded context via **`securityContextForAgent`** (`buildEngineDeps`) | `src/security/types.ts`, `src/engine/buildEngineDeps.ts` | No in-core HTTP **`SecurityLayer`** module — hosts authenticate **before** **`Agent.load`**; see [`08-scope-and-security.md`](./core/08-scope-and-security.md) |
 | 1.9 | `parseStep` — JSON parse + fence stripping + schema validation | `src/engine/parseStep.ts` | Unit: valid JSON (all 4 step types), invalid JSON, fenced JSON, missing fields |
 | 1.10 | `ToolRunner` — registry, allowlist check, validate, execute | `src/tools/ToolRunner.ts` | Unit: register, resolve, allowlist deny, validate fail, execute success/error |
-| 1.11 | Built-in tools: `save_memory`, `get_memory` | `src/tools/builtins.ts` | Unit: each tool with mock `MemoryAdapter` |
+| 1.11 | Built-in tools: `system_save_memory`, `system_get_memory` | `src/tools/builtins.ts` | Unit: each tool with mock `MemoryAdapter` |
 | 1.12 | `EngineDeps`, `EngineHooks`, `LLMResponseMeta` types | `src/engine/types.ts` | Type-only |
 | 1.13 | `ContextBuilder` | `src/context/ContextBuilder.ts` | Unit: deterministic output; tool catalog from agent + skills (+ registry). **`SecurityContext` on input type is unused in `build()`** — see [`technical-debt.md`](./technical-debt.md) §7 |
 | 1.14 | `executeRun` — main loop (+ `createRun`) | `src/engine/Engine.ts` | Integration: thought→action→result cycle; wait→resume; max iterations; parse recovery (1 re-prompt then fail) |
@@ -226,19 +226,19 @@ Use **`@agent-runtime/adapters-upstash`** when you want **HTTP-only** Redis (ser
 
 | Step | Module | Package | Test |
 |------|--------|---------|------|
-| 6c.1 | `vector_search`, `vector_upsert`, `vector_delete` tools | `core/src/tools/` | Integration: mock embedding + vector adapters |
-| 6c.2 | `file_read`, `file_ingest`, `file_list` tools | `rag/src/tools/` | Integration: mock utils + adapters, full pipeline |
-| 6c.2b | **`list_rag_sources`**, **`ingest_rag_source`**; **`registerRagToolsAndSkills()`**; **`registerRagCatalog(runtime, projectId, entries)`** (`@agent-runtime/rag`); per-project catalog on **`AgentRuntime`** (`validateRagFileCatalog`, `ragCatalogForProject`) | `rag/src/`, `core/src/runtime/AgentRuntime.ts`, `core/src/ragCatalogTypes.ts` | Integration: catalog + ingest + search; **`examples/rag`** |
+| 6c.1 | `system_vector_search`, `system_vector_upsert`, `system_vector_delete` tools | `core/src/tools/` | Integration: mock embedding + vector adapters |
+| 6c.2 | `system_file_read`, `system_file_ingest`, `system_file_list` tools | `rag/src/tools/` | Integration: mock utils + adapters, full pipeline |
+| 6c.2b | **`system_list_rag_sources`**, **`system_ingest_rag_source`**; **`registerRagToolsAndSkills()`**; **`registerRagCatalog(runtime, projectId, entries)`** (`@agent-runtime/rag`); per-project catalog on **`AgentRuntime`** (`validateRagFileCatalog`, `ragCatalogForProject`) | `rag/src/`, `core/src/runtime/AgentRuntime.ts`, `core/src/ragCatalogTypes.ts` | Integration: catalog + ingest + search; **`examples/rag`** |
 | 6c.3 | `rag` and `rag-reader` skills | `rag/src/skills/` | Unit: tool grouping, description |
 | 6c.4 | `SkillDefinitionPersisted`, `Skill.define(def, execute?)`, `Skill.defineBatch` (Redis/DB JSON + code `execute`) | `core/src/define/Skill.ts` | Unit: `tests/skill-define.test.ts` |
 
-**Gate:** `pnpm turbo build` builds all packages in topological order. Integration test: `file_ingest` a `.md` file → `vector_search` returns relevant chunks. Catalog path: register tools → **`registerRagCatalog(runtime, projectId, [...])`** → **`ingest_rag_source`** by id (see **`examples/rag`**).
+**Gate:** `pnpm turbo build` builds all packages in topological order. Integration test: `system_file_ingest` a `.md` file → `system_vector_search` returns relevant chunks. Catalog path: register tools → **`registerRagCatalog(runtime, projectId, [...])`** → **`system_ingest_rag_source`** by id (see **`examples/rag`**).
 
 ---
 
 ## Phase 7 — Multi-agent
 
-**Goal:** Two agents can coordinate via `send_message` + `wait`/`resume`.
+**Goal:** Two agents can coordinate via `system_send_message` + `wait`/`resume`.
 
 **Package:** `packages/core`
 
@@ -246,8 +246,8 @@ Use **`@agent-runtime/adapters-upstash`** when you want **HTTP-only** Redis (ser
 |------|--------|---------|------|
 | 7.1 | `AgentMessage`, `MessageBus` interfaces | `src/bus/MessageBus.ts` | Type-only |
 | 7.2 | In-process `MessageBus` (EventEmitter + Map) | `src/bus/InProcessMessageBus.ts` | Unit: send/waitFor with correlationId, timeout |
-| 7.3 | `send_message` tool | `src/tools/sendMessage.ts` (+ `sendMessagePolicy.ts`) | Unit: enqueues via bus, returns `{ success, messageId }`; policy tests in **`send-message-validation.test.ts`** |
-| 7.4 | Request–reply integration: Agent A → send → wait → Agent B → reply → A resumes | `Engine.ts` | **`tests/multi-agent.test.ts`** — `send_message` + `InProcessMessageBus` (event + **`correlationId`** request). Full **two-agent run** with **`wait`/`resume`** across processes is orchestration outside `core`. |
+| 7.3 | `system_send_message` tool | `src/tools/sendMessage.ts` (+ `sendMessagePolicy.ts`) | Unit: enqueues via bus, returns `{ success, messageId }`; policy tests in **`send-message-validation.test.ts`** |
+| 7.4 | Request–reply integration: Agent A → send → wait → Agent B → reply → A resumes | `Engine.ts` | **`tests/multi-agent.test.ts`** — `system_send_message` + `InProcessMessageBus` (event + **`correlationId`** request). Full **two-agent run** with **`wait`/`resume`** across processes is orchestration outside `core`. |
 
 **Gate:** **`multi-agent.test.ts`** passes (delivery + correlation). Optional follow-up: scripted two-agent **`wait`/`resume`** loop in tests or sample app — not required for the Phase 7 **MessageBus** + tool contract.
 
@@ -282,7 +282,7 @@ Use **`@agent-runtime/adapters-upstash`** when you want **HTTP-only** Redis (ser
 | 9.6 | Timeout: global run timeout triggers `RunTimeoutError`, abort triggers `RunCancelledError` | **`tests/runtime-limits.test.ts`** — `startedAtMs` in the past vs **`runTimeoutMs`**; **`AbortSignal`** already aborted |
 | 9.7 | RAG catalog: **`validateRagFileCatalog`**, **`AgentRuntime.registerRagCatalog`**, **`ragCatalogForProject`** → **`buildEngineDeps`** | **`tests/rag-file-catalog.test.ts`** |
 | 9.8 | Vector tools: request size / batch caps (`vectorLimits`) | **`tests/vector-limits.test.ts`** |
-| 9.9 | `send_message`: target allowlist / policy (`sendMessageTargetPolicy` on **`AgentRuntime`**) | **`tests/send-message-validation.test.ts`** |
+| 9.9 | `system_send_message`: target allowlist / policy (`sendMessageTargetPolicy` on **`AgentRuntime`**) | **`tests/send-message-validation.test.ts`** |
 | 9.10 | Tool failure → observation (engine does not stall on bad tool output) | **`tests/tool-failure-observation.test.ts`** |
 | 9.11 | **`RunStore`** persistence contract (in-memory reference + integration expectations) | **`tests/run-store.test.ts`** |
 
@@ -323,7 +323,7 @@ Use **`@agent-runtime/adapters-upstash`** when you want **HTTP-only** Redis (ser
 | 3 | Same test passes with real OpenAI, `watchUsage` reports tokens |
 | 4 | Global `runTimeoutMs` + optional per-tool `toolTimeoutMs` (`ToolTimeoutError`); `AbortSignal` cancels run cleanly |
 | 5 | **`@agent-runtime/adapters-bullmq`**: `createEngineQueue` / `createEngineWorker` + **`dispatchEngineJob(runtime, payload)`** — jobs complete asynchronously on workers |
-| 6 | `file_ingest` / **`ingest_rag_source`** → **`vector_search`** returns chunks; optional declarative catalog via **`registerRagCatalog(runtime, …)`** |
+| 6 | `system_file_ingest` / **`system_ingest_rag_source`** → **`system_vector_search`** returns chunks; optional declarative catalog via **`registerRagCatalog(runtime, …)`** |
 | 7 | Agent A asks Agent B a question, gets an answer back |
 | 8 | `npx @agent-runtime/cli init` produces a buildable project |
 | 9 | Full stack + **`AgentRuntime`** on workers; host-layer security (**§9.4** gaps in core); usage tracking via **`watchUsage`** / hooks; **§9.7–9.11** tests (**`rag-file-catalog`**, **`vector-limits`**, **`send-message-validation`**, **`tool-failure-observation`**, **`run-store`**) |

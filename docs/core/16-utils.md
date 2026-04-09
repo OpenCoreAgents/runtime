@@ -140,9 +140,9 @@ Each subdirectory exports a single entry function. Strategy-specific logic lives
 
 ```
 LLM
- │  action: file_ingest({ source: "policy.pdf" })
+ │  action: system_file_ingest({ source: "policy.pdf" })
  ▼
-ToolRunner → file_ingest tool
+ToolRunner → system_file_ingest tool
                │
                ├── resolveSource("policy.pdf")        ← util (file-resolver)
                ├── parseFile(buffer, "application/pdf") ← util (parsers)

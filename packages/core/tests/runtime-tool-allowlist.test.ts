@@ -52,14 +52,14 @@ describe("buildEngineDeps + allowedToolIds", () => {
       llmAdapter: new DummyLlm(),
       memoryAdapter: new InMemoryMemoryAdapter(),
       maxIterations: 10,
-      allowedToolIds: ["save_memory"],
+      allowedToolIds: ["system_save_memory"],
     });
 
     await Agent.define({
       id: "t1",
       projectId: "p-rta",
       systemPrompt: "Test.",
-      tools: ["save_memory", "get_memory"],
+      tools: ["system_save_memory", "system_get_memory"],
       llm: { provider: "openai", model: "gpt-4o" },
     });
 
@@ -70,7 +70,7 @@ describe("buildEngineDeps + allowedToolIds", () => {
 
     await expect(
       deps.toolRunner.execute(
-        "get_memory",
+        "system_get_memory",
         { memoryType: "longTerm" },
         {
           projectId: "p-rta",
@@ -84,7 +84,7 @@ describe("buildEngineDeps + allowedToolIds", () => {
     ).rejects.toThrow(ToolNotAllowedError);
 
     const out = await deps.toolRunner.execute(
-      "save_memory",
+      "system_save_memory",
       { memoryType: "longTerm", content: { n: 1 } },
       {
         projectId: "p-rta",

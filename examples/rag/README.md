@@ -1,6 +1,6 @@
 # RAG example (`@agent-runtime/example-rag`)
 
-End-to-end demo: a small **file catalog** (`id` + `description` + `source` path), then **`ingest_rag_source`** + **`vector_search`**. Default run uses a **scripted LLM** (no API keys); optional **`start:openai`** uses OpenAI.
+End-to-end demo: a small **file catalog** (`id` + `description` + `source` path), then **`system_ingest_rag_source`** + **`system_vector_search`**. Default run uses a **scripted LLM** (no API keys); optional **`start:openai`** uses OpenAI.
 
 ## Register documents (app code, not the LLM)
 
@@ -15,13 +15,13 @@ Each catalog entry:
 
 | Field | Meaning |
 |-------|---------|
-| `id` | Stable handle the model passes to **`ingest_rag_source`** (e.g. `demo-handbook`). |
-| `description` | Shown in **`list_rag_sources`** so the model knows what each id is. |
-| `source` | Server-side path or URL (same rules as **`file_ingest`**: relative to effective **`fileReadRoot`** on **`Session`** or default on **`AgentRuntime`**, or http(s) when allowed). |
+| `id` | Stable handle the model passes to **`system_ingest_rag_source`** (e.g. `demo-handbook`). |
+| `description` | Shown in **`system_list_rag_sources`** so the model knows what each id is. |
+| `source` | Server-side path or URL (same rules as **`system_file_ingest`**: relative to effective **`fileReadRoot`** on **`Session`** or default on **`AgentRuntime`**, or http(s) when allowed). |
 
 Edit **[`src/fileSources.ts`](./src/fileSources.ts)** — array **`DEMO_RAG_SOURCES`** and **`DEMO_FILE_READ_ROOT`**.
 
-**`file_ingest`** remains for advanced use (arbitrary `source` string).
+**`system_file_ingest`** remains for advanced use (arbitrary `source` string).
 
 ## File sandbox
 
@@ -34,13 +34,13 @@ Edit **[`src/fileSources.ts`](./src/fileSources.ts)** — array **`DEMO_RAG_SOUR
 | [`src/fileSources.ts`](./src/fileSources.ts) | **`DEMO_RAG_SOURCES`**; **`DEMO_FILE_READ_ROOT`**. |
 | [`src/main.ts`](./src/main.ts) | **`AgentRuntime`**, `registerRagToolsAndSkills`, `registerRagCatalog`, `Agent.define` / `run`. |
 | [`src/demoAdapters.ts`](./src/demoAdapters.ts) | In-memory vector + demo embeddings. |
-| [`src/scriptedRagLlm.ts`](./src/scriptedRagLlm.ts) | Fake LLM: `ingest_rag_source` → `vector_search` → `result`. |
+| [`src/scriptedRagLlm.ts`](./src/scriptedRagLlm.ts) | Fake LLM: `system_ingest_rag_source` → `system_vector_search` → `result`. |
 | [`src/printRun.ts`](./src/printRun.ts) | Prints `run.history`. |
 | [`src/openaiMain.ts`](./src/openaiMain.ts) | OpenAI chat + embeddings (`pnpm run start:openai`). |
 
 ## Ingest pipeline (library)
 
-Shared implementation: **[`packages/rag/src/tools/fileIngestCore.ts`](../../packages/rag/src/tools/fileIngestCore.ts)** (`runFileIngestPipeline`) — used by **`file_ingest`** and **`ingest_rag_source`**.
+Shared implementation: **[`packages/rag/src/tools/fileIngestCore.ts`](../../packages/rag/src/tools/fileIngestCore.ts)** (`runFileIngestPipeline`) — used by **`system_file_ingest`** and **`system_ingest_rag_source`**.
 
 ## What to run
 
@@ -68,7 +68,7 @@ pnpm start
 
 ## With OpenAI (optional, paid API)
 
-**`pnpm run start:openai`** → [`src/openaiMain.ts`](./src/openaiMain.ts). Same bootstrap; the model uses **`list_rag_sources`** / **`ingest_rag_source`** with **ids**, not raw filenames.
+**`pnpm run start:openai`** → [`src/openaiMain.ts`](./src/openaiMain.ts). Same bootstrap; the model uses **`system_list_rag_sources`** / **`system_ingest_rag_source`** with **ids**, not raw filenames.
 
 | Piece | What OpenAI replaces |
 |-------|----------------------|

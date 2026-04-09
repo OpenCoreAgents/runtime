@@ -10,7 +10,7 @@ export function printRunSummary(run: Run): void {
       const o = h.content as { success?: boolean; results?: unknown[]; chunksCreated?: number };
       if (Array.isArray(o.results)) {
         console.log(
-          "observation: vector_search hits:",
+          "observation: system_vector_search hits:",
           o.results.length,
           "top score:",
           (o.results[0] as { score?: number } | undefined)?.score,

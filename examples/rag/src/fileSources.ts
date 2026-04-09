@@ -2,8 +2,8 @@
  * ## 1) Register documents (no LLM involved)
  *
  * Call **`registerRagCatalog(runtime, projectId, DEMO_RAG_SOURCES)`** and set **`fileReadRoot`** on **`AgentRuntime`** (see `main.ts`). Legacy: **`registerRagFileCatalog`**.
- * Each entry is `{ id, description, source }` where `source` is resolved like `file_ingest` (path relative
- * to the effective `fileReadRoot` (`Session` or `AgentRuntime`), or an allowed URL). Tools **`list_rag_sources`** and **`ingest_rag_source`**
+ * Each entry is `{ id, description, source }` where `source` is resolved like `system_file_ingest` (path relative
+ * to the effective `fileReadRoot` (`Session` or `AgentRuntime`), or an allowed URL). Tools **`system_list_rag_sources`** and **`system_ingest_rag_source`**
  * use this catalog; the model only sees **id** + **description** from the list tool.
  *
  * ## 2) Session sandbox (where local paths resolve)
@@ -30,7 +30,7 @@ export const DEMO_RAG_SOURCES: RagSourceDefinition[] = [
   {
     id: "demo-handbook",
     description:
-      "Intro markdown for this example: RAG, catalog ingest, vector_search, and production adapters.",
+      "Intro markdown for this example: RAG, catalog ingest, system_vector_search, and production adapters.",
     source: "sample.md",
   },
 ];

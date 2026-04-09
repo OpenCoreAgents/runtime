@@ -104,7 +104,7 @@ describe("dispatchEngineJob", () => {
     const llm = new QueueLLM([
       JSON.stringify({
         type: "action",
-        tool: "save_memory",
+        tool: "system_save_memory",
         input: { memoryType: "longTerm", content: { note: "eu-scoped" } },
       }),
       JSON.stringify({ type: "result", content: "done" }),
@@ -115,7 +115,7 @@ describe("dispatchEngineJob", () => {
       id: "a3",
       projectId: "p1",
       systemPrompt: "Test.",
-      tools: ["save_memory"],
+      tools: ["system_save_memory"],
       llm: { provider: "openai", model: "gpt-4o" },
     });
 

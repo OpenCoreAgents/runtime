@@ -56,7 +56,7 @@ This allows an end-user facing agent to recall facts about a returning customer 
 
 **Host responsibility:** Authenticate and authorize **before** **`Agent.load(agentId, runtime, { session })`**; optionally narrow **`allowedToolIds`** or omit definitions so the model never sees forbidden tools.
 
-**Target (core, not shipped):** Intersect the catalog with **`SecurityContext.scopes`** and default-deny sensitive tools (e.g. `send_message`) without explicit scope — same gap as [technical-debt.md](../technical-debt.md) §7.
+**Target (core, not shipped):** Intersect the catalog with **`SecurityContext.scopes`** and default-deny sensitive tools (e.g. `system_send_message`) without explicit scope — same gap as [technical-debt.md](../technical-debt.md) §7.
 
 ---
 

@@ -12,7 +12,7 @@ export async function registerCoordinatorAgent(): Promise<void> {
     name: "Coordinator",
     systemPrompt: SYSTEM,
     skills: ["exampleSkill"],
-    tools: ["save_memory", "get_memory"],
+    tools: ["system_save_memory", "system_get_memory"],
     llm: { provider: "openai", model: "gpt-4o", temperature: 0.2 },
     security: { roles: ["agent"] },
   });
@@ -33,7 +33,7 @@ export async function registerWorkerAgent(): Promise<void> {
     id: "worker",
     name: "Worker",
     systemPrompt: SYSTEM,
-    tools: ["save_memory", "get_memory"],
+    tools: ["system_save_memory", "system_get_memory"],
     llm: { provider: "openai", model: "gpt-4o", temperature: 0.2 },
     security: { roles: ["agent"] },
   });

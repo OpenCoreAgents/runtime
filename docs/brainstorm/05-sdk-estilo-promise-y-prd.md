@@ -103,7 +103,7 @@ A normal Promise resolves once. Here there are **events**, possible **pause**, *
 
 - One reference agent.
 - Basic memory (e.g. Mongo).
-- Tools: `save_memory`, `get_memory`.
+- Tools: `system_save_memory`, `system_get_memory`.
 - Bounded loop (few iterations).
 - **wait** support + basic Promise-like SDK.
 

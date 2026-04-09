@@ -12,7 +12,7 @@ function scopeFromContext(ctx: ToolContext): MemoryScope {
 }
 
 const saveMemory: ToolAdapter = {
-  name: "save_memory",
+  name: "system_save_memory",
   description: "Persists content in the agent memory store.",
   validate(input: unknown): boolean {
     if (!input || typeof input !== "object") return false;
@@ -30,7 +30,7 @@ const saveMemory: ToolAdapter = {
 };
 
 const getMemory: ToolAdapter = {
-  name: "get_memory",
+  name: "system_get_memory",
   description: "Queries stored memory fragments.",
   validate(input: unknown): boolean {
     if (!input || typeof input !== "object") return false;
@@ -51,7 +51,7 @@ const getMemory: ToolAdapter = {
 /** Register built-in tool handlers (call once at process startup). */
 export function registerBuiltinToolHandlers(): void {
   registerToolDefinition({
-    id: "save_memory",
+    id: "system_save_memory",
     scope: "global",
     description: saveMemory.description,
     inputSchema: {
@@ -65,7 +65,7 @@ export function registerBuiltinToolHandlers(): void {
     roles: ["agent"],
   });
   registerToolDefinition({
-    id: "get_memory",
+    id: "system_get_memory",
     scope: "global",
     description: getMemory.description,
     inputSchema: {

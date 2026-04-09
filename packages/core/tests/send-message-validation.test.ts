@@ -41,7 +41,7 @@ function toolCtx(agentId: string, rt: AgentRuntime): ToolContext {
   };
 }
 
-describe("send_message validate + execute guards", () => {
+describe("system_send_message validate + execute guards", () => {
   let runner: ToolRunner;
   let rt: AgentRuntime;
 
@@ -52,12 +52,12 @@ describe("send_message validate + execute guards", () => {
       memoryAdapter: new InMemoryMemoryAdapter(),
       messageBus: new InProcessMessageBus(),
     });
-    runner = new ToolRunner(resolveToolRegistry("p1"), new Set(["send_message"]));
+    runner = new ToolRunner(resolveToolRegistry("p1"), new Set(["system_send_message"]));
   });
 
   it("accepts a valid event payload", async () => {
     const out = await runner.execute(
-      "send_message",
+      "system_send_message",
       { toAgentId: "agent-b", type: "event", payload: { x: 1 } },
       toolCtx("agent-a", rt),
     );
@@ -66,7 +66,7 @@ describe("send_message validate + execute guards", () => {
 
   it("trims toAgentId and correlationId", async () => {
     const out = await runner.execute(
-      "send_message",
+      "system_send_message",
       {
         toAgentId: "  agent-b  ",
         type: "request",
@@ -80,23 +80,23 @@ describe("send_message validate + execute guards", () => {
 
   it("rejects invalid input via validate", async () => {
     await expect(
-      runner.execute("send_message", { toAgentId: "", payload: {} }, toolCtx("agent-a", rt)),
+      runner.execute("system_send_message", { toAgentId: "", payload: {} }, toolCtx("agent-a", rt)),
     ).rejects.toThrow(ToolValidationError);
     await expect(
       runner.execute(
-        "send_message",
+        "system_send_message",
         { toAgentId: "b", type: "request", payload: {} },
         toolCtx("agent-a", rt),
       ),
     ).rejects.toThrow(ToolValidationError);
     await expect(
-      runner.execute("send_message", { toAgentId: "b" }, toolCtx("agent-a", rt)),
+      runner.execute("system_send_message", { toAgentId: "b" }, toolCtx("agent-a", rt)),
     ).rejects.toThrow(ToolValidationError);
   });
 
   it("rejects send to self after validate", async () => {
     await expect(
-      runner.execute("send_message", { toAgentId: "agent-a", payload: {} }, toolCtx("agent-a", rt)),
+      runner.execute("system_send_message", { toAgentId: "agent-a", payload: {} }, toolCtx("agent-a", rt)),
     ).rejects.toThrow(ToolExecutionError);
   });
 
@@ -108,10 +108,10 @@ describe("send_message validate + execute guards", () => {
       messageBus: new InProcessMessageBus(),
       sendMessageTargetPolicy: () => false,
     });
-    const r = new ToolRunner(resolveToolRegistry("p1"), new Set(["send_message"]));
+    const r = new ToolRunner(resolveToolRegistry("p1"), new Set(["system_send_message"]));
     await expect(
       r.execute(
-        "send_message",
+        "system_send_message",
         { toAgentId: "agent-b", payload: {} },
         toolCtx("agent-a", rt),
       ),
@@ -126,12 +126,12 @@ describe("send_message validate + execute guards", () => {
       messageBus: new InProcessMessageBus(),
       sendMessageTargetPolicy: ({ toAgentId }) => toAgentId === "allowed",
     });
-    const r = new ToolRunner(resolveToolRegistry("p1"), new Set(["send_message"]));
+    const r = new ToolRunner(resolveToolRegistry("p1"), new Set(["system_send_message"]));
     await expect(
-      r.execute("send_message", { toAgentId: "other", payload: {} }, toolCtx("agent-a", rt)),
+      r.execute("system_send_message", { toAgentId: "other", payload: {} }, toolCtx("agent-a", rt)),
     ).rejects.toThrow(ToolExecutionError);
     const ok = await r.execute(
-      "send_message",
+      "system_send_message",
       { toAgentId: "allowed", payload: {} },
       toolCtx("agent-a", rt),
     );

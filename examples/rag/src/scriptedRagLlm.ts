@@ -1,8 +1,8 @@
 /**
- * **Demo only.** Fixed steps: `ingest_rag_source` → `vector_search` → `result` (no API keys).
+ * **Demo only.** Fixed steps: `system_ingest_rag_source` → `system_vector_search` → `result` (no API keys).
  *
- * **Production:** use a real `LLMAdapter`; the model calls `list_rag_sources` / `ingest_rag_source` /
- * `vector_search` based on tool schemas. Catalog: **`registerRagCatalog(runtime, projectId, …)`** (or legacy **`registerRagFileCatalog`**) — independent of which LLM you use.
+ * **Production:** use a real `LLMAdapter`; the model calls `system_list_rag_sources` / `system_ingest_rag_source` /
+ * `system_vector_search` based on tool schemas. Catalog: **`registerRagCatalog(runtime, projectId, …)`** (or legacy **`registerRagFileCatalog`**) — independent of which LLM you use.
  *
  * @see [`examples/openai-tools-skill`](../../openai-tools-skill/) for **`OpenAILLMAdapter`** without a wrapper.
  */
@@ -25,7 +25,7 @@ export function createScriptedRagLlm(opts: ScriptedRagLlmOptions): LLMAdapter {
           return {
             content: JSON.stringify({
               type: "action",
-              tool: "ingest_rag_source",
+              tool: "system_ingest_rag_source",
               input: { id: catalogIngestId },
             }),
           };
@@ -33,7 +33,7 @@ export function createScriptedRagLlm(opts: ScriptedRagLlmOptions): LLMAdapter {
           return {
             content: JSON.stringify({
               type: "action",
-              tool: "vector_search",
+              tool: "system_vector_search",
               input: { query: searchQuery, topK: 5 },
             }),
           };
@@ -42,7 +42,7 @@ export function createScriptedRagLlm(opts: ScriptedRagLlmOptions): LLMAdapter {
             content: JSON.stringify({
               type: "result",
               content:
-                "Answer (demo): The retrieved chunks describe RAG, catalog ingest, vector_search, " +
+                "Answer (demo): The retrieved chunks describe RAG, catalog ingest, system_vector_search, " +
                 "and using a real embedding API plus a hosted vector index in production.",
             }),
           };

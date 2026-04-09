@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "description": "RAG demo: registerRagCatalog(runtime, …) + ingest_rag_source / vector_search; fake LLM by default; optional OpenAI (start:openai).",
+  "description": "RAG demo: registerRagCatalog(runtime, …) + system_ingest_rag_source / system_vector_search; fake LLM by default; optional OpenAI (start:openai).",
   "scripts": {
     "start": "tsx src/main.ts",
     "start:openai": "tsx src/openaiMain.ts",

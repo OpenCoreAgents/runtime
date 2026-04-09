@@ -18,7 +18,7 @@
 ## Delivery shape
 
 - **Same semantics** in **SDK (Promise + hooks)**, **CLI**, and **REST** avoids duplicating the loop and helps dev + ops adoption ([`05-sdk-estilo-promise-y-prd.md`](./05-sdk-estilo-promise-y-prd.md), [`06-libreria-adapters-cli.md`](./06-libreria-adapters-cli.md), [`07-multi-agente-rest-sesiones.md`](./07-multi-agente-rest-sesiones.md), [`../core/14-consumers.md`](../core/14-consumers.md)).
-- **Multi-agent** as **MessageBus + tool** (`send_message`), not one mega-model with many voices; still one loop per agent ([`../core/09-communication-multiagent.md`](../core/09-communication-multiagent.md)).
+- **Multi-agent** as **MessageBus + tool** (`system_send_message`), not one mega-model with many voices; still one loop per agent ([`../core/09-communication-multiagent.md`](../core/09-communication-multiagent.md)).
 - **Dynamic platform** (`Agent.define` / `Tool.define` / `Skill.define`, project vs global) is **evolutionary vision**, not mandatory for engine MVP ([`08-plataforma-dinamica-proyectos.md`](./08-plataforma-dinamica-proyectos.md), [`../core/07-definition-syntax.md`](../core/07-definition-syntax.md), [`../core/06-mvp.md`](../core/06-mvp.md)).
 
 ## Security and serious product

@@ -1,6 +1,6 @@
 /**
  * Demo-only replacements for production embedding + vector services.
- * Not used by `file_ingest` directly: the RAG tool uses whatever you pass into `AgentRuntime`.
+ * Not used by `system_file_ingest` directly: the RAG tool uses whatever you pass into `AgentRuntime`.
  */
 import type {
   EmbeddingAdapter,

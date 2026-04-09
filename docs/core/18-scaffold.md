@@ -50,7 +50,7 @@ npx @agent-runtime/cli generate agent support-bot
 |------|---------|--------|
 | `--cwd` | current directory | Project root containing `agents/`, `tools/`, etc. |
 | `--skills` | `[]` | Comma-separated skill ids to include. |
-| `--tools` | `save_memory`, `get_memory` | Comma-separated tool ids (omit flag entirely for this default). |
+| `--tools` | `system_save_memory`, `system_get_memory` | Comma-separated tool ids (omit flag entirely for this default). |
 | `--llm-model` | `gpt-4o` | Model id written into the generated agent file. |
 | `--with-test` | `true` | Generate `tests/<agent>.test.ts` (use `--no-with-test` to skip). |
 | `--force` | `false` | Overwrite existing files. |
@@ -71,7 +71,7 @@ Generates the `Tool.define` call with placeholder `inputSchema` and an empty han
 ### 2.4 `generate skill` — skill definition
 
 ```bash
-npx @agent-runtime/cli generate skill intake-summary --tools save_memory,get_memory
+npx @agent-runtime/cli generate skill intake-summary --tools system_save_memory,system_get_memory
 ```
 
 Generates the `Skill.define` call referencing the listed tools.
@@ -180,7 +180,7 @@ await scaffold.generateAgent({
   projectPath: "/tmp/my-project",
   agentId: "support-bot",
   skills: ["intakeSummary"],
-  tools: ["save_memory", "get_memory"],
+  tools: ["system_save_memory", "system_get_memory"],
 });
 ```
 

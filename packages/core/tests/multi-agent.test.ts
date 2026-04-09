@@ -24,14 +24,14 @@ beforeEach(() => {
   clearAllRegistriesForTests();
 });
 
-describe("multi-agent (InProcessMessageBus + send_message)", () => {
+describe("multi-agent (InProcessMessageBus + system_send_message)", () => {
   it("delivers an event from agent A to a waiter on agent B", async () => {
     const bus = new InProcessMessageBus();
     const mem = new InMemoryMemoryAdapter();
     const llm = new QueueLLM([
       JSON.stringify({
         type: "action",
-        tool: "send_message",
+        tool: "system_send_message",
         input: {
           toAgentId: "agent-b",
           type: "event",
@@ -51,7 +51,7 @@ describe("multi-agent (InProcessMessageBus + send_message)", () => {
       id: "agent-a",
       projectId: "p-ma",
       systemPrompt: "Sender.",
-      tools: ["send_message"],
+      tools: ["system_send_message"],
       llm: { provider: "openai", model: "gpt-4o" },
     });
 
@@ -74,7 +74,7 @@ describe("multi-agent (InProcessMessageBus + send_message)", () => {
     const llm = new QueueLLM([
       JSON.stringify({
         type: "action",
-        tool: "send_message",
+        tool: "system_send_message",
         input: {
           toAgentId: "agent-b",
           type: "request",
@@ -95,7 +95,7 @@ describe("multi-agent (InProcessMessageBus + send_message)", () => {
       id: "agent-a",
       projectId: "p-ma",
       systemPrompt: "Sender.",
-      tools: ["send_message"],
+      tools: ["system_send_message"],
       llm: { provider: "openai", model: "gpt-4o" },
     });
 

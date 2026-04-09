@@ -8,9 +8,9 @@ Agents can **send each other messages** and coordinate; a message bus is require
 
 - Per-agent queues (EventEmitter + Promise style).
 - `send(destination, payload)` and correlated wait for `wait` / resume.
-- Enables tools like `send_message`.
+- Enables tools like `system_send_message`.
 
-### Example tool: `send_message`
+### Example tool: `system_send_message`
 
 Sends to the bus; the other agent can react in its loop and reply.
 
@@ -30,7 +30,7 @@ AgentA → action → ToolAdapter → MessageBus → AgentB (loop) → reply →
 
 - Same core as single-agent.
 - `MessageBus.js`.
-- Tool `send_message`.
+- Tool `system_send_message`.
 - CLI `send`.
 - Hooks and Promise-style philosophy unchanged.
 

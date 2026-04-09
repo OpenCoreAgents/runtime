@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "description": "In-process multi-agent demo: InProcessMessageBus, send_message (event + request/reply), mock LLM — no API keys.",
+  "description": "In-process multi-agent demo: InProcessMessageBus, system_send_message (event + request/reply), mock LLM — no API keys.",
   "scripts": {
     "start": "tsx src/main.ts",
     "typecheck": "tsc --noEmit -p tsconfig.json"

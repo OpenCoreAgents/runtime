@@ -8,10 +8,11 @@ function isMessageType(v: unknown): v is "request" | "reply" | "event" {
   return v === "request" || v === "reply" || v === "event";
 }
 
+/** Public tool id: `system_send_message` — engine primitive for MessageBus delivery (multi-agent). */
 const sendMessage: ToolAdapter = {
-  name: "send_message",
+  name: "system_send_message",
   description:
-    "Sends a message to another agent in the same project. " +
+    "System: send a message to another agent in the same project (MessageBus). " +
     "Supports fire-and-forget events and request-reply patterns.",
   validate(input: unknown): boolean {
     if (!input || typeof input !== "object" || Array.isArray(input)) return false;
@@ -44,7 +45,7 @@ const sendMessage: ToolAdapter = {
     };
     const toId = o.toAgentId.trim();
     if (toId === ctx.agentId) {
-      throw new Error("send_message: toAgentId cannot match the sending agent");
+      throw new Error("system_send_message: toAgentId cannot match the sending agent");
     }
     const policy = ctx.sendMessageTargetPolicy;
     if (
@@ -57,12 +58,12 @@ const sendMessage: ToolAdapter = {
         endUserId: ctx.endUserId,
       })
     ) {
-      throw new Error("send_message: target agent is not allowed for this sender");
+      throw new Error("system_send_message: target agent is not allowed for this sender");
     }
     const bus = ctx.messageBus;
     if (!bus) {
       throw new Error(
-        "messageBus is required for send_message. Pass it via AgentRuntime({ messageBus }).",
+        "messageBus is required for system_send_message. Pass it via AgentRuntime({ messageBus }).",
       );
     }
     await bus.send({
@@ -82,7 +83,7 @@ const sendMessage: ToolAdapter = {
 
 export function registerSendMessageToolHandler(): void {
   registerToolDefinition({
-    id: "send_message",
+    id: "system_send_message",
     scope: "global",
     description: sendMessage.description!,
     inputSchema: {

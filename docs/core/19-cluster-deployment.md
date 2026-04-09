@@ -13,7 +13,7 @@ Related: [05-adapters.md](./05-adapters.md) (adapters + BullMQ), [09-communicati
 | **RunStore** | `RunStore` in `@agent-runtime/core`; `InMemoryRunStore`; **`RedisRunStore`** (`@agent-runtime/adapters-redis`); `UpstashRunStore` (`@agent-runtime/adapters-upstash`); pass **`runStore`** into **`new AgentRuntime({ … })`**; `RunBuilder` persists after each run; `Agent.resume(runId, input)` | DB-backed `RunStore`, TTL/cleanup policies |
 | **Job queue** | **`@agent-runtime/adapters-bullmq`** — `createEngineQueue`, `createEngineWorker`, `dispatchEngineJob` (BullMQ **priority**) | QStash HTTP handler **not** in monorepo; delayed `resume` orchestration still app-specific |
 | **MessageBus** | `InProcessMessageBus`, **`RedisMessageBus`** (`@agent-runtime/adapters-redis`), `UpstashRedisMessageBus` | BullMQ-as-transport for messages (alternative pattern) |
-| **Bootstrap** | **`new AgentRuntime({ … })`** registers built-in tools (`save_memory`, `get_memory`) and optional vector / `send_message` handlers (same as constructor side effects) | — |
+| **Bootstrap** | **`new AgentRuntime({ … })`** registers built-in tools (`system_save_memory`, `system_get_memory`) and optional vector / `system_send_message` handlers (same as constructor side effects) | — |
 | **Direct engine API** | `buildEngineDeps`, `createRun`, `executeRun`, `getAgentDefinition` — same loop as `RunBuilder`; use when a job handler should not use `Agent.run` | You must call `runStore.save` after each `executeRun` when using `runStore` (including `waiting`) |
 
 ---
@@ -51,7 +51,7 @@ Legend: **✓** = adapter(s) in repo. **○** = your app wires BullMQ (or anothe
 | **Runtime** (`AgentRuntime`) | One instance per worker (holds merged `EngineConfig`) | Each worker constructs **`new AgentRuntime({ llmAdapter, memoryAdapter, runStore?, … })`** at boot with the **same** adapter wiring. Pass that instance to **`Agent.load(..., runtime, …)`** and **`dispatchEngineJob(runtime, …)`**. |
 | **Tool handlers** | Registered via `registerToolHandler` into a process-local `Map` | Each worker registers the same handler set. Handlers contain code (functions), not serializable. |
 | **Engine loop** (`executeRun`) | Pure function: takes `Run` + `EngineDeps`, returns `Run` | Stateless — any worker can execute any run as long as it can read/write the `Run` from a shared store. |
-| **Built-in tools** (`save_memory`, `get_memory`) | Registered when **`AgentRuntime`** is constructed | Same on every node — they delegate to the shared `MemoryAdapter`. |
+| **Built-in tools** (`system_save_memory`, `system_get_memory`) | Registered when **`AgentRuntime`** is constructed | Same on every node — they delegate to the shared `MemoryAdapter`. |
 
 **Key rule**: **tool handlers** stay in-process (functions). For **definitions**, either ship them in code (redeploy all workers when they change) or **hydrate from a store** on boot (and on invalidation) so every node registers the same metadata. There is no magic replication of the module-level `Map`s — only identical bootstrap logic per worker. Skill JSON + code `execute`: [07-definition-syntax.md](./07-definition-syntax.md) §9.2b.
 
@@ -62,7 +62,7 @@ Legend: **✓** = adapter(s) in repo. **○** = your app wires BullMQ (or anothe
 | **MemoryAdapter** | **`RedisMemoryAdapter`** (TCP, `@agent-runtime/adapters-redis`), `UpstashRedisMemoryAdapter` (REST), Postgres | All workers read/write the same memory store. `InMemoryMemoryAdapter` is **single-process only** (tests / local dev). |
 | **RunStore** | `InMemoryRunStore` (tests/local), **`RedisRunStore`** (TCP, `@agent-runtime/adapters-redis`), `UpstashRunStore` (HTTP, `@agent-runtime/adapters-upstash`) | Persists `Run` so `wait` on node A can be `resume`d on node B. Pass **`runStore`** into **`AgentRuntime`** — see §3. |
 | **Job queue** (BullMQ / QStash) | **`@agent-runtime/adapters-bullmq`** — typed queue/worker + **`dispatchEngineJob(runtime, payload)`** | Distributes `run` / `resume` jobs across workers. QStash remains app-integrated (not packaged here). |
-| **MessageBus** | `InProcessMessageBus` (single process), **`RedisMessageBus`** (TCP Streams, `@agent-runtime/adapters-redis`), `UpstashRedisMessageBus` (REST) | Delivers `send_message` across workers when **`messageBus`** is set on **`AgentRuntime`**. |
+| **MessageBus** | `InProcessMessageBus` (single process), **`RedisMessageBus`** (TCP Streams, `@agent-runtime/adapters-redis`), `UpstashRedisMessageBus` (REST) | Delivers `system_send_message` across workers when **`messageBus`** is set on **`AgentRuntime`**. |
 | **VectorAdapter** | Upstash Vector | Shared semantic index — stateless queries from any node. |
 
 ---
@@ -85,7 +85,7 @@ const runtime = new AgentRuntime({
   llmAdapter: new OpenAILLMAdapter(process.env.OPENAI_API_KEY!),
   memoryAdapter: new RedisMemoryAdapter(redis),
   runStore: new RedisRunStore(redis), // required for wait/resume across workers
-  messageBus: new RedisMessageBus(redis), // omit if you do not use send_message across processes
+  messageBus: new RedisMessageBus(redis), // omit if you do not use system_send_message across processes
 });
 
 // Alternative — Upstash REST (no TCP): same contracts, HTTP client to Redis
@@ -100,7 +100,7 @@ const runtime = new AgentRuntime({
 // });
 
 // 2. Definitions — identical on every node (your domain tools/skills/agents only).
-// Do NOT re-define built-ins: save_memory / get_memory are registered by AgentRuntime construction.
+// Do NOT re-define built-ins: system_save_memory / system_get_memory are registered by AgentRuntime construction.
 await Tool.define({
   id: "lookup_ticket",
   scope: "global",
@@ -154,7 +154,7 @@ Pass **`runStore`** (and other adapters) in the **`AgentRuntime`** constructor a
 ### 3.4 Concurrency and integrity (multi-worker)
 
 - **`RunStore.saveIfStatus` (bundled adapters):** after **`resume`** and after in-process **`onWait`** when the run was last persisted as **`waiting`**, **`RunBuilder`** calls **`saveIfStatus(..., "waiting")`** so only one writer succeeds; the other gets **`RunInvalidStateError`**. **`RedisRunStore`** uses **`WATCH`/`MULTI`/`EXEC`**; **`UpstashRunStore`** uses one **`EVAL`** per commit. The **first** persist of a brand-new run still uses unconditional **`save`**. Prefer **BullMQ `jobId`** dedupe anyway to avoid wasted work.
-- **Memory adapters (`Redis` / `Upstash`)** use **read–modify–write** for **`save`** (append to a JSON list). Concurrent **`save_memory`** for the **same** session + `memoryType` can **lose** updates. Use app-level serialization, **Lua** / **`WATCH`**, or list primitives if you need atomic append under load.
+- **Memory adapters (`Redis` / `Upstash`)** use **read–modify–write** for **`save`** (append to a JSON list). Concurrent **`system_save_memory`** for the **same** session + `memoryType` can **lose** updates. Use app-level serialization, **Lua** / **`WATCH`**, or list primitives if you need atomic append under load.
 - **`EngineJobPayload`** (BullMQ) includes **`sessionId`**, optional **`endUserId`**, and optional **`expiresAtMs`**. **`dispatchEngineJob`** forwards **`endUserId`** into **`Session`** and throws **`EngineJobExpiredError`** if the job is processed after **`expiresAtMs`** — treat as **non-retryable** in BullMQ if appropriate. For B2B2C **`longTerm`** / **`vectorMemory`**, enqueue jobs with **`endUserId`** set when the run is on behalf of an end-user ([15-multi-tenancy.md §4](./15-multi-tenancy.md)).
 
 Full table: [`technical-debt.md` §8](../../technical-debt.md).
@@ -224,9 +224,9 @@ Enqueue from your API with **`createEngineQueue`** (`addRun` / `addResume`) usin
 | **In-process** | Single-process dev / tests | `InProcessMessageBus` (`@agent-runtime/core`) |
 | **Redis Streams (TCP)** | Cluster (multiple workers) | `RedisMessageBus` (`@agent-runtime/adapters-redis`) — stream `bus:agent:{toAgentId}`, `XRANGE` polling in `waitFor`. |
 | **Redis Streams (REST)** | Cluster (multiple workers) | `UpstashRedisMessageBus` (`@agent-runtime/adapters-upstash`) — same keys/semantics over HTTP. |
-| **BullMQ-backed** | *Optional app pattern* | For **`run`/`resume` jobs**, use **`@agent-runtime/adapters-bullmq`** (§4). Using BullMQ **as transport for `send_message`** (instead of Redis Streams) is a custom design — not a separate package. |
+| **BullMQ-backed** | *Optional app pattern* | For **`run`/`resume` jobs**, use **`@agent-runtime/adapters-bullmq`** (§4). Using BullMQ **as transport for `system_send_message`** (instead of Redis Streams) is a custom design — not a separate package. |
 
-In cluster mode, `send_message` from agent A (on worker 1) writes to Redis; agent B’s run (on worker 3) picks it up via `waitFor` when using `UpstashRedisMessageBus` or `RedisMessageBus`.
+In cluster mode, `system_send_message` from agent A (on worker 1) writes to Redis; agent B’s run (on worker 3) picks it up via `waitFor` when using `UpstashRedisMessageBus` or `RedisMessageBus`.
 
 ---
 
@@ -237,8 +237,8 @@ In cluster mode, `send_message` from agent A (on worker 1) writes to Redis; agen
 | `Agent.define` on deploy | Works | Each worker has its own copy — fine if all deploy the same code |
 | `agent.run("hello")` | Works | Works — stateless execution |
 | `wait` → `resume` | Works with in-memory `Run` if same process | **Breaks** without `RunStore` — `Run` lost when another worker must resume. |
-| `save_memory` → `get_memory` | Works with `InMemoryMemoryAdapter` | **Breaks** — data in worker 1's heap. Needs shared Redis. |
-| `send_message` (multi-agent) | Works with in-process bus | **Breaks** — in-process bus is per-process. Needs `UpstashRedisMessageBus`, `RedisMessageBus`, or equivalent shared bus. |
+| `system_save_memory` → `system_get_memory` | Works with `InMemoryMemoryAdapter` | **Breaks** — data in worker 1's heap. Needs shared Redis. |
+| `system_send_message` (multi-agent) | Works with in-process bus | **Breaks** — in-process bus is per-process. Needs `UpstashRedisMessageBus`, `RedisMessageBus`, or equivalent shared bus. |
 | Job retry after crash | No mechanism in engine | **You add** BullMQ (or equivalent) around `agent.run` / `agent.resume`. |
 
 ---

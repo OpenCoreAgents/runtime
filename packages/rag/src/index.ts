@@ -8,6 +8,11 @@ export { getRagRegistrations } from "./registrations.js";
 export type { RagRegistration } from "./registrations.js";
 export { registerRagToolsAndSkills } from "./register.js";
 export {
+  RAG_SYSTEM_TOOL_IDS,
+  type RagSystemToolId,
+  isRagSystemToolId,
+} from "./systemToolIds.js";
+export {
   registerRagCatalog,
   registerRagFileCatalog,
   getRagFileCatalog,

@@ -1,5 +1,5 @@
 /**
- * Multi-agent demo: InProcessMessageBus + send_message (event + request/reply).
+ * Multi-agent demo: InProcessMessageBus + system_send_message (event + request/reply).
  * Mock LLM only — no API keys. See ../README.md.
  */
 import type { LLMAdapter, LLMRequest, LLMResponse } from "@agent-runtime/core";
@@ -48,7 +48,7 @@ async function demoEvent(): Promise<void> {
     id: "notifier-agent",
     projectId: PROJECT,
     systemPrompt: "You coordinate handoffs to other agents.",
-    tools: ["send_message"],
+    tools: ["system_send_message"],
     llm: { provider: "openai", model: "gpt-4o-mini" },
   });
 
@@ -86,7 +86,7 @@ async function demoRequestReply(): Promise<void> {
     id: "coordinator-agent",
     projectId: PROJECT,
     systemPrompt: "You escalate to specialists with a clear request.",
-    tools: ["send_message"],
+    tools: ["system_send_message"],
     llm: { provider: "openai", model: "gpt-4o-mini" },
   });
 

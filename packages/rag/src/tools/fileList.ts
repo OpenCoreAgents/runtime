@@ -10,13 +10,13 @@ function getVectorNamespace(ctx: ToolContext): string {
 function requireAdapter<T>(ctx: ToolContext, key: string): T {
   const adapter = (ctx as unknown as Record<string, unknown>)[key];
   if (!adapter) {
-    throw new Error(`${key} is required for file_list.`);
+    throw new Error(`${key} is required for system_file_list.`);
   }
   return adapter as T;
 }
 
 export const fileListTool: ToolAdapter = {
-  name: "file_list",
+  name: "system_file_list",
   description: "Lists documents that have been ingested into the knowledge base.",
   async execute(input: unknown, ctx: ToolContext): Promise<unknown> {
     const o = input as {
@@ -59,7 +59,7 @@ export const fileListTool: ToolAdapter = {
 };
 
 export const fileListDefinition = {
-  id: "file_list",
+  id: "system_file_list",
   scope: "global" as const,
   description: fileListTool.description!,
   inputSchema: {

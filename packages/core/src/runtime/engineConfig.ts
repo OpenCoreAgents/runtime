@@ -18,21 +18,21 @@ export interface EngineConfig {
    */
   llmAdaptersByProvider?: Record<string, LLMAdapter>;
   memoryAdapter: MemoryAdapter;
-  /** Required for vector_search / vector_upsert / vector_delete tools. */
+  /** Required for system_vector_search / system_vector_upsert / system_vector_delete tools. */
   embeddingAdapter?: EmbeddingAdapter;
-  /** Required for vector_search / vector_upsert / vector_delete tools. */
+  /** Required for system_vector_search / system_vector_upsert / system_vector_delete tools. */
   vectorAdapter?: VectorAdapter;
   /** Required for `wait`/`resume` in cluster deployments. See docs/core/19-cluster-deployment.md. */
   runStore?: RunStore;
-  /** Required for send_message tool (multi-agent). */
+  /** Required for `system_send_message` tool (multi-agent). */
   messageBus?: MessageBus;
   /**
-   * Optional guard for `send_message` destinations (confused deputy / tenant policy).
+   * Optional guard for `system_send_message` destinations (confused deputy / tenant policy).
    * Ignored when unset — only structural checks and self-send rejection apply.
    */
   sendMessageTargetPolicy?: SendMessageTargetPolicy;
   /**
-   * Default base directory for `file_read` / `file_ingest` / RAG local paths when
+   * Default base directory for `system_file_read` / `system_file_ingest` / RAG local paths when
    * {@link Session} omits `fileReadRoot`. Session value wins when set.
    */
   fileReadRoot?: string;

@@ -3,7 +3,7 @@ import { parseFile } from "@agent-runtime/utils";
 import { resolveSourceForTool } from "./resolveFileSource.js";
 
 export const fileReadTool: ToolAdapter = {
-  name: "file_read",
+  name: "system_file_read",
   description:
     "Reads a file and returns its extracted text content. " +
     "Supports: txt, md, json, csv, html.",
@@ -20,7 +20,7 @@ export const fileReadTool: ToolAdapter = {
 };
 
 export const fileReadDefinition = {
-  id: "file_read",
+  id: "system_file_read",
   scope: "global" as const,
   description: fileReadTool.description!,
   inputSchema: {

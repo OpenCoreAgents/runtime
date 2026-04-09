@@ -215,7 +215,7 @@ Packages reference each other with `"workspace:*"` in `dependencies`:
 @agent-runtime/scaffold          → depends on @agent-runtime/core
 ```
 
-RAG tools that import utils (e.g. `file_ingest`, `file_read`) live in `@agent-runtime/rag` to keep `core` free of internal dependencies. Built-in tools that only need `MemoryAdapter` (`save_memory`, `get_memory`, `update_state`) and vector tools that only need adapter interfaces (`vector_search`, `vector_upsert`, `vector_delete`) remain in `core`.
+RAG tools that import utils (e.g. `system_file_ingest`, `system_file_read`) live in `@agent-runtime/rag` to keep `core` free of internal dependencies. Built-in tools that only need `MemoryAdapter` (`system_save_memory`, `system_get_memory`, `update_state`) and vector tools that only need adapter interfaces (`system_vector_search`, `system_vector_upsert`, `system_vector_delete`) remain in `core`.
 
 Turborepo `^build` in `dependsOn` ensures transitive builds run in correct order.
 
@@ -225,13 +225,13 @@ Nine packages under `packages/`. Edges match §0.7; **status** reflects this rep
 
 | Package | Role | `workspace:*` deps | Status (typical) |
 |---------|------|--------------------|------------------|
-| `@agent-runtime/core` | Engine loop, `Tool`/`Skill`/`Agent`/`Session` (optional **`expiresAtMs`** / **`SessionExpiredError`**), registries, built-in memory tools, vector tools, `send_message`, `InProcessMessageBus`, `RunStore`, **`buildEngineDeps`** / **`createRun`** / **`executeRun`**, **`RunBuilder.onWait`**, **`effectiveToolAllowlist`**, optional **`toolTimeoutMs`**, adapters as interfaces | — | **Implemented** (Phases 1–4, 4b, 6–7; worker API + cluster docs — see `docs/plan.md` **Progress snapshot**) |
+| `@agent-runtime/core` | Engine loop, `Tool`/`Skill`/`Agent`/`Session` (optional **`expiresAtMs`** / **`SessionExpiredError`**), registries, built-in memory tools, vector tools, `system_send_message`, `InProcessMessageBus`, `RunStore`, **`buildEngineDeps`** / **`createRun`** / **`executeRun`**, **`RunBuilder.onWait`**, **`effectiveToolAllowlist`**, optional **`toolTimeoutMs`**, adapters as interfaces | — | **Implemented** (Phases 1–4, 4b, 6–7; worker API + cluster docs — see `docs/plan.md` **Progress snapshot**) |
 | `@agent-runtime/utils` | Parsers, chunking, file-resolver ([`16-utils.md`](./core/16-utils.md)) | — | **Implemented** (parsers: txt/md/json/csv/html; chunking: fixed_size/sentence/paragraph/recursive; file-resolver: local/http) |
 | `@agent-runtime/adapters-redis` | `RedisMemoryAdapter`, `RedisRunStore`, `RedisMessageBus` (`ioredis`, Redis Streams) | `core` | **Implemented** — **default** for `REDIS_URL` / cluster memory + runs + bus (no vector here) |
 | `@agent-runtime/adapters-upstash` | `UpstashRedisMemoryAdapter`, `UpstashVectorAdapter`, `UpstashRunStore`, `UpstashRedisMessageBus` (HTTP) | `core` | **Implemented** — REST + vector; optional vs TCP Redis |
 | `@agent-runtime/adapters-openai` | `OpenAILLMAdapter`, `OpenAIEmbeddingAdapter` (fetch) | `core` | **Implemented** |
 | `@agent-runtime/adapters-bullmq` | `createEngineQueue`, `createEngineWorker`, `dispatchEngineJob`, `EngineJobPayload` (**BullMQ** — priority async / workers) | `core`, `bullmq` | **Implemented** (orchestrate delayed `resume` in app) |
-| `@agent-runtime/rag` | File-based RAG tools + skills ([`17-rag-pipeline.md`](./core/17-rag-pipeline.md)) | `core`, `utils` | **Implemented** (file_read, file_ingest, file_list tools; rag, rag-reader skills) |
+| `@agent-runtime/rag` | File-based RAG tools + skills ([`17-rag-pipeline.md`](./core/17-rag-pipeline.md)) | `core`, `utils` | **Implemented** (system_file_read, system_file_ingest, system_file_list tools; rag, rag-reader skills) |
 | `@agent-runtime/scaffold` | Programmatic `scaffold.initProject` / `generate*` ([`18-scaffold.md`](./core/18-scaffold.md) API) | `core` | **Implemented** (TS templates, manifest) |
 | `@agent-runtime/cli` | `agent-runtime` binary + `runCli()` (delegates to `scaffold`) | `scaffold` | **Implemented** (argv → scaffold API) |
 
@@ -260,9 +260,9 @@ agent-runtime/                    → repo root (Turborepo)
 │   │   │   │   ├── embedding/
 │   │   │   │   └── vector/
 │   │   │   ├── tools/                → ToolRunner + built-in tool handlers
-│   │   │   │   ├── builtins.ts       → save_memory, get_memory
-│   │   │   │   ├── vectorTools.ts    → vector_search, vector_upsert, vector_delete
-│   │   │   │   └── sendMessage.ts    → send_message (multi-agent)
+│   │   │   │   ├── builtins.ts       → system_save_memory, system_get_memory
+│   │   │   │   ├── vectorTools.ts    → system_vector_search, system_vector_upsert, system_vector_delete
+│   │   │   │   └── sendMessage.ts    → system_send_message (multi-agent)
 │   │   │   ├── protocol/             → Step, ProtocolMessage, RunEnvelope types
 │   │   │   ├── security/             → types (SecurityContext, principal kinds); host SecurityLayer is app-side
 │   │   │   ├── bus/                  → MessageBus interface + InProcessMessageBus
@@ -351,9 +351,9 @@ agent-runtime/                    → repo root (Turborepo)
 │   ├── rag/                          → @agent-runtime/rag (file-based RAG tools)
 │   │   ├── src/
 │   │   │   ├── tools/
-│   │   │   │   ├── fileRead.ts       → file_read tool (resolveSource → parseFile)
-│   │   │   │   ├── fileIngest.ts     → file_ingest tool (resolve → parse → chunk → embed → upsert)
-│   │   │   │   └── fileList.ts       → file_list tool (vector query for ingested docs)
+│   │   │   │   ├── fileRead.ts       → system_file_read tool (resolveSource → parseFile)
+│   │   │   │   ├── fileIngest.ts     → system_file_ingest tool (resolve → parse → chunk → embed → upsert)
+│   │   │   │   └── fileList.ts       → system_file_list tool (vector query for ingested docs)
 │   │   │   ├── skills/
 │   │   │   │   └── rag.ts            → rag + rag-reader skill definitions
 │   │   │   └── index.ts              → getRagRegistrations() + exports
@@ -1084,8 +1084,8 @@ class ToolRunner {
 
 | Tool | Handler |
 |------|---------|
-| `save_memory` | `memoryAdapter.save(scope, memoryType, content)` |
-| `get_memory` | `memoryAdapter.query(scope, memoryType, filter)` |
+| `system_save_memory` | `memoryAdapter.save(scope, memoryType, content)` |
+| `system_get_memory` | `memoryAdapter.query(scope, memoryType, filter)` |
 | `update_state` | Bounded working memory update |
 
 ### 6.2 Vector tools (MVP+) — `packages/core/src/tools`
@@ -1094,9 +1094,9 @@ These only depend on adapter interfaces (`EmbeddingAdapter`, `VectorAdapter`), s
 
 | Tool | Handler flow |
 |------|-------------|
-| `vector_search` | `embed(query)` → `vectorAdapter.query(ns, …)` → results |
-| `vector_upsert` | `embedBatch(contents)` → `vectorAdapter.upsert(ns, docs)` → `{ stored: N }` |
-| `vector_delete` | `vectorAdapter.delete(ns, params)` |
+| `system_vector_search` | `embed(query)` → `vectorAdapter.query(ns, …)` → results |
+| `system_vector_upsert` | `embedBatch(contents)` → `vectorAdapter.upsert(ns, docs)` → `{ stored: N }` |
+| `system_vector_delete` | `vectorAdapter.delete(ns, params)` |
 
 ### 6.3 File / RAG tools (MVP+) — `packages/rag/src/tools`
 
@@ -1104,15 +1104,15 @@ These import from `@agent-runtime/utils` (parsers, chunking, file-resolver), so 
 
 | Tool | Handler flow |
 |------|-------------|
-| `file_read` | `resolveSource` → `parseFile` → `{ content, metadata }` |
-| `file_ingest` | `resolveSource` → `parseFile` → `chunkText` → `embedBatch` → `upsert` → `{ chunksCreated }` |
-| `file_list` | Query document registry from MemoryAdapter |
+| `system_file_read` | `resolveSource` → `parseFile` → `{ content, metadata }` |
+| `system_file_ingest` | `resolveSource` → `parseFile` → `chunkText` → `embedBatch` → `upsert` → `{ chunksCreated }` |
+| `system_file_list` | Query document registry from MemoryAdapter |
 
 ### 6.4 Multi-agent tool
 
 | Tool | Handler |
 |------|---------|
-| `send_message` | `messageBus.send({ to, type, content, correlationId, … })` → `{ success, messageId }` |
+| `system_send_message` | `messageBus.send({ to, type, content, correlationId, … })` → `{ success, messageId }` |
 
 ---
 
@@ -1358,7 +1358,7 @@ Organization (billing, identity)      ← NOT in engine
 ### 11.3 MVP
 
 - In-process (EventEmitter + Map) or Redis-backed bus.
-- `send_message` tool registered where needed.
+- `system_send_message` tool registered where needed.
 - One documented request–reply flow + tests.
 
 ---
@@ -1473,8 +1473,8 @@ RunStore enables `wait`/`resume` across cluster nodes — see [`19-cluster-deplo
 | 26 | Utils: parsers, chunking, file-resolver | `packages/utils` | **Implemented** |
 | 27 | Embedding Adapter interface + OpenAI impl | `packages/core` + `packages/adapters-openai` | **Implemented** |
 | 28 | Vector Adapter interface + Upstash impl | `packages/core` + `packages/adapters-upstash` | **Implemented** |
-| 29 | Vector tools (`vector_search`, `vector_upsert`, `vector_delete`) | `packages/core/src/tools/vectorTools.ts` | **Implemented** |
-| 30 | File tools (`file_read`, `file_ingest`, `file_list`) | `packages/rag/src/tools/` | **Implemented** |
+| 29 | Vector tools (`system_vector_search`, `system_vector_upsert`, `system_vector_delete`) | `packages/core/src/tools/vectorTools.ts` | **Implemented** |
+| 30 | File tools (`system_file_read`, `system_file_ingest`, `system_file_list`) | `packages/rag/src/tools/` | **Implemented** |
 | 31 | RAG skills (`rag`, `rag-reader`) | `packages/rag/src/skills/rag.ts` | **Implemented** |
 
 After Phase 6: `pnpm turbo build` builds all packages in topological order. `@agent-runtime/rag` depends on `core` + `utils`; `core` remains free of internal `workspace:*` dependencies.
@@ -1484,7 +1484,7 @@ After Phase 6: `pnpm turbo build` builds all packages in topological order. `@ag
 | # | Module | Files | Status |
 |---|--------|-------|--------|
 | 32 | MessageBus interface + InProcessMessageBus | `src/bus/MessageBus.ts`, `src/bus/InProcessMessageBus.ts` | **Implemented** |
-| 33 | `send_message` tool | `src/tools/sendMessage.ts` | **Implemented** |
+| 33 | `system_send_message` tool | `src/tools/sendMessage.ts` | **Implemented** |
 | 34 | Request–reply with wait/resume | `src/engine/Engine.ts` | **Implemented** (wait/resume via RunStore) |
 
 ### Phase 8 — CLI + scaffold — `packages/cli` + `packages/scaffold` ✅

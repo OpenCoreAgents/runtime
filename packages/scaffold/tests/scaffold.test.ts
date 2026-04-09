@@ -50,7 +50,7 @@ describe("scaffold", () => {
       projectPath: root,
       agentId: "support-bot",
       skills: [],
-      tools: ["save_memory"],
+      tools: ["system_save_memory"],
     });
     expect(m.created).toContain("agents/support-bot.ts");
   });
@@ -73,7 +73,7 @@ describe("scaffold", () => {
     const m = await scaffold.generateSkill({
       projectPath: root,
       skillId: "intake-summary",
-      tools: ["save_memory"],
+      tools: ["system_save_memory"],
     });
     expect(m.created).toContain("skills/intakeSummary.ts");
   });

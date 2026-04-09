@@ -3,11 +3,11 @@ import type { ChunkOptions } from "@agent-runtime/utils";
 import { runFileIngestPipeline } from "./fileIngestCore.js";
 
 export const fileIngestTool: ToolAdapter = {
-  name: "file_ingest",
+  name: "system_file_ingest",
   description:
     "Ingests a file into the vector knowledge base. " +
     "Reads, splits into chunks, generates embeddings, and stores them. " +
-    "Prefer ingest_rag_source when documents are registered in the RAG file catalog.",
+    "Prefer system_ingest_rag_source when documents are registered in the RAG file catalog.",
   async execute(input: unknown, ctx: ToolContext): Promise<unknown> {
     const o = input as {
       source: string;
@@ -22,7 +22,7 @@ export const fileIngestTool: ToolAdapter = {
 };
 
 export const fileIngestDefinition = {
-  id: "file_ingest",
+  id: "system_file_ingest",
   scope: "global" as const,
   description: fileIngestTool.description!,
   inputSchema: {

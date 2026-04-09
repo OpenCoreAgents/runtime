@@ -5,7 +5,7 @@ export interface SessionOptions {
   /** When set, runs and resumes are rejected after this instant (Unix ms, same as `Date.now()`). */
   expiresAtMs?: number;
   /**
-   * Base directory for `file_read` / `file_ingest` local paths (relative paths resolve under here).
+   * Base directory for `system_file_read` / `system_file_ingest` local paths (relative paths resolve under here).
    * When set, overrides `fileReadRoot` from `AgentRuntime` / `EngineConfig`. HTTP(S) sources ignore this.
    */
   fileReadRoot?: string;
@@ -15,7 +15,7 @@ export interface SessionOptions {
    */
   allowFileReadOutsideRoot?: boolean;
   /**
-   * Explicit opt-in for `file_read` / `file_ingest` when `source` is an http(s) URL
+   * Explicit opt-in for `system_file_read` / `system_file_ingest` when `source` is an http(s) URL
    * (mitigates SSRF from model-controlled URLs).
    */
   allowHttpFileSources?: boolean;

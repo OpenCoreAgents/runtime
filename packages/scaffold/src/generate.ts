@@ -25,7 +25,7 @@ export async function generateAgent(
   if (!agentId) throw new Error("generateAgent: `agentId` is required.");
 
   const skills = opts.skills ?? [];
-  const tools = opts.tools ?? ["save_memory", "get_memory"];
+  const tools = opts.tools ?? ["system_save_memory", "system_get_memory"];
   const withTest = opts.withTest ?? true;
   const model = opts.llmModel?.trim() || "gpt-4o";
   const force = opts.force ?? false;

@@ -6,7 +6,7 @@ export interface RagFileSourceEntry {
   description: string;
   /**
    * Path relative to effective `fileReadRoot` (`Session.fileReadRoot` or `AgentRuntime` default), or http(s) URL when allowed
-   * (same as `file_ingest` `source`).
+   * (same as `system_file_ingest` `source`).
    */
   source: string;
 }

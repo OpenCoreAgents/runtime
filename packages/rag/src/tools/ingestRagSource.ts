@@ -4,10 +4,10 @@ import { resolveRagSource } from "../catalog.js";
 import { runFileIngestPipeline } from "./fileIngestCore.js";
 
 export const ingestRagSourceTool: ToolAdapter = {
-  name: "ingest_rag_source",
+  name: "system_ingest_rag_source",
   description:
     "Ingests a preregistered catalog document into the vector store by id. " +
-    "Call list_rag_sources first if you do not know valid ids.",
+    "Call system_list_rag_sources first if you do not know valid ids.",
   async execute(input: unknown, ctx: ToolContext): Promise<unknown> {
     const o = input as {
       id: string;
@@ -18,7 +18,7 @@ export const ingestRagSourceTool: ToolAdapter = {
     if (!entry) {
       return {
         success: false,
-        error: `Unknown RAG catalog id: ${o.id}. Call list_rag_sources.`,
+        error: `Unknown RAG catalog id: ${o.id}. Call system_list_rag_sources.`,
       };
     }
     return runFileIngestPipeline(ctx, entry.source, {
@@ -33,7 +33,7 @@ export const ingestRagSourceTool: ToolAdapter = {
 };
 
 export const ingestRagSourceDefinition = {
-  id: "ingest_rag_source",
+  id: "system_ingest_rag_source",
   scope: "global" as const,
   description: ingestRagSourceTool.description!,
   inputSchema: {
@@ -41,7 +41,7 @@ export const ingestRagSourceDefinition = {
     properties: {
       id: {
         type: "string",
-        description: "Catalog id from list_rag_sources",
+        description: "Catalog id from system_list_rag_sources",
       },
       chunkStrategy: {
         type: "object",

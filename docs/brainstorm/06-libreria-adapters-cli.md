@@ -100,7 +100,7 @@ interface ToolAdapter {
 
 ### Examples
 
-- `save_memory`: delegates to `MemoryAdapter`.
+- `system_save_memory`: delegates to `MemoryAdapter`.
 - `http_request`: fetch external APIs.
 
 ### Flow
@@ -129,7 +129,7 @@ The CLI uses the same library, prints thoughts/actions to the terminal, and can 
 
 - Agent + `AgentExecution` + loop.
 - Adapters: InMemory + one persistent (e.g. Mongo).
-- Tools: `save_memory`, `http_request` (as needed).
+- Tools: `system_save_memory`, `http_request` (as needed).
 - Promise-style hooks.
 - CLI: run, resume, memory, logs.
 

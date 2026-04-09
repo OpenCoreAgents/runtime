@@ -71,12 +71,12 @@ describe("InMemoryMemoryAdapter end-user scoping (Phase 9.2)", () => {
     expect(await mem.query(s1, "longTerm")).toEqual([{ note: "only-s1" }]);
   });
 
-  it("save_memory longTerm in one session is visible from another session (same endUserId)", async () => {
+  it("system_save_memory longTerm in one session is visible from another session (same endUserId)", async () => {
     const mem = new InMemoryMemoryAdapter();
     const llmS1 = new QueueLLM([
       JSON.stringify({
         type: "action",
-        tool: "save_memory",
+        tool: "system_save_memory",
         input: { memoryType: "longTerm", content: { prefs: "dark" } },
       }),
       JSON.stringify({ type: "result", content: "saved" }),
@@ -84,7 +84,7 @@ describe("InMemoryMemoryAdapter end-user scoping (Phase 9.2)", () => {
     const llmS2 = new QueueLLM([
       JSON.stringify({
         type: "action",
-        tool: "get_memory",
+        tool: "system_get_memory",
         input: { memoryType: "longTerm" },
       }),
       JSON.stringify({ type: "result", content: "done" }),
@@ -95,7 +95,7 @@ describe("InMemoryMemoryAdapter end-user scoping (Phase 9.2)", () => {
       id: "mem-agent",
       projectId: "p-mem",
       systemPrompt: "Test.",
-      tools: ["save_memory", "get_memory"],
+      tools: ["system_save_memory", "system_get_memory"],
       llm: { provider: "openai", model: "gpt-4o" },
     });
 
@@ -113,7 +113,7 @@ describe("InMemoryMemoryAdapter end-user scoping (Phase 9.2)", () => {
       id: "mem-agent",
       projectId: "p-mem",
       systemPrompt: "Test.",
-      tools: ["save_memory", "get_memory"],
+      tools: ["system_save_memory", "system_get_memory"],
       llm: { provider: "openai", model: "gpt-4o" },
     });
 

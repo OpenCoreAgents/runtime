@@ -36,7 +36,7 @@ Generate options (all subcommands):
 
 Generate agent:
   --skills <a,b>    Comma-separated skill ids (default: [])
-  --tools <a,b>     Comma-separated tool ids (default: save_memory,get_memory)
+  --tools <a,b>     Comma-separated tool ids (default: system_save_memory,system_get_memory)
   --llm-model <m>   Model id written into generated agent (default: gpt-4o)
   --with-test       Generate tests/<id>.test.ts (default)
   --no-with-test    Skip companion test file
@@ -233,7 +233,7 @@ async function runGenerateSkill(
   const skillId = positionals[0]?.trim();
   if (!skillId) {
     console.error(
-      "generate skill: missing <id>. Example: agent-runtime generate skill intake-summary --tools save_memory,get_memory",
+      "generate skill: missing <id>. Example: agent-runtime generate skill intake-summary --tools system_save_memory,system_get_memory",
     );
     return 1;
   }

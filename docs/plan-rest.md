@@ -24,7 +24,7 @@
 | `POST` | `/agents/:id/resume` | Body: `runId` + resume payload (same contract as `Agent.resume`). |
 | `GET` | `/agents/:id/memory` | Query scoped memory (design: session vs end-user — align with [`15-multi-tenancy.md`](./core/15-multi-tenancy.md)). |
 | `GET` | `/runs/:runId` or `/agents/:id/logs` | Run history / status for debugging or dashboards. |
-| `POST` | `/agents/:from/send` or bus-specific route | Multi-agent message to another agent (same as `send_message` semantics). |
+| `POST` | `/agents/:from/send` or bus-specific route | Multi-agent message to another agent (same as `system_send_message` semantics). |
 
 **Cross-cutting:** Authentication (API key, JWT, mTLS), **`SecurityContext`** construction, **`SessionExpiredError`** → HTTP **401/403/440** (product choice), idempotency keys for `POST run` if jobs are retried.
 
