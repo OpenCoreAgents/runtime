@@ -67,6 +67,7 @@ For package-level detail, see **`docs/planning/scaffold.md` §0.8** and **§12**
 | 0.20 | Scaffold `packages/adapters-anthropic/` — `workspace:*` → `core` | Same pattern as `adapters-openai` |
 | 0.21 | Scaffold `packages/rest-api/` — `workspace:*` → `core`; optional **`peerDependencies`** on **`adapters-bullmq`**, **`bullmq`** for dispatch tests | Express **`createRuntimeRestRouter`** — contract in **`plan-rest.md`** |
 | 0.22 | Scaffold `packages/conversation-gateway/` — `workspace:*` → `core` | — |
+| 0.23 | Scaffold `packages/code-skills/` — **no** `workspace:*` deps; `skills/*/SKILL.md` for coding assistants + optional `src/index.ts` (`skillsDirectory`, `skillDocsDirectory`, `skillPackagesDirectory`) | Published tarball: `dist/skills/<id>/` with `SKILL.md`, generated `docs/`, `packages/` (see `copy-pack.mjs`) |
 
 **Gate:** `pnpm turbo build` completes for all packages. `pnpm turbo typecheck` passes. All `dist/` dirs created with `index.js` + `index.d.ts`.
 
@@ -316,6 +317,7 @@ flowchart BT
   cli[cli]
   ra[rest-api]
   cg[conversation-gateway]
+  cs[code-skills]
   aht --> core
   dd --> core
   dd --> aht
@@ -334,7 +336,7 @@ flowchart BT
   cli --> sc
 ```
 
-**Also:** **`dynamic-definitions`** may be loaded at runtime by **`core`** via dynamic `import()` when **`dynamicDefinitionsStore`** is set — that path is not a `core` `package.json` dependency. **`rest-api`** lists **`adapters-bullmq`** / **`bullmq`** as **optional peers** (required for dispatch integration tests). **BullMQ** uses Redis TCP — pair with **`adapters-redis`** for shared `REDIS_URL` when it fits your topology. **`scaffold`** has no workspace deps; **`cli`** depends only on **`scaffold`**.
+**Also:** **`code-skills`** has **no** workspace edges (documentation / assistant skill packs only). **`dynamic-definitions`** may be loaded at runtime by **`core`** via dynamic `import()` when **`dynamicDefinitionsStore`** is set — that path is not a `core` `package.json` dependency. **`rest-api`** lists **`adapters-bullmq`** / **`bullmq`** as **optional peers** (required for dispatch integration tests). **BullMQ** uses Redis TCP — pair with **`adapters-redis`** for shared `REDIS_URL` when it fits your topology. **`scaffold`** has no workspace deps; **`cli`** depends only on **`scaffold`**.
 
 ---
 
@@ -342,7 +344,7 @@ flowchart BT
 
 | Phase | I know it works when… |
 |-------|----------------------|
-| 0 | `pnpm turbo build` compiles all **fourteen** workspace packages (`adapters-redis`, **`adapters-bullmq`**, **`dynamic-definitions`**, **`rest-api`**, …) |
+| 0 | `pnpm turbo build` compiles all **fifteen** workspace packages (`adapters-redis`, **`adapters-bullmq`**, **`dynamic-definitions`**, **`rest-api`**, **`code-skills`**, …) |
 | 1 | **`AgentRuntime`** + mock LLM: thought→action→result with in-memory adapters |
 | 2 | `RedisMemoryAdapter` / `RedisRunStore` / `RedisMessageBus` + `ioredis` — data and runs survive restart on TCP Redis |
 | 2a | Same persistence story with `UpstashRedisMemoryAdapter` (REST) when you choose Upstash instead of TCP |

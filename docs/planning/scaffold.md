@@ -219,6 +219,7 @@ Packages reference each other with `"workspace:*"` in `dependencies`:
 @opencoreagents/rag                → depends on @opencoreagents/core + **utils**
 @opencoreagents/scaffold           → no workspace deps today (templates reference **`@opencoreagents/core`** in generated apps)
 @opencoreagents/cli                → depends on **scaffold** only
+@opencoreagents/code-skills        → no workspace deps — **`SKILL.md`** packs for Cursor / Claude / Codex (+ `skillsDirectory`, `skillDocsDirectory`, `skillPackagesDirectory`); not engine **`Skill.define`**
 ```
 
 RAG tools that import utils (e.g. `system_file_ingest`, `system_file_read`) live in `@opencoreagents/rag` to keep `core` free of internal dependencies. Built-in tools that only need `MemoryAdapter` (`system_save_memory`, `system_get_memory`, `update_state`) and vector tools that only need adapter interfaces (`system_vector_search`, `system_vector_upsert`, `system_vector_delete`) remain in `core`.
@@ -227,7 +228,7 @@ Turborepo `^build` in `dependsOn` ensures transitive builds run in correct order
 
 ### 0.8 Per-package inventory (all workspace packages)
 
-**Fourteen** packages under `packages/`. Edges match §0.7; **status** reflects this repository (incremental implementation). The **Workspace / npm deps** column lists `workspace:*` edges plus notable npm packages; optional **peer** deps are called out where they matter for builds/tests.
+**Fifteen** packages under `packages/`. Edges match §0.7; **status** reflects this repository (incremental implementation). The **Workspace / npm deps** column lists `workspace:*` edges plus notable npm packages; optional **peer** deps are called out where they matter for builds/tests.
 
 | Package | Role | Workspace / npm deps | Status (typical) |
 |---------|------|----------------------|------------------|
@@ -245,6 +246,7 @@ Turborepo `^build` in `dependsOn` ensures transitive builds run in correct order
 | `@opencoreagents/rag` | File-based RAG tools + skills ([`17-rag-pipeline.md`](../core/17-rag-pipeline.md)) | `core`, `utils` | **Implemented** (system_file_read, system_file_ingest, system_file_list tools; rag, rag-reader skills) |
 | `@opencoreagents/scaffold` | Programmatic `scaffold.initProject` / `generate*` ([`18-scaffold.md`](../core/18-scaffold.md) API) | — *(no `workspace:*` in repo `package.json`)* | **Implemented** (TS templates, manifest) |
 | `@opencoreagents/cli` | `runtime` binary + `runCli()` (delegates to `scaffold`) | `scaffold` | **Implemented** (argv → scaffold API) |
+| `@opencoreagents/code-skills` | **`SKILL.md`** + per-skill **`docs/`** / **`packages/`** (build); `skillsDirectory`, `skillDocsDirectory`, `skillPackagesDirectory`, `skillIds` — [`packages/code-skills/README.md`](../../packages/code-skills/README.md) | — | **Implemented** |
 
 ---
 
@@ -415,6 +417,16 @@ agents/                    → repo root (Turborepo)
 │   │   ├── package.json              → deps: @opencoreagents/core, @opencoreagents/utils (workspace:*)
 │   │   ├── tsconfig.json
 │   │   └── tsup.config.ts
+│   │
+│   ├── code-skills/                  → @opencoreagents/code-skills (assistant SKILL.md packs; ESM-only dist)
+│   │   ├── skills/                   → opencoreagents-*/SKILL.md (Cursor / Claude / Codex)
+│   │   ├── scripts/copy-pack.mjs     → build: hydrate each skills/<id>/docs + packages/, then copy skills/ → dist/skills/
+│   │   ├── src/index.ts              → skillsDirectory, skillIds, skillDocsDirectory, skillPackagesDirectory
+│   │   ├── tests/
+│   │   ├── package.json              → no workspace deps
+│   │   ├── tsconfig.json
+│   │   ├── tsup.config.ts
+│   │   └── vitest.config.ts
 │   │
 │   └── scaffold/                     → @opencoreagents/scaffold (programmatic API + templates)
 │       ├── src/
@@ -1442,7 +1454,7 @@ Each phase builds on the previous. Interfaces from §2 are implemented progressi
 | 0l | `pnpm install` | Verify workspace links |
 | 0m | Verify `pnpm turbo build` runs all packages in order | — |
 | 0n | Add root `eslint.config.mjs` (or `.eslintrc.cjs`), `.prettierrc`, `.gitignore` | — |
-| 0o | Add remaining workspace packages | **`adapters-http-tool`** → **`dynamic-definitions`** → **`adapters-redis`** (depends on both + core), **`adapters-bullmq`**, **`adapters-anthropic`**, **`rest-api`**, **`conversation-gateway`** — numbered steps **0.16–0.22** in [`plan.md`](./plan.md) Phase 0; dependency graph in same section |
+| 0o | Add remaining workspace packages | **`adapters-http-tool`** → **`dynamic-definitions`** → **`adapters-redis`** (depends on both + core), **`adapters-bullmq`**, **`adapters-anthropic`**, **`rest-api`**, **`conversation-gateway`**, **`code-skills`** — numbered steps **0.16–0.23** in [`plan.md`](./plan.md) Phase 0; dependency graph in same section |
 
 ### Phase 1 — Core loop (no persistence) — `packages/core`
 
@@ -1553,7 +1565,7 @@ After Phase 6: `pnpm turbo build` builds all packages in topological order. `@op
 | 36 | CLI commands (init, generate) — argv parsing, exit codes | `packages/cli` | **Implemented** |
 | 37 | Project templates (TypeScript modules returning file trees) | `packages/scaffold/src/templates/` (`default`, `minimal`, `multi-agent`) | **Implemented** |
 
-**In-repo status:** Phases **0–4**, **4b** (RunStore), **5** (**`adapters-bullmq`** — BullMQ priority), and **6–8** (RAG, multi-agent, CLI + scaffold) are implemented — `pnpm turbo run build test lint` passes for all **fourteen** workspace packages under `packages/`. **CI:** `.github/workflows/ci.yml` runs the same pipeline on push/PR. **QStash** is not a package; integrate via HTTP if needed (see [`19-cluster-deployment.md`](../core/19-cluster-deployment.md)). **Phase 9** (full integration hardening, including optional E2E with live keys) is partial. See **`docs/planning/plan.md` → Progress snapshot**.
+**In-repo status:** Phases **0–4**, **4b** (RunStore), **5** (**`adapters-bullmq`** — BullMQ priority), and **6–8** (RAG, multi-agent, CLI + scaffold) are implemented — `pnpm turbo run build test lint` passes for all **fifteen** workspace packages under `packages/`. **CI:** `.github/workflows/ci.yml` runs the same pipeline on push/PR. **QStash** is not a package; integrate via HTTP if needed (see [`19-cluster-deployment.md`](../core/19-cluster-deployment.md)). **Phase 9** (full integration hardening, including optional E2E with live keys) is partial. See **`docs/planning/plan.md` → Progress snapshot**.
 
 ---
 

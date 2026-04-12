@@ -294,6 +294,8 @@ importers:
         specifier: workspace:*
         version: link:../scaffold
 
+  packages/code-skills: {}
+
   packages/conversation-gateway:
     dependencies:
       '@opencoreagents/core':

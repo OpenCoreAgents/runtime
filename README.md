@@ -56,7 +56,7 @@ There is also an optional path where **prompts and tool configs live in Redis** 
 
 Stateful **engine**: protocol loop, pluggable adapters (LLM, memory, vector, queues), RAG and multi-agent helpers, CLI/scaffold.
 
-Fourteen **`@opencoreagents/*`** packages in **`packages/`** (see [Packages](#packages) below). Registry releases, when used, are **maintainer-only**: [GitHub Packages](#github-packages).
+Fifteen **`@opencoreagents/*`** packages in **`packages/`** (see [Packages](#packages) below). Registry releases, when used, are **maintainer-only**: [GitHub Packages](#github-packages).
 
 ---
 
@@ -250,6 +250,12 @@ Your **HTTP control plane** (Express or any framework) typically **writes defini
 |---------|------|
 | [`@opencoreagents/cli`](packages/cli/README.md) | `runtime` CLI (`init`, `generate`, …) |
 | [`@opencoreagents/scaffold`](packages/scaffold/README.md) | Programmatic project generation |
+
+### Assistant skills (Cursor / Claude / Codex)
+
+| Package | Role |
+|---------|------|
+| [`@opencoreagents/code-skills`](packages/code-skills/README.md) | **`SKILL.md`** packs so coding assistants know how to use this monorepo’s libraries and docs (not engine `Skill.define`) |
 
 ---
 
