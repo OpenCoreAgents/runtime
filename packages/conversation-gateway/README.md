@@ -1,4 +1,4 @@
-# @agent-runtime/conversation-gateway
+# @opencoreagents/conversation-gateway
 
 Channel-agnostic **inbound message → `Agent.run` / `resume` → outbound reply** orchestration.
 

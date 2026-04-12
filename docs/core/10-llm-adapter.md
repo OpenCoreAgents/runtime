@@ -55,12 +55,12 @@ After each `generate` call, **`executeRun`** runs **`normalizeLlmStepContent`**:
 - **`llmAdapter`** — default when `agent.llm.provider` has no dedicated entry.
 - **`llmAdaptersByProvider`** — `Record<string, LLMAdapter>`; the engine picks `llmAdaptersByProvider[agent.llm.provider]` when that key exists (trimmed provider string; empty/missing provider uses `"default"`).
 
-You must set **`llmAdapter`** and/or a **non-empty** provider map. Helpers can call **`resolveLlmAdapterForProvider`** (exported from `@agent-runtime/core`) with the same config shape.
+You must set **`llmAdapter`** and/or a **non-empty** provider map. Helpers can call **`resolveLlmAdapterForProvider`** (exported from `@opencoreagents/core`) with the same config shape.
 
 Reference implementations in this repository:
 
-- **`@agent-runtime/adapters-openai`** — `OpenAILLMAdapter`, `OpenAIEmbeddingAdapter`
-- **`@agent-runtime/adapters-anthropic`** — `AnthropicLLMAdapter`
+- **`@opencoreagents/adapters-openai`** — `OpenAILLMAdapter`, `OpenAIEmbeddingAdapter`
+- **`@opencoreagents/adapters-anthropic`** — `AnthropicLLMAdapter`
 
 ---
 

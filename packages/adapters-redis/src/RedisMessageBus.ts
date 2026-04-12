@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import type { AgentMessage, MessageBus } from "@agent-runtime/core";
+import type { AgentMessage, MessageBus } from "@opencoreagents/core";
 import type Redis from "ioredis";
 
 /**

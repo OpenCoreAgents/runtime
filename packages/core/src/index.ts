@@ -15,7 +15,14 @@ export {
   applyRuntimeToolAllowlist,
   effectiveToolAllowlist,
 } from "./define/effectiveToolAllowlist.js";
-export { getAgentDefinition, resolveToolRegistry } from "./define/registry.js";
+export {
+  getAgentDefinition,
+  getToolDefinition,
+  listAgentIdsForProject,
+  registerToolDefinition,
+  registerToolHandler,
+  resolveToolRegistry,
+} from "./define/registry.js";
 
 export type * from "./types.js";
 
@@ -23,6 +30,13 @@ export { watchUsage } from "./engine/watchUsage.js";
 export { createRun, executeRun } from "./engine/Engine.js";
 export { normalizeLlmStepContent } from "./engine/normalizeLlmStepContent.js";
 export { buildEngineDeps, securityContextForAgent } from "./engine/buildEngineDeps.js";
+export { dispatchEngineJob } from "./engine/dispatchJob.js";
+export type {
+  EngineJobPayload,
+  EngineResumeInput,
+  EngineResumeJobPayload,
+  EngineRunJobPayload,
+} from "./engine/engineJobPayload.js";
 
 export {
   EngineError,

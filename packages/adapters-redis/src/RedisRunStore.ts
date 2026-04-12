@@ -1,4 +1,4 @@
-import type { Run, RunStatus, RunStore } from "@agent-runtime/core";
+import type { Run, RunStatus, RunStore } from "@opencoreagents/core";
 import type Redis from "ioredis";
 
 /**

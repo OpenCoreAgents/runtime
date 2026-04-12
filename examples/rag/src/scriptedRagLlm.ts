@@ -6,7 +6,7 @@
  *
  * @see [`examples/openai-tools-skill`](../../openai-tools-skill/) for **`OpenAILLMAdapter`** without a wrapper.
  */
-import type { LLMAdapter, LLMRequest, LLMResponse } from "@agent-runtime/core";
+import type { LLMAdapter, LLMRequest, LLMResponse } from "@opencoreagents/core";
 
 export interface ScriptedRagLlmOptions {
   /** Must match a catalog entry id for the agent’s project (`registerRagCatalog` or global register). */

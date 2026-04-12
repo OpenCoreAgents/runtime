@@ -1,0 +1,51 @@
+{
+  "name": "@opencoreagents/rest-api",
+  "version": "0.0.0",
+  "private": true,
+  "license": "Apache-2.0",
+  "description": "Express router: plan-rest-shaped JSON API — inline Agent.run or optional BullMQ dispatch (like dynamic-runtime-rest)",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run --config vitest.config.ts",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src/",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@opencoreagents/core": "workspace:*",
+    "express": "^4.21.2"
+  },
+  "peerDependencies": {
+    "@opencoreagents/adapters-bullmq": ">=0.0.0",
+    "bullmq": ">=5"
+  },
+  "peerDependenciesMeta": {
+    "@opencoreagents/adapters-bullmq": {
+      "optional": true
+    },
+    "bullmq": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@opencoreagents/adapters-bullmq": "workspace:*",
+    "@types/express": "^5.0.0",
+    "@types/supertest": "^6.0.2",
+    "bullmq": "^5.73.1",
+    "supertest": "^7.0.0",
+    "typescript": "^5.7.3",
+    "vitest": "^3"
+  }
+}

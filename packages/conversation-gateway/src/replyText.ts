@@ -1,4 +1,4 @@
-import type { Run } from "@agent-runtime/core";
+import type { Run } from "@opencoreagents/core";
 
 /**
  * Best-effort assistant reply string from run history (last `result` step).

@@ -20,7 +20,7 @@ From the repository root:
 
 ```bash
 pnpm install
-pnpm turbo run build --filter=@agent-runtime/core --filter=@agent-runtime/adapters-openai --filter=@agent-runtime/adapters-anthropic
+pnpm turbo run build --filter=@opencoreagents/core --filter=@opencoreagents/adapters-openai --filter=@opencoreagents/adapters-anthropic
 ```
 
 Optional: copy [`.env.example`](./.env.example) to `.env`. Set **`OPENAI_API_KEY`** and/or **`ANTHROPIC_API_KEY`** for real chat (if both are set, OpenAI is used unless **`EXPRESS_LLM_PROVIDER=anthropic`**); set **`API_KEY`** to require `Authorization: Bearer …` on **`/v1/*`**.
@@ -28,7 +28,7 @@ Optional: copy [`.env.example`](./.env.example) to `.env`. Set **`OPENAI_API_KEY
 ## Run
 
 ```bash
-pnpm --filter @agent-runtime/example-real-world-with-express start
+pnpm --filter @opencoreagents/example-real-world-with-express start
 ```
 
 Default URL: `http://127.0.0.1:3000` (override with **`PORT`**). Open **`http://127.0.0.1:3000/`** in a browser for the **HTML/JS** demo (paste **`API_KEY`** in the page if the server requires it).
@@ -108,5 +108,5 @@ The composite LLM in [`src/llm.ts`](./src/llm.ts) routes by markers in the agent
 ## Typecheck
 
 ```bash
-pnpm --filter @agent-runtime/example-real-world-with-express run typecheck
+pnpm --filter @opencoreagents/example-real-world-with-express run typecheck
 ```

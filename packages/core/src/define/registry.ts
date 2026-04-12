@@ -80,6 +80,15 @@ export function getAgentDefinition(
   return projectAgents.get(projectId)?.get(agentId) ?? globalAgents.get(agentId);
 }
 
+/** Ids for which {@link getAgentDefinition} would succeed (project-scoped for `projectId` plus global agents). */
+export function listAgentIdsForProject(projectId: string): string[] {
+  const ids = new Set<string>();
+  const inProject = projectAgents.get(projectId);
+  if (inProject) for (const id of inProject.keys()) ids.add(id);
+  for (const id of globalAgents.keys()) ids.add(id);
+  return [...ids].sort();
+}
+
 export function resolveToolRegistry(_projectId: string): Map<string, ToolAdapter> {
   return new Map(toolHandlers);
 }

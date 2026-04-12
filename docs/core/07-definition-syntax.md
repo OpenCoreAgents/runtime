@@ -227,14 +227,14 @@ Typical registration order:
 new AgentRuntime({ ... })  →  Tool.define (custom)  →  Skill.define  →  Agent.define  →  Agent.load(id, runtime, { session }) + run
 ```
 
-Construct **`AgentRuntime`** once per worker (or process) before **`Agent.load`**. Its constructor registers **built-in** memory tools **`system_save_memory`** and **`system_get_memory`**; with **`embeddingAdapter`** and **`vectorAdapter`**, also **`system_vector_search`**, **`system_vector_upsert`**, and **`system_vector_delete`**; with **`messageBus`**, **`system_send_message`**. **`@agent-runtime/rag`** (e.g. **`registerRagToolsAndSkills()`**) adds catalog and file tools with the same **`system_`** prefix: **`system_list_rag_sources`**, **`system_ingest_rag_source`**, **`system_file_read`**, **`system_file_ingest`**, **`system_file_list`**. You do **not** `Tool.define` these unless you are replacing defaults (advanced).
+Construct **`AgentRuntime`** once per worker (or process) before **`Agent.load`**. Its constructor registers **built-in** memory tools **`system_save_memory`** and **`system_get_memory`**; with **`embeddingAdapter`** and **`vectorAdapter`**, also **`system_vector_search`**, **`system_vector_upsert`**, and **`system_vector_delete`**; with **`messageBus`**, **`system_send_message`**. **`@opencoreagents/rag`** (e.g. **`registerRagToolsAndSkills()`**) adds catalog and file tools with the same **`system_`** prefix: **`system_list_rag_sources`**, **`system_ingest_rag_source`**, **`system_file_read`**, **`system_file_ingest`**, **`system_file_list`**. You do **not** `Tool.define` these unless you are replacing defaults (advanced).
 
 ### 9.0 `system_*` tool ids (reference)
 
 | Package | Constants | Ids |
 |---------|-----------|-----|
-| **`@agent-runtime/core`** | **`CORE_SYSTEM_TOOL_IDS`**, **`isCoreSystemToolId()`** | **`system_save_memory`**, **`system_get_memory`**, **`system_vector_search`**, **`system_vector_upsert`**, **`system_vector_delete`**, **`system_send_message`** |
-| **`@agent-runtime/rag`** | **`RAG_SYSTEM_TOOL_IDS`**, **`isRagSystemToolId()`** | **`system_list_rag_sources`**, **`system_ingest_rag_source`**, **`system_file_read`**, **`system_file_ingest`**, **`system_file_list`** |
+| **`@opencoreagents/core`** | **`CORE_SYSTEM_TOOL_IDS`**, **`isCoreSystemToolId()`** | **`system_save_memory`**, **`system_get_memory`**, **`system_vector_search`**, **`system_vector_upsert`**, **`system_vector_delete`**, **`system_send_message`** |
+| **`@opencoreagents/rag`** | **`RAG_SYSTEM_TOOL_IDS`**, **`isRagSystemToolId()`** | **`system_list_rag_sources`**, **`system_ingest_rag_source`**, **`system_file_read`**, **`system_file_ingest`**, **`system_file_list`** |
 
 Handlers for vector and messaging tools are registered only when the corresponding **`AgentRuntime`** options are set; the id list is still stable for allowlists and prompts.
 
@@ -245,7 +245,7 @@ The following objects are **conceptually equivalent** to the JSON in §1 and §8
 Registers a **custom** tool in the engine catalog (name exposed to the LLM + metadata + scope). Pass **`execute`** so the handler is registered in the same call.
 
 ```typescript
-import { Tool } from "@agent-runtime/core";
+import { Tool } from "@opencoreagents/core";
 
 // Example: global custom tool (all projects)
 await Tool.define({
@@ -261,7 +261,7 @@ await Tool.define({
   execute: async (input) => ({ ticket: { id: (input as { id: string }).id, status: "open" } }),
 });
 
-// Built-ins: memory + vector + messaging from AgentRuntime; RAG/file tools from @agent-runtime/rag — all `system_*` ids; shapes in §8 / 17-rag-pipeline.md; not re-defined here unless you replace defaults.
+// Built-ins: memory + vector + messaging from AgentRuntime; RAG/file tools from @opencoreagents/rag — all `system_*` ids; shapes in §8 / 17-rag-pipeline.md; not re-defined here unless you replace defaults.
 
 // Project-scoped tool (multi-tenant)
 await Tool.define({
@@ -283,14 +283,14 @@ await Tool.define({
 });
 ```
 
-**Implementation note**: with `Tool.define({ ..., execute })`, the handler is registered in-process under `def.id`. Without `execute`, only the definition is stored — the engine still needs a matching `registerToolHandler` from your bootstrap (unusual for app code).
+**Implementation note**: with `Tool.define({ ..., execute })`, the handler is registered in-process under `def.id`. Without `execute`, only the definition is stored — the engine still needs a matching **`registerToolHandler`** (or **`registerToolDefinition`** + **`registerToolHandler`**) from your bootstrap. For **JSON-only HTTP integrations**, use **`@opencoreagents/adapters-http-tool`** and **`registerHttpToolsFromDefinitions`** — [20-http-tool-adapter.md](./20-http-tool-adapter.md).
 
 ### 9.2 `Skill.define`
 
 Registers a reusable skill that references tools by `id`. In **TypeScript source**, put **`execute` on `def`** when the skill has imperative logic. The optional **second argument** exists only for **§9.2b** (JSON from Redis/DB): it attaches `execute` when the parsed row cannot carry a function. If `def` already includes `execute`, the second argument is **ignored**.
 
 ```typescript
-import { Skill } from "@agent-runtime/core";
+import { Skill } from "@opencoreagents/core";
 
 await Skill.define({
   id: "intakeSummary",
@@ -338,7 +338,7 @@ import {
   Skill,
   type SkillDefinitionPersisted,
   type SkillExecute,
-} from "@agent-runtime/core";
+} from "@opencoreagents/core";
 
 const skillExecutes: Partial<Record<string, SkillExecute>> = {
   workflowHandoff: async ({ input, context }) => ({ suggestedPriority: "high" }),
@@ -355,14 +355,14 @@ await Skill.defineBatch(list, skillExecutes);
 
 Validate or schema-check parsed JSON in production before registering; `as SkillDefinitionPersisted` is only for the type checker.
 
-**Cluster**: each worker registers locally after reading the same data (boot or pub/sub). No Redis client in `@agent-runtime/core` — see [19-cluster-deployment.md](./19-cluster-deployment.md) §1.1.
+**Cluster**: each worker registers locally after reading the same data (boot or pub/sub). No Redis client in `@opencoreagents/core` — see [19-cluster-deployment.md](./19-cluster-deployment.md) §1.1.
 
 ### 9.3 `Agent.define`
 
 Persists the agent definition aligned with §1 (`systemPrompt`, `tools`, `skills`, `memoryConfig`, `llm`).
 
 ```typescript
-import { Agent } from "@agent-runtime/core";
+import { Agent } from "@opencoreagents/core";
 
 await Agent.define({
   id: "ops-analyst",
@@ -388,7 +388,7 @@ await Agent.define({
 Instantiate an agent already defined in the store, with a **session** to scope memory/history.
 
 ```typescript
-import { Agent, AgentRuntime, Session } from "@agent-runtime/core";
+import { Agent, AgentRuntime, Session } from "@opencoreagents/core";
 
 const runtime = new AgentRuntime({
   // llmAdapter, memoryAdapter, runStore?, …
@@ -420,7 +420,7 @@ await agent
 End-user facing session (B2B2C — e.g. support bot):
 
 ```typescript
-import { Agent, AgentRuntime, Session } from "@agent-runtime/core";
+import { Agent, AgentRuntime, Session } from "@opencoreagents/core";
 
 const runtime = new AgentRuntime({
   // llmAdapter, memoryAdapter, …
@@ -452,7 +452,7 @@ import {
   createRun,
   executeRun,
   getAgentDefinition,
-} from "@agent-runtime/core";
+} from "@opencoreagents/core";
 
 const runtime = new AgentRuntime({
   // llmAdapter, memoryAdapter, runStore?, …

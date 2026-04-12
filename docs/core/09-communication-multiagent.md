@@ -55,7 +55,7 @@ interface MessageBus {
 }
 ```
 
-Implementations in this repo: **`InProcessMessageBus`** (single process); **`RedisMessageBus`** (`@agent-runtime/adapters-redis`, TCP `ioredis` — **preferred** for cluster); **`UpstashRedisMessageBus`** (`@agent-runtime/adapters-upstash`, Redis Streams over REST). Other patterns (Redis lists, BullMQ as transport) are possible in your app. See [19-cluster-deployment.md §5](./19-cluster-deployment.md).
+Implementations in this repo: **`InProcessMessageBus`** (single process); **`RedisMessageBus`** (`@opencoreagents/adapters-redis`, TCP `ioredis` — **preferred** for cluster); **`UpstashRedisMessageBus`** (`@opencoreagents/adapters-upstash`, Redis Streams over REST). Other patterns (Redis lists, BullMQ as transport) are possible in your app. See [19-cluster-deployment.md §5](./19-cluster-deployment.md).
 
 ---
 

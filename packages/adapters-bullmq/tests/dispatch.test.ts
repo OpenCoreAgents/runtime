@@ -7,10 +7,10 @@ import {
   InMemoryMemoryAdapter,
   InMemoryRunStore,
   clearAllRegistriesForTests,
-} from "@agent-runtime/core";
-import type { LLMAdapter, LLMRequest, LLMResponse } from "@agent-runtime/core";
+} from "@opencoreagents/core";
+import type { LLMAdapter, LLMRequest, LLMResponse } from "@opencoreagents/core";
 import Redis from "ioredis-mock";
-import { RedisMemoryAdapter } from "@agent-runtime/adapters-redis";
+import { RedisMemoryAdapter } from "@opencoreagents/adapters-redis";
 import { dispatchEngineJob } from "../src/dispatch.js";
 
 class QueueLLM implements LLMAdapter {

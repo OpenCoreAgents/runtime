@@ -1,5 +1,5 @@
 {
-  "name": "@agent-runtime/example-telegram-mocked",
+  "name": "@opencoreagents/example-telegram-mocked",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -9,8 +9,8 @@
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
-    "@agent-runtime/conversation-gateway": "workspace:*",
-    "@agent-runtime/core": "workspace:*"
+    "@opencoreagents/conversation-gateway": "workspace:*",
+    "@opencoreagents/core": "workspace:*"
   },
   "devDependencies": {
     "tsx": "^4.19.3",

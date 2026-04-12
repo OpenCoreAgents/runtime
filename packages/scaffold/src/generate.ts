@@ -35,7 +35,7 @@ export async function generateAgent(
   const skillsJson = JSON.stringify(skills);
   const toolsJson = JSON.stringify(tools);
 
-  const contents = `import { Agent, Session, type AgentRuntime, type SessionOptions } from "@agent-runtime/core";
+  const contents = `import { Agent, Session, type AgentRuntime, type SessionOptions } from "@opencoreagents/core";
 
 const SYSTEM = "You are ${agentId}. Each model turn must be a single JSON Step object.";
 
@@ -103,7 +103,7 @@ export async function generateTool(
   const base = toolFileBase(opts.toolId);
   const rel = `tools/${base}.ts`;
 
-  const contents = `import { Tool } from "@agent-runtime/core";
+  const contents = `import { Tool } from "@opencoreagents/core";
 
 export async function register${toPascal(base)}Tool(): Promise<void> {
   await Tool.define({
@@ -147,7 +147,7 @@ export async function generateSkill(
   const rel = `skills/${skillCamel}.ts`;
   const toolsJson = JSON.stringify(tools);
 
-  const contents = `import { Skill } from "@agent-runtime/core";
+  const contents = `import { Skill } from "@opencoreagents/core";
 
 export async function register${toPascal(skillCamel)}Skill(): Promise<void> {
   await Skill.define({

@@ -2,7 +2,9 @@
 
 How the platform maps **business entities** (organizations, teams, end-users) to **engine primitives** (`projectId`, `sessionId`, `SecurityContext`) without polluting the core loop.
 
-Related: [08-scope-and-security.md](./08-scope-and-security.md) (scope levels, SecurityLayer), [07-definition-syntax.md](./07-definition-syntax.md) (Session, SecurityContext types), [05-adapters.md](./05-adapters.md) (memory key patterns).
+Related: [08-scope-and-security.md](./08-scope-and-security.md) (scope levels, SecurityLayer), [07-definition-syntax.md](./07-definition-syntax.md) (Session, SecurityContext types), [05-adapters.md](./05-adapters.md) (memory key patterns), [21-dynamic-runtime-rest.md](./21-dynamic-runtime-rest.md) (REST/store definitions).
+
+Definitions ingested through **`@opencoreagents/dynamic-definitions`** are **project-scoped only**; `scope: "global"` is **not allowed** there. **`scope: "global"`** remains for **built-ins** (`system_*`, etc.) and for **`Tool.define` / `Skill.define` in your application code** when you intentionally share a catalog across all projects. See [21-dynamic-runtime-rest.md §3.1](./21-dynamic-runtime-rest.md#31-project-isolation-vs-scope-global).
 
 ---
 
@@ -130,7 +132,7 @@ When `endUserId` is present in the session, the **MemoryAdapter** uses it as the
 ### 4.4 Session with end-user
 
 ```typescript
-import { Agent, AgentRuntime, Session, InMemoryMemoryAdapter } from "@agent-runtime/core";
+import { Agent, AgentRuntime, Session, InMemoryMemoryAdapter } from "@opencoreagents/core";
 
 const runtime = new AgentRuntime({
   llmAdapter: chatAdapter, // your LLMAdapter

@@ -1,4 +1,4 @@
-import type { SkillDefinition } from "@agent-runtime/core";
+import type { SkillDefinition } from "@opencoreagents/core";
 
 export const ragSkill: SkillDefinition = {
   id: "rag",

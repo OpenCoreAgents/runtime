@@ -2,14 +2,14 @@
  * Multi-agent demo: InProcessMessageBus + system_send_message (event + request/reply).
  * Mock LLM only — no API keys. See ../README.md.
  */
-import type { LLMAdapter, LLMRequest, LLMResponse } from "@agent-runtime/core";
+import type { LLMAdapter, LLMRequest, LLMResponse } from "@opencoreagents/core";
 import {
   Agent,
   AgentRuntime,
   Session,
   InMemoryMemoryAdapter,
   InProcessMessageBus,
-} from "@agent-runtime/core";
+} from "@opencoreagents/core";
 import {
   DEMO_EVENT_LLM_STEPS,
   demoRequestReplyLlmSteps,

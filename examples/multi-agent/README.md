@@ -20,7 +20,7 @@ import {
   Session,
   InMemoryMemoryAdapter,
   InProcessMessageBus,
-} from "@agent-runtime/core";
+} from "@opencoreagents/core";
 
 const bus = new InProcessMessageBus();
 const session = new Session({ id: "s1", projectId: "my-project" });
@@ -73,14 +73,14 @@ const reply = await replyPromise;
 
 ```bash
 # from repository root
-pnpm turbo run build --filter=@agent-runtime/core
+pnpm turbo run build --filter=@opencoreagents/core
 ```
 
 ## Run
 
 ```bash
 pnpm install
-pnpm --filter @agent-runtime/example-multi-agent start
+pnpm --filter @opencoreagents/example-multi-agent start
 ```
 
 Or from this directory:

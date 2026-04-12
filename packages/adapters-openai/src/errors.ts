@@ -3,7 +3,7 @@ import {
   LLMRateLimitError,
   LLMTransportError,
   RunCancelledError,
-} from "@agent-runtime/core";
+} from "@opencoreagents/core";
 
 /** Maps OpenAI HTTP status to engine LLM errors (plan Phase 3.2). */
 export function throwForOpenAIHttpStatus(status: number, detail: string): never {

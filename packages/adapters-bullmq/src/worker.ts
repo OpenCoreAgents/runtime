@@ -6,7 +6,7 @@ export const DEFAULT_ENGINE_QUEUE_NAME = "agent-engine-runs";
 
 /**
  * BullMQ {@link Worker} that receives {@link EngineJobPayload} jobs.
- * The `processor` typically calls {@link dispatchEngineJob} or your own `buildEngineDeps` + `executeRun` flow.
+ * The `processor` typically calls {@link AgentRuntime.dispatch} or {@link dispatchEngineJob} (same) or your own `buildEngineDeps` + `executeRun` flow.
  */
 export function createEngineWorker(
   queueName: string,

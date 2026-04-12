@@ -1,4 +1,4 @@
-import { Agent, Session, type Run } from "@agent-runtime/core";
+import { Agent, Session, type Run } from "@opencoreagents/core";
 import type { ConversationGatewayConfig, NormalizedInboundMessage } from "./types.js";
 import { replyTextFromRun } from "./replyText.js";
 

@@ -1,0 +1,21 @@
+{
+  "name": "@opencoreagents/example-plan-rest-express",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Minimal Express server using @opencoreagents/rest-api after Agent.define (plan-rest-shaped JSON API).",
+  "scripts": {
+    "start": "tsx src/server.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@opencoreagents/core": "workspace:*",
+    "@opencoreagents/rest-api": "workspace:*",
+    "express": "^4.21.2"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "tsx": "^4.19.3",
+    "typescript": "^5.7.3"
+  }
+}

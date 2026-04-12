@@ -21,7 +21,7 @@ export function minimalTemplateFiles(opts: {
           typecheck: "tsc --noEmit",
         },
         dependencies: {
-          "@agent-runtime/core": "^0.0.0",
+          "@opencoreagents/core": "^0.0.0",
         },
         devDependencies: {
           "@types/node": "^22",
@@ -56,8 +56,8 @@ REDIS_URL=
 
     "config/runtime.ts": buildRuntimeTs({ adapter, llm }),
 
-    "agent.ts": `import type { LLMAdapter, LLMRequest, LLMResponse } from "@agent-runtime/core";
-import { Agent, AgentRuntime, InMemoryMemoryAdapter, Session } from "@agent-runtime/core";
+    "agent.ts": `import type { LLMAdapter, LLMRequest, LLMResponse } from "@opencoreagents/core";
+import { Agent, AgentRuntime, InMemoryMemoryAdapter, Session } from "@opencoreagents/core";
 
 const SYSTEM = "Minimal single-file agent. Respond with one JSON Step per turn.";
 

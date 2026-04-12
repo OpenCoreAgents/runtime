@@ -1,5 +1,5 @@
-import type { ToolAdapter, ToolContext } from "@agent-runtime/core";
-import type { ChunkOptions } from "@agent-runtime/utils";
+import type { ToolAdapter, ToolContext } from "@opencoreagents/core";
+import type { ChunkOptions } from "@opencoreagents/utils";
 import { resolveRagSource } from "../catalog.js";
 import { runFileIngestPipeline } from "./fileIngestCore.js";
 

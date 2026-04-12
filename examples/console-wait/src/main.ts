@@ -5,13 +5,13 @@
  */
 import * as readline from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
-import type { LLMAdapter, LLMRequest, LLMResponse } from "@agent-runtime/core";
+import type { LLMAdapter, LLMRequest, LLMResponse } from "@opencoreagents/core";
 import {
   Agent,
   AgentRuntime,
   Session,
   InMemoryMemoryAdapter,
-} from "@agent-runtime/core";
+} from "@opencoreagents/core";
 
 const PROJECT_ID = "demo-console-wait";
 

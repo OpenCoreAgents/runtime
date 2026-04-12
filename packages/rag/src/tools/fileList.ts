@@ -1,4 +1,4 @@
-import type { ToolAdapter, ToolContext, VectorAdapter } from "@agent-runtime/core";
+import type { ToolAdapter, ToolContext, VectorAdapter } from "@opencoreagents/core";
 
 function getVectorNamespace(ctx: ToolContext): string {
   const endUserId = (ctx as unknown as Record<string, unknown>).endUserId as string | undefined;

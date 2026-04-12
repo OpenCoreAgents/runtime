@@ -24,10 +24,10 @@ Related: [07-definition-syntax.md](./07-definition-syntax.md) (what gets generat
 Creates the project root structure and base configuration.
 
 ```bash
-npx @agent-runtime/cli init my-project
+npx @opencoreagents/cli init my-project
 ```
 
-The package exposes the `agent-runtime` executable (`package.json` `bin`); after a local or global install you can run `agent-runtime init my-project` the same way.
+The package exposes the `runtime` executable (`package.json` `bin`); after a local or global install you can run `runtime init my-project` the same way.
 
 | Flag | Default | Effect |
 |------|---------|--------|
@@ -43,7 +43,7 @@ The package exposes the `agent-runtime` executable (`package.json` `bin`); after
 Adds a new agent definition and optional supporting files.
 
 ```bash
-npx @agent-runtime/cli generate agent support-bot
+npx @opencoreagents/cli generate agent support-bot
 ```
 
 | Flag | Default | Effect |
@@ -58,7 +58,7 @@ npx @agent-runtime/cli generate agent support-bot
 ### 2.3 `generate tool` — tool definition + handler stub
 
 ```bash
-npx @agent-runtime/cli generate tool send-email
+npx @opencoreagents/cli generate tool send-email
 ```
 
 Generates the `Tool.define` call with placeholder `inputSchema` and an empty handler module.
@@ -71,7 +71,7 @@ Generates the `Tool.define` call with placeholder `inputSchema` and an empty han
 ### 2.4 `generate skill` — skill definition
 
 ```bash
-npx @agent-runtime/cli generate skill intake-summary --tools system_save_memory,system_get_memory
+npx @opencoreagents/cli generate skill intake-summary --tools system_save_memory,system_get_memory
 ```
 
 Generates the `Skill.define` call referencing the listed tools.
@@ -103,7 +103,7 @@ my-project/
 │   └── example-agent.test.ts  → vitest/jest starter
 ├── .env.example               → required env vars (API keys, Redis URL)
 ├── tsconfig.json
-├── package.json               → @agent-runtime/core + dev deps
+├── package.json               → @opencoreagents/core + dev deps
 └── README.md                  → quickstart instructions
 ```
 
@@ -122,7 +122,7 @@ Adds `agents/` with two sample agents, `config/message-bus.ts` for inter-agent c
 The scaffold generates a typed config that the engine reads at startup.
 
 ```typescript
-import { RuntimeConfig } from "@agent-runtime/core";
+import { RuntimeConfig } from "@opencoreagents/core";
 
 export default {
   adapters: {
@@ -166,7 +166,7 @@ Each section maps to an adapter contract in [05-adapters.md](./05-adapters.md). 
 For tools that generate projects without the CLI (e.g. a dashboard or CI pipeline):
 
 ```typescript
-import { scaffold } from "@agent-runtime/scaffold";
+import { scaffold } from "@opencoreagents/scaffold";
 
 await scaffold.initProject({
   name: "my-project",
@@ -190,7 +190,7 @@ Returns a manifest of created files for downstream processing.
 
 ## 6. Template engine
 
-Templates live in **`@agent-runtime/scaffold`** (`packages/scaffold/src/templates/`), not in the CLI package. Each template is a **TypeScript module** (`default`, `minimal`, `multi-agent`) that returns a map of relative paths → file contents for a full project tree. Substitution (project name, adapter preset, LLM preset, package manager) is applied in code when building that map.
+Templates live in **`@opencoreagents/scaffold`** (`packages/scaffold/src/templates/`), not in the CLI package. Each template is a **TypeScript module** (`default`, `minimal`, `multi-agent`) that returns a map of relative paths → file contents for a full project tree. Substitution (project name, adapter preset, LLM preset, package manager) is applied in code when building that map.
 
 Keeping templates in the scaffold package lets the CLI stay a thin argv/exit-code wrapper and keeps one programmatic implementation for both CLI and embedders.
 

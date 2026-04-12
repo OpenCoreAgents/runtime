@@ -22,7 +22,7 @@ describe("runCli", () => {
   it("generate agent uses cwd", async () => {
     const dir = await mkdtemp(path.join(tmpdir(), "cli-gen-"));
     const root = path.join(dir, "proj");
-    const { scaffold } = await import("@agent-runtime/scaffold");
+    const { scaffold } = await import("@opencoreagents/scaffold");
     await scaffold.initProject({ name: "proj", path: root, template: "default" });
 
     const code = await runCli([

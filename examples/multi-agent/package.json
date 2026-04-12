@@ -1,5 +1,5 @@
 {
-  "name": "@agent-runtime/example-multi-agent",
+  "name": "@opencoreagents/example-multi-agent",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -9,7 +9,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
-    "@agent-runtime/core": "workspace:*"
+    "@opencoreagents/core": "workspace:*"
   },
   "devDependencies": {
     "tsx": "^4.19.3",

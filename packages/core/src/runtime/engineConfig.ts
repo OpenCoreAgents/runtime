@@ -46,6 +46,20 @@ export interface EngineConfig {
   runTimeoutMs?: number;
   /** Per-tool wall-clock limit for `ToolRunner.execute` (optional). */
   toolTimeoutMs?: number;
+  /**
+   * **Optional.** When set, `AgentRuntime.dispatch` / `dispatchEngineJob` await
+   * **`hydrateAgentDefinitionsFromStore`** from **`@opencoreagents/dynamic-definitions`** (runtime `import()`)
+   * before **`Agent.load`**, using **`projectId`** and **`agentId`** from the job payload.
+   * Omit for code-only agents (`Agent.define` at boot). Use e.g. **`RedisDynamicDefinitionsStore`**
+   * (`@opencoreagents/adapters-redis`) or **`InMemoryDynamicDefinitionsStore`** (`@opencoreagents/dynamic-definitions`)
+   * (hydration reads **`store.methods`** when the value is a facade).
+   */
+  dynamicDefinitionsStore?: unknown;
+  /**
+   * **Optional.** Used only when `dynamicDefinitionsStore` is set: supplies **`{{secret:*}}`** values
+   * for HTTP tools during hydration. Omit or return **`{}`** if you do not use templated secrets.
+   */
+  dynamicDefinitionsSecrets?: () => Record<string, string>;
 }
 
 export const engineRuntimeDefaults = {

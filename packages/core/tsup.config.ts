@@ -8,4 +8,6 @@ export default defineConfig({
   sourcemap: true,
   platform: "node",
   target: "node18",
+  /** Dynamic `import()` only when `dynamicDefinitionsStore` is set; must not be bundled into core. */
+  external: ["@opencoreagents/dynamic-definitions"],
 });

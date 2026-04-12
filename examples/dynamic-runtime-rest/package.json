@@ -1,0 +1,27 @@
+{
+  "name": "@opencoreagents/example-dynamic-runtime-rest",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "REST + Redis definitions + BullMQ: Express control plane, worker with runtime.dispatch and dynamicDefinitionsStore (per-job hydrate).",
+  "scripts": {
+    "start:api": "tsx src/api.ts",
+    "start:worker": "tsx src/worker.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@opencoreagents/adapters-bullmq": "workspace:*",
+    "@opencoreagents/adapters-http-tool": "workspace:*",
+    "@opencoreagents/adapters-redis": "workspace:*",
+    "@opencoreagents/core": "workspace:*",
+    "@opencoreagents/dynamic-definitions": "workspace:*",
+    "bullmq": "^5.73.1",
+    "express": "^4.21.2",
+    "ioredis": "^5.4.1"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "tsx": "^4.19.3",
+    "typescript": "^5.7.3"
+  }
+}

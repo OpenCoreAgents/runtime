@@ -1,7 +1,8 @@
 {
-  "name": "@agent-runtime/adapters-bullmq",
+  "name": "@opencoreagents/adapters-bullmq",
   "version": "0.0.0",
   "private": true,
+  "license": "Apache-2.0",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -22,11 +23,11 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@agent-runtime/core": "workspace:*",
+    "@opencoreagents/core": "workspace:*",
     "bullmq": "^5.73.1"
   },
   "devDependencies": {
-    "@agent-runtime/adapters-redis": "workspace:*",
+    "@opencoreagents/adapters-redis": "workspace:*",
     "ioredis-mock": "^8.9.0"
   }
 }

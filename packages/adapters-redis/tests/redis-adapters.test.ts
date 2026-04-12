@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import Redis from "ioredis-mock";
-import type { Run } from "@agent-runtime/core";
+import type { Run } from "@opencoreagents/core";
 import { RedisMemoryAdapter, RedisRunStore, memoryKeyPrefix } from "../src/index.js";
 
 describe("RedisRunStore", () => {

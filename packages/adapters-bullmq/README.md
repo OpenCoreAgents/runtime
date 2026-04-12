@@ -1,14 +1,16 @@
-# `@agent-runtime/adapters-bullmq`
+# `@opencoreagents/adapters-bullmq`
 
-**Priority integration** for background work: typed BullMQ **queue** / **worker** helpers and **`dispatchEngineJob`** so workers call the same **`Agent.run`** / **`Agent.resume`** path as the SDK.
+**Priority integration** for background work: typed BullMQ **queue** / **worker** helpers. Workers should call **`runtime.dispatch(job.data)`** from **`@opencoreagents/core`** (same behavior as **`dispatchEngineJob(runtime, job.data)`**, re-exported here) so execution matches the SDK **`Agent.run`** / **`Agent.resume`** path.
 
-Requires the same worker bootstrap as any engine process: construct **`AgentRuntime`** with shared adapters, then **`Tool.define` / `Skill.define` / `Agent.define`** before processing jobs.
+**Optional `dynamicDefinitionsStore` / `dynamicDefinitionsSecrets`** on **`AgentRuntime`**: when set, **`dispatch`** / **`dispatchEngineJob`** await **`hydrateAgentDefinitionsFromStore`** (from **`@opencoreagents/dynamic-definitions`**) before **`Agent.load`**. Pass a **`DynamicDefinitionsStore`** facade (e.g. **`RedisDynamicDefinitionsStore`**) — core reads **`store.methods`** — or a bare **`DynamicDefinitionsStoreMethods`**. Omit for code-only workers that **`Agent.define`** at boot.
+
+Otherwise, use the same worker bootstrap as any engine process: construct **`AgentRuntime`** with shared adapters, then **`Tool.define` / `Skill.define` / `Agent.define`** before processing jobs.
 
 ## Exports
 
 - **`createEngineQueue`** — enqueue `run` / `resume` jobs with typed payloads
 - **`createEngineWorker`** — `Worker` that receives **`EngineJobPayload`**
-- **`dispatchEngineJob(runtime, payload)`** — `Agent.load` → `run` or `resume` for one job payload
+- **`dispatchEngineJob(runtime, payload)`** — re-export from **`@opencoreagents/core`**; prefer **`runtime.dispatch(payload)`** on **`AgentRuntime`**
 - **`DEFAULT_ENGINE_QUEUE_NAME`** — default queue name string (`agent-engine-runs`)
 
 ## Usage
@@ -16,13 +18,12 @@ Requires the same worker bootstrap as any engine process: construct **`AgentRunt
 Use the **same queue name** and **connection** for producers and consumers. After **`AgentRuntime`** construction and **`Agent.define`** (worker process):
 
 ```typescript
-import { AgentRuntime } from "@agent-runtime/core";
+import { AgentRuntime } from "@opencoreagents/core";
 import {
   DEFAULT_ENGINE_QUEUE_NAME,
   createEngineQueue,
   createEngineWorker,
-  dispatchEngineJob,
-} from "@agent-runtime/adapters-bullmq";
+} from "@opencoreagents/adapters-bullmq";
 
 const connection = { url: process.env.REDIS_URL! };
 
@@ -42,7 +43,7 @@ await addRun({
 
 // Worker process
 createEngineWorker(DEFAULT_ENGINE_QUEUE_NAME, connection, async (job) => {
-  await dispatchEngineJob(runtime, job.data);
+  await runtime.dispatch(job.data);
 });
 ```
 
@@ -50,7 +51,7 @@ For **`resume`** after a `wait`, use **`addResume`** with `runId` and **`resumeI
 
 ## Testing
 
-- **Unit:** `dispatchEngineJob` with in-memory runtime — `tests/dispatch.test.ts`.
+- **Unit:** `dispatchEngineJob` (core implementation) with in-memory runtime — `tests/dispatch.test.ts`.
 - **Integration (Redis):** `tests/redis-queue.integration.test.ts` runs only when **`REDIS_INTEGRATION=1`** (set in CI with a Redis service). Locally: start Redis on `REDIS_HOST` / `REDIS_PORT` (defaults `127.0.0.1:6379`) and run with that env var.
 
 ## Docs

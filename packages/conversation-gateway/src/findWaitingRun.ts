@@ -1,4 +1,4 @@
-import type { RunStore } from "@agent-runtime/core";
+import type { RunStore } from "@opencoreagents/core";
 
 /**
  * Convenience implementation of {@link WaitingRunLookup} using a {@link RunStore}.

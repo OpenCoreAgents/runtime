@@ -1,6 +1,6 @@
-# RAG + contact support (`@agent-runtime/example-rag-contact-support`)
+# RAG + contact support (`@opencoreagents/example-rag-contact-support`)
 
-Combines **`@agent-runtime/rag`** (catalog ingest + **`system_vector_search`**) with a **custom** tool **`contact_support`** via **`Tool.define`**. Uses a **scripted LLM** (no API keys) so runs are reproducible.
+Combines **`@opencoreagents/rag`** (catalog ingest + **`system_vector_search`**) with a **custom** tool **`contact_support`** via **`Tool.define`**. Uses a **scripted LLM** (no API keys) so runs are reproducible.
 
 ## Flow (CLI)
 
@@ -16,8 +16,8 @@ Combines **`@agent-runtime/rag`** (catalog ingest + **`system_vector_search`**) 
 From repo root (after `pnpm install`):
 
 ```bash
-pnpm turbo run build --filter=@agent-runtime/core --filter=@agent-runtime/rag
-pnpm --filter @agent-runtime/example-rag-contact-support start
+pnpm turbo run build --filter=@opencoreagents/core --filter=@opencoreagents/rag
+pnpm --filter @opencoreagents/example-rag-contact-support start
 ```
 
 Run it **in a normal terminal** (interactive stdin). You will be prompted twice before any agent work: (1) first KB question — press **Enter** for the default warranty question, (2) email — enter an address or **Enter** to skip and use **`wait` + `resume`** on the refund turn.

@@ -1,20 +1,20 @@
 import path from "node:path";
-import { scaffold } from "@agent-runtime/scaffold";
+import { scaffold } from "@opencoreagents/scaffold";
 import type {
   InitProjectOptions,
   ScaffoldAdapterPreset,
   ScaffoldLlmPreset,
   ScaffoldTemplate,
-} from "@agent-runtime/scaffold";
+} from "@opencoreagents/scaffold";
 
 function printHelp(): void {
-  console.log(`@agent-runtime/cli — project scaffolding
+  console.log(`@opencoreagents/cli — project scaffolding
 
 Usage:
-  agent-runtime init <name> [options]
-  agent-runtime generate agent <id> [options]
-  agent-runtime generate tool <id> [options]
-  agent-runtime generate skill <id> [options]
+  runtime init <name> [options]
+  runtime generate agent <id> [options]
+  runtime generate tool <id> [options]
+  runtime generate skill <id> [options]
 
 Commands:
   init              Create a new project directory with template files.
@@ -117,7 +117,7 @@ async function runInit(
 ): Promise<number> {
   const name = positionals[0]?.trim();
   if (!name) {
-    console.error("init: missing <name>. Example: agent-runtime init my-project");
+    console.error("init: missing <name>. Example: runtime init my-project");
     return 1;
   }
 
@@ -173,7 +173,7 @@ async function runGenerateAgent(
 ): Promise<number> {
   const agentId = positionals[0]?.trim();
   if (!agentId) {
-    console.error("generate agent: missing <id>. Example: agent-runtime generate agent support-bot");
+    console.error("generate agent: missing <id>. Example: runtime generate agent support-bot");
     return 1;
   }
   const root = resolveProjectRoot(cwd, flags);
@@ -208,7 +208,7 @@ async function runGenerateTool(
 ): Promise<number> {
   const toolId = positionals[0]?.trim();
   if (!toolId) {
-    console.error("generate tool: missing <id>. Example: agent-runtime generate tool send-email");
+    console.error("generate tool: missing <id>. Example: runtime generate tool send-email");
     return 1;
   }
   const root = resolveProjectRoot(cwd, flags);
@@ -233,7 +233,7 @@ async function runGenerateSkill(
   const skillId = positionals[0]?.trim();
   if (!skillId) {
     console.error(
-      "generate skill: missing <id>. Example: agent-runtime generate skill intake-summary --tools system_save_memory,system_get_memory",
+      "generate skill: missing <id>. Example: runtime generate skill intake-summary --tools system_save_memory,system_get_memory",
     );
     return 1;
   }
@@ -278,6 +278,6 @@ export async function runCli(argv: string[]): Promise<number> {
     return 1;
   }
 
-  console.error(`Unknown command: ${positionals[0]}. Try: agent-runtime --help`);
+  console.error(`Unknown command: ${positionals[0]}. Try: runtime --help`);
   return 1;
 }

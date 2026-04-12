@@ -1,5 +1,5 @@
-import type { ToolAdapter, ToolContext } from "@agent-runtime/core";
-import { parseFile } from "@agent-runtime/utils";
+import type { ToolAdapter, ToolContext } from "@opencoreagents/core";
+import { parseFile } from "@opencoreagents/utils";
 import { resolveSourceForTool } from "./resolveFileSource.js";
 
 export const fileReadTool: ToolAdapter = {

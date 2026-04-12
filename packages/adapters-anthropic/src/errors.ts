@@ -3,7 +3,7 @@ import {
   LLMRateLimitError,
   LLMTransportError,
   RunCancelledError,
-} from "@agent-runtime/core";
+} from "@opencoreagents/core";
 
 /** Maps Anthropic HTTP status to engine LLM errors (same semantics as OpenAI adapter). */
 export function throwForAnthropicHttpStatus(status: number, detail: string): never {

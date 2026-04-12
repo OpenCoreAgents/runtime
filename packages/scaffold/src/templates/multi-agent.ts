@@ -2,7 +2,7 @@ import { buildRuntimeTs } from "../runtime-snippet.js";
 import type { InitProjectOptions } from "../types.js";
 import { defaultTemplateFiles } from "./default.js";
 
-const coordinator = `import { Agent, Session, type AgentRuntime, type SessionOptions } from "@agent-runtime/core";
+const coordinator = `import { Agent, Session, type AgentRuntime, type SessionOptions } from "@opencoreagents/core";
 
 const SYSTEM = "You coordinate work across agents. Emit JSON Step objects only.";
 
@@ -24,7 +24,7 @@ export async function loadCoordinator(runtime: AgentRuntime, sessionOpts: Sessio
 }
 `;
 
-const worker = `import { Agent, Session, type AgentRuntime, type SessionOptions } from "@agent-runtime/core";
+const worker = `import { Agent, Session, type AgentRuntime, type SessionOptions } from "@opencoreagents/core";
 
 const SYSTEM = "You execute delegated tasks. Emit JSON Step objects only.";
 
@@ -45,7 +45,7 @@ export async function loadWorker(runtime: AgentRuntime, sessionOpts: SessionOpti
 }
 `;
 
-const messageBus = `import type { AgentMessage, MessageBus } from "@agent-runtime/core";
+const messageBus = `import type { AgentMessage, MessageBus } from "@opencoreagents/core";
 
 /** Stub — replace with Redis / in-process queue (see docs/core/09-communication-multiagent.md). */
 export function createInProcessMessageBus(): MessageBus {
@@ -100,7 +100,7 @@ bootstrap().catch((err) => {
 
 Includes \`agents/coordinator.ts\`, \`agents/worker.ts\`, and \`config/message-bus.ts\`.
 
-See **09-communication-multiagent** in \`@agent-runtime\` docs for production MessageBus wiring.
+See **09-communication-multiagent** in \`@opencoreagents\` docs for production MessageBus wiring.
 `,
   };
 }

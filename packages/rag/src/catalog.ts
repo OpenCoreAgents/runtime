@@ -3,14 +3,14 @@
  * (or **`AgentRuntime.registerRagCatalog`** directly) per project.
  * Tools call {@link resolveRagCatalog} / {@link resolveRagSource} which prefer `ToolContext.ragFileCatalog`.
  */
-import type { AgentRuntime, RagFileSourceEntry, ToolContext } from "@agent-runtime/core";
+import type { AgentRuntime, RagFileSourceEntry, ToolContext } from "@opencoreagents/core";
 
 export type RagSourceDefinition = RagFileSourceEntry;
 
 /**
  * Registers the per-project RAG file catalog on {@link AgentRuntime}.
  * Same behavior as **`runtime.registerRagCatalog(projectId, sources)`** — use this entry point so catalog
- * registration stays discoverable under **`@agent-runtime/rag`**.
+ * registration stays discoverable under **`@opencoreagents/rag`**.
  *
  * Call **`registerRagToolsAndSkills()`** first; otherwise a dev **`console.warn`** may run (see core).
  */

@@ -1,4 +1,4 @@
-import type { LLMAdapter, LLMRequest, LLMResponse } from "@agent-runtime/core";
+import type { LLMAdapter, LLMRequest, LLMResponse } from "@opencoreagents/core";
 import { rethrowFetchFailure, throwForAnthropicHttpStatus } from "./errors.js";
 
 const DEFAULT_MAX_TOKENS = 4096;

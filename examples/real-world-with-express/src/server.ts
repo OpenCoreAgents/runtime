@@ -22,7 +22,7 @@ import {
   Session,
   type Run,
   type RunStatus,
-} from "@agent-runtime/core";
+} from "@opencoreagents/core";
 
 import {
   createExpressDemoLlm,
@@ -165,7 +165,7 @@ async function bootstrap(): Promise<void> {
     const llm = expressLlmConfig();
     res.json({
       ok: true,
-      service: "agent-runtime-express-example",
+      service: "runtime-express-example",
       expressLlm: llm.backend,
       openaiConfigured: Boolean(process.env.OPENAI_API_KEY?.trim()),
       anthropicConfigured: Boolean(process.env.ANTHROPIC_API_KEY?.trim()),
@@ -177,7 +177,7 @@ async function bootstrap(): Promise<void> {
   app.get("/status", (_req, res) => {
     res.json({
       ok: true,
-      service: "agent-runtime-express-example",
+      service: "runtime-express-example",
       uptimeMs: Math.round(process.uptime() * 1000),
       startedAt: new Date(PROCESS_STARTED_AT_MS).toISOString(),
       pid: process.pid,
@@ -497,7 +497,7 @@ async function bootstrap(): Promise<void> {
           ? "Anthropic"
           : "mock";
     console.log(
-      `Express + agent-runtime on http://127.0.0.1:${PORT} (UI: http://127.0.0.1:${PORT}/) | chat: ${chatLabel} (${llm.provider}/${llm.model}) | API_KEY ${API_KEY ? "required for /v1" : "not set (open /v1)"}`,
+      `Express + runtime on http://127.0.0.1:${PORT} (UI: http://127.0.0.1:${PORT}/) | chat: ${chatLabel} (${llm.provider}/${llm.model}) | API_KEY ${API_KEY ? "required for /v1" : "not set (open /v1)"}`,
     );
   });
 

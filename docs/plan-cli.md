@@ -1,4 +1,4 @@
-# CLI planning (`@agent-runtime/cli`)
+# CLI planning (`@opencoreagents/cli`)
 
 > Roadmap for the **command-line** surface: what exists today vs the **library-parity** CLI sketched in [`brainstorm/06-libreria-adapters-cli.md`](./brainstorm/06-libreria-adapters-cli.md). Complements [`plan.md`](./plan.md) (monorepo/engine) and [`core/14-consumers.md`](./core/14-consumers.md) §CLI.
 
@@ -10,7 +10,7 @@
 
 | Area | Status |
 |------|--------|
-| **`agent-runtime` binary** | **Shipped** — `packages/cli`: `init`, `generate agent|tool|skill` delegating to `@agent-runtime/scaffold`. |
+| **`runtime` binary** | **Shipped** — `packages/cli`: `init`, `generate agent|tool|skill` delegating to `@opencoreagents/scaffold`. |
 | **Runtime commands** (`run`, `resume`, `memory`, `logs`, `list`, `send`) | **Not in monorepo** — brainstorm only; users run generated project scripts or embed the SDK. |
 
 See [`technical-debt.md`](./technical-debt.md) §4 (CLI and scaffold).
@@ -22,12 +22,12 @@ See [`technical-debt.md`](./technical-debt.md) §4 (CLI and scaffold).
 Same semantics as the SDK, for operators and debugging:
 
 ```text
-agent-runtime list              # agents visible in project / registry
-agent-runtime run <agentId> --input "..."
-agent-runtime resume <runId> --input "..."
-agent-runtime memory <agentId> [--type shortTerm|…]
-agent-runtime logs <runId>
-agent-runtime send <from> <to> --message "..."   # when multi-agent / bus wired
+runtime list              # agents visible in project / registry
+runtime run <agentId> --input "..."
+runtime resume <runId> --input "..."
+runtime memory <agentId> [--type shortTerm|…]
+runtime logs <runId>
+runtime send <from> <to> --message "..."   # when multi-agent / bus wired
 ```
 
 Implementation notes:

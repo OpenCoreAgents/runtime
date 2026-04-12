@@ -1,13 +1,13 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import type { ConnectionOptions, Worker } from "bullmq";
-import type { Run } from "@agent-runtime/core";
+import type { Run } from "@opencoreagents/core";
 import {
   Agent,
   AgentRuntime,
   InMemoryMemoryAdapter,
   clearAllRegistriesForTests,
-} from "@agent-runtime/core";
-import type { LLMAdapter, LLMRequest, LLMResponse } from "@agent-runtime/core";
+} from "@opencoreagents/core";
+import type { LLMAdapter, LLMRequest, LLMResponse } from "@opencoreagents/core";
 import {
   createEngineQueue,
   createEngineWorker,

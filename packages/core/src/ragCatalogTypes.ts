@@ -1,4 +1,4 @@
-/** Catalog entries for RAG tools — use `registerRagCatalog(runtime, projectId, entries)` from `@agent-runtime/rag` or `AgentRuntime.registerRagCatalog`. */
+/** Catalog entries for RAG tools — use `registerRagCatalog(runtime, projectId, entries)` from `@opencoreagents/rag` or `AgentRuntime.registerRagCatalog`. */
 export interface RagFileSourceEntry {
   /** Stable handle for tools (e.g. `handbook`). */
   id: string;

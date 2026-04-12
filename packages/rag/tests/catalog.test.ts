@@ -5,7 +5,7 @@ import {
   type LLMAdapter,
   type LLMRequest,
   type LLMResponse,
-} from "@agent-runtime/core";
+} from "@opencoreagents/core";
 import {
   registerRagCatalog,
   registerRagFileCatalog,
@@ -16,7 +16,7 @@ import {
 } from "../src/catalog.js";
 import { listRagSourcesTool } from "../src/tools/listRagSources.js";
 import { ingestRagSourceTool } from "../src/tools/ingestRagSource.js";
-import type { ToolContext } from "@agent-runtime/core";
+import type { ToolContext } from "@opencoreagents/core";
 
 describe("RAG file catalog", () => {
   beforeEach(() => {

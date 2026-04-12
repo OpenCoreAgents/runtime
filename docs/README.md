@@ -14,7 +14,7 @@ A **control system** where the LLM proposes and the engine decides — with laye
 
 ### Current repository status
 
-Nine workspace packages (`core`, `utils`, `adapters-openai`, `adapters-upstash`, `adapters-redis`, **`adapters-bullmq`**, `rag`, `scaffold`, `cli`) build and test together. **BullMQ** (`@agent-runtime/adapters-bullmq`) is the **priority** path for background runs and workers (`createEngineQueue`, `dispatchEngineJob(runtime, payload)`, …). **TCP Redis** adapters are the **default** for shared engine state; pair with the same Redis for queues when it fits ops. **Upstash REST** + **Upstash Vector** when you want HTTP-only Redis. **Per-tool timeouts**: set **`toolTimeoutMs`** on **`AgentRuntime`**. **CI**: `pnpm turbo run build test lint` ([`.github/workflows/ci.yml`](../.github/workflows/ci.yml)). Roadmap: [`plan.md`](./plan.md); gaps: [`technical-debt.md`](./technical-debt.md).
+Fourteen workspace packages (`core`, `utils`, `adapters-openai`, `adapters-anthropic`, `adapters-upstash`, `adapters-redis`, **`adapters-bullmq`**, **`adapters-http-tool`**, **`dynamic-definitions`**, **`conversation-gateway`**, **`rest-api`**, `rag`, `scaffold`, `cli`) build and test together. **BullMQ** (`@opencoreagents/adapters-bullmq`) is the **priority** path for background runs and workers (`createEngineQueue`, `createEngineWorker`; **`dispatchEngineJob(runtime, payload)`** lives in **`@opencoreagents/core`** and is re-exported from **`adapters-bullmq`**). **TCP Redis** adapters are the **default** for shared engine state; pair with the same Redis for queues when it fits ops. **Upstash REST** + **Upstash Vector** when you want HTTP-only Redis. **Per-tool timeouts**: set **`toolTimeoutMs`** on **`AgentRuntime`**. **CI**: `pnpm turbo run build test lint` ([`.github/workflows/ci.yml`](../.github/workflows/ci.yml)). Roadmap: [`plan.md`](./plan.md); gaps: [`technical-debt.md`](./technical-debt.md).
 
 ---
 
@@ -87,7 +87,7 @@ Agent.define()    →  stored, references skills + tools + memory policy + LLM c
 Tools are the executable primitives. The engine — never the LLM — runs them.
 
 ```typescript
-import { Tool } from "@agent-runtime/core";
+import { Tool } from "@opencoreagents/core";
 
 // Global: available to any agent in any project
 await Tool.define({
@@ -126,7 +126,7 @@ await Tool.define({
 Skills group tools and shape how the agent is prompted. They can be declarative (context only) or imperative (run code directly).
 
 ```typescript
-import { Skill } from "@agent-runtime/core";
+import { Skill } from "@opencoreagents/core";
 
 // Declarative: injects domain context, restricts visible tools
 await Skill.define({
@@ -154,7 +154,7 @@ await Skill.define({
 An agent definition is a config object stored in the DB. It declares which skills and tools it can use, its memory policy, LLM settings, and who is allowed to run it.
 
 ```typescript
-import { Agent } from "@agent-runtime/core";
+import { Agent } from "@opencoreagents/core";
 
 await Agent.define({
   id: "ops-analyst",
@@ -180,10 +180,10 @@ await Agent.define({
 ### 4. Load and run
 
 ```typescript
-import { Agent, AgentRuntime, Session, InMemoryMemoryAdapter } from "@agent-runtime/core";
+import { Agent, AgentRuntime, Session, InMemoryMemoryAdapter } from "@opencoreagents/core";
 
 const runtime = new AgentRuntime({
-  llmAdapter: chatAdapter, // your LLMAdapter (e.g. @agent-runtime/adapters-openai)
+  llmAdapter: chatAdapter, // your LLMAdapter (e.g. @opencoreagents/adapters-openai)
   memoryAdapter: new InMemoryMemoryAdapter(),
 });
 
@@ -312,19 +312,19 @@ Messages are scoped to `projectId` by default — no cross-tenant leakage.
 
 ## Production Redis and Upstash
 
-The engine uses **interfaces**; production usually constructs **`AgentRuntime`** with shared adapters. Prefer **TCP Redis** (`@agent-runtime/adapters-redis`) when you have a normal `REDIS_URL` — it matches **BullMQ** and typical deployments. Use **`@agent-runtime/adapters-upstash`** for **REST** Redis, **Upstash Vector**, or serverless-friendly HTTP access.
+The engine uses **interfaces**; production usually constructs **`AgentRuntime`** with shared adapters. Prefer **TCP Redis** (`@opencoreagents/adapters-redis`) when you have a normal `REDIS_URL` — it matches **BullMQ** and typical deployments. Use **`@opencoreagents/adapters-upstash`** for **REST** Redis, **Upstash Vector**, or serverless-friendly HTTP access.
 
 | Piece | Typical choice |
 |-------|----------------|
-| **TCP Redis** (`ioredis`) | `RedisMemoryAdapter`, `RedisRunStore`, `RedisMessageBus` in `@agent-runtime/adapters-redis` — **default** for cluster memory, `wait`/`resume` across workers, and `system_send_message`. |
+| **TCP Redis** (`ioredis`) | `RedisMemoryAdapter`, `RedisRunStore`, `RedisMessageBus` in `@opencoreagents/adapters-redis` — **default** for cluster memory, `wait`/`resume` across workers, and `system_send_message`. |
 | **Upstash REST** | `UpstashRedisMemoryAdapter`, `UpstashRunStore`, `UpstashRedisMessageBus` when you want HTTP-only Redis. |
-| **Upstash Vector** | `UpstashVectorAdapter` for `system_vector_search` / RAG — lives in `@agent-runtime/adapters-upstash`. |
-| **BullMQ (primary job queue)** | **`@agent-runtime/adapters-bullmq`** — `dispatchEngineJob(runtime, payload)` or `buildEngineDeps` + `executeRun` — [`core/05-adapters.md`](./core/05-adapters.md#job-queue-adapter-primary-bullmq). |
+| **Upstash Vector** | `UpstashVectorAdapter` for `system_vector_search` / RAG — lives in `@opencoreagents/adapters-upstash`. |
+| **BullMQ (primary job queue)** | **`@opencoreagents/adapters-bullmq`** — queue/worker helpers; **`dispatchEngineJob(runtime, payload)`** from **`@opencoreagents/core`** (re-exported) or `buildEngineDeps` + `executeRun` — [`core/05-adapters.md`](./core/05-adapters.md#job-queue-adapter-primary-bullmq). |
 | **Upstash QStash (alternative)** | HTTP callback to `resume` after a scheduled `wait` if you skip BullMQ workers — same wake semantics, different ops model. |
 
 ```typescript
-import { AgentRuntime } from "@agent-runtime/core";
-import { RedisMemoryAdapter, RedisRunStore } from "@agent-runtime/adapters-redis";
+import { AgentRuntime } from "@opencoreagents/core";
+import { RedisMemoryAdapter, RedisRunStore } from "@opencoreagents/adapters-redis";
 import Redis from "ioredis";
 
 const redis = new Redis(process.env.REDIS_URL!);
@@ -380,6 +380,8 @@ GET   /agents/:id/memory      → agent memory for a session
 POST  /agents                 → Agent.define() over HTTP
 POST  /agents/:id/send        → send message to another agent
 ```
+
+**In this monorepo:** mount [**`@opencoreagents/rest-api`**](../packages/rest-api/) (**`createPlanRestRouter`**) on Express for that shape (`GET /agents`, `POST /agents/:id/run`, resume, `GET /runs/:id`) plus optional **BullMQ** **`dispatch`** (**202**, **`GET /jobs/:id`**, **`wait=1`**) aligned with [`examples/dynamic-runtime-rest/`](../examples/dynamic-runtime-rest/) — see [`plan-rest.md`](./plan-rest.md), [`examples/plan-rest-express/`](../examples/plan-rest-express/). Tenancy: fixed vs per-request **`projectId`**, **`allowedProjectIds`**, **`agentIds`**, **`apiKey`**: [package README](../packages/rest-api/README.md).
 
 All REST routes pass through the SecurityLayer before reaching the engine. Auth, project isolation, and quota checks happen there — the engine loop never changes.
 
@@ -512,6 +514,8 @@ src/
 | [`core/12-skills.md`](./core/12-skills.md) | Skills vs tools — resolution, model visibility, imperative execute |
 | [`core/13-errors-parsing-and-recovery.md`](./core/13-errors-parsing-and-recovery.md) | Failures, timeouts, bounded re-prompt |
 | [`core/14-consumers.md`](./core/14-consumers.md) | SDK, CLI, REST, MCP, webhooks, cron |
+| [`core/20-http-tool-adapter.md`](./core/20-http-tool-adapter.md) | JSON-configured outbound HTTP tools (`adapters-http-tool`) |
+| [`core/21-dynamic-runtime-rest.md`](./core/21-dynamic-runtime-rest.md) | Dynamic agents/skills/HTTP tools via store + sync (`dynamic-definitions`, example `dynamic-runtime-rest`) |
 
 ---
 

@@ -203,10 +203,10 @@ Flush = one **`NormalizedInboundMessage`** with `text` built from merged lines (
 
 ## 10. Illustrative code sketch (TypeScript)
 
-**Implementation:** [`packages/conversation-gateway`](../../packages/conversation-gateway/README.md) (`@agent-runtime/conversation-gateway`) — same shape as below; adjust `findWaitingRunId` to your `RunStore` / DB.
+**Implementation:** [`packages/conversation-gateway`](../../packages/conversation-gateway/README.md) (`@opencoreagents/conversation-gateway`) — same shape as below; adjust `findWaitingRunId` to your `RunStore` / DB.
 
 ```typescript
-import { Agent, AgentRuntime, Session, type Run } from "@agent-runtime/core";
+import { Agent, AgentRuntime, Session, type Run } from "@opencoreagents/core";
 
 /** Normalized after your webhook / SDK adapter. */
 export interface NormalizedInboundMessage {
@@ -369,8 +369,8 @@ import {
   AgentRuntime,
   InMemoryMemoryAdapter,
   InMemoryRunStore,
-} from "@agent-runtime/core";
-import type { LLMAdapter } from "@agent-runtime/core";
+} from "@opencoreagents/core";
+import type { LLMAdapter } from "@opencoreagents/core";
 import {
   ConversationGateway,
   type NormalizedInboundMessage,
@@ -485,7 +485,7 @@ async function bootstrap() {
 
 ## 12. Document status
 
-Design proposal for **implementation in the product/host**; not a closed specification of the `agent-runtime` repo. Adjust names and DTOs to match your codebase when you implement the module.
+Design proposal for **implementation in the product/host**; not a closed specification of the `agents` repo. Adjust names and DTOs to match your codebase when you implement the module.
 
 ---
 

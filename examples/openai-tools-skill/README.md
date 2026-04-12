@@ -4,14 +4,14 @@ Uses **`OpenAILLMAdapter`**, a **custom tool** (`roll_dice`), and a **skill** (`
 
 **Production:** memory is **`InMemoryMemoryAdapter`** here for a minimal demo. Use **`RedisMemoryAdapter`** / **`UpstashRedisMemoryAdapter`** when you need shared or persistent memory — [`examples/README.md`](../README.md#memory-in-production).
 
-The engine parses **JSON in `message.content`** (`thought` | `action` | `result` | …). When OpenAI returns **`tool_calls`** with an empty `content`, **`executeRun`** (in `@agent-runtime/core`) maps the first call into an **`action`** step — use **`OpenAILLMAdapter`** directly, no wrapper class.
+The engine parses **JSON in `message.content`** (`thought` | `action` | `result` | …). When OpenAI returns **`tool_calls`** with an empty `content`, **`executeRun`** (in `@opencoreagents/core`) maps the first call into an **`action`** step — use **`OpenAILLMAdapter`** directly, no wrapper class.
 
 ## Setup
 
 ```bash
 # repository root: install and build workspace packages
 pnpm install
-pnpm turbo run build --filter=@agent-runtime/core --filter=@agent-runtime/adapters-openai
+pnpm turbo run build --filter=@opencoreagents/core --filter=@opencoreagents/adapters-openai
 ```
 
 Copy env and add your key:
@@ -32,7 +32,7 @@ pnpm start
 Or one shot:
 
 ```bash
-OPENAI_API_KEY=sk-... pnpm --filter @agent-runtime/example-openai-tools-skill start
+OPENAI_API_KEY=sk-... pnpm --filter @opencoreagents/example-openai-tools-skill start
 ```
 
 ## What it does

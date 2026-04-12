@@ -1,4 +1,4 @@
-import type { ToolAdapter, ToolContext } from "@agent-runtime/core";
+import type { ToolAdapter, ToolContext } from "@opencoreagents/core";
 import { resolveRagCatalog } from "../catalog.js";
 
 export const listRagSourcesTool: ToolAdapter = {

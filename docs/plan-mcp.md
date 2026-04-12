@@ -10,7 +10,7 @@
 
 | Area | Status |
 |------|--------|
-| **`@agent-runtime/mcp` or bundled MCP server** | **Not shipped** — no first-party MCP package in the workspace (see [`technical-debt.md`](./technical-debt.md) §5). |
+| **`@opencoreagents/mcp` or bundled MCP server** | **Not shipped** — no first-party MCP package in the workspace (see [`technical-debt.md`](./technical-debt.md) §5). |
 | **Interop story** | **Documented at pattern level** in `14-consumers.md`. |
 
 ---

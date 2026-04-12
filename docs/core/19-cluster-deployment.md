@@ -10,9 +10,9 @@ Related: [05-adapters.md](./05-adapters.md) (adapters + BullMQ), [09-communicati
 
 | Area | Implemented | Planned / design only |
 |------|-------------|------------------------|
-| **RunStore** | `RunStore` in `@agent-runtime/core`; `InMemoryRunStore`; **`RedisRunStore`** (`@agent-runtime/adapters-redis`); `UpstashRunStore` (`@agent-runtime/adapters-upstash`); pass **`runStore`** into **`new AgentRuntime({ … })`**; `RunBuilder` persists after each run; `Agent.resume(runId, input)` | DB-backed `RunStore`, TTL/cleanup policies |
-| **Job queue** | **`@agent-runtime/adapters-bullmq`** — `createEngineQueue`, `createEngineWorker`, `dispatchEngineJob` (BullMQ **priority**) | QStash HTTP handler **not** in monorepo; delayed `resume` orchestration still app-specific |
-| **MessageBus** | `InProcessMessageBus`, **`RedisMessageBus`** (`@agent-runtime/adapters-redis`), `UpstashRedisMessageBus` | BullMQ-as-transport for messages (alternative pattern) |
+| **RunStore** | `RunStore` in `@opencoreagents/core`; `InMemoryRunStore`; **`RedisRunStore`** (`@opencoreagents/adapters-redis`); `UpstashRunStore` (`@opencoreagents/adapters-upstash`); pass **`runStore`** into **`new AgentRuntime({ … })`**; `RunBuilder` persists after each run; `Agent.resume(runId, input)` | DB-backed `RunStore`, TTL/cleanup policies |
+| **Job queue** | **`@opencoreagents/adapters-bullmq`** — `createEngineQueue`, `createEngineWorker`; **`dispatchEngineJob`** implemented in **`@opencoreagents/core`**, re-exported from **`adapters-bullmq`** (BullMQ **priority**) | QStash HTTP handler **not** in monorepo; delayed `resume` orchestration still app-specific |
+| **MessageBus** | `InProcessMessageBus`, **`RedisMessageBus`** (`@opencoreagents/adapters-redis`), `UpstashRedisMessageBus` | BullMQ-as-transport for messages (alternative pattern) |
 | **Bootstrap** | **`new AgentRuntime({ … })`** registers built-in tools (`system_save_memory`, `system_get_memory`) and optional vector / `system_send_message` handlers (same as constructor side effects) | — |
 | **Direct engine API** | `buildEngineDeps`, `createRun`, `executeRun`, `getAgentDefinition` — same loop as `RunBuilder`; use when a job handler should not use `Agent.run` | You must call `runStore.save` after each `executeRun` when using `runStore` (including `waiting`) |
 
@@ -41,7 +41,7 @@ Related: [05-adapters.md](./05-adapters.md) (adapters + BullMQ), [09-communicati
    ╚═══════════╝   ╚═══════════╝   ╚═══════════╝
 ```
 
-Legend: **✓** = adapter(s) in repo. **○** = your app wires BullMQ (or another queue) around Redis — **`@agent-runtime/adapters-bullmq`** supplies typed helpers; queue infra is not implied by the diagram alone.
+Legend: **✓** = adapter(s) in repo. **○** = your app wires BullMQ (or another queue) around Redis — **`@opencoreagents/adapters-bullmq`** supplies typed helpers; queue infra is not implied by the diagram alone.
 
 ### 1.1 Per-process (replicated on every node)
 
@@ -53,16 +53,16 @@ Legend: **✓** = adapter(s) in repo. **○** = your app wires BullMQ (or anothe
 | **Engine loop** (`executeRun`) | Pure function: takes `Run` + `EngineDeps`, returns `Run` | Stateless — any worker can execute any run as long as it can read/write the `Run` from a shared store. |
 | **Built-in tools** (`system_save_memory`, `system_get_memory`) | Registered when **`AgentRuntime`** is constructed | Same on every node — they delegate to the shared `MemoryAdapter`. |
 
-**Key rule**: **tool handlers** stay in-process (functions). For **definitions**, either ship them in code (redeploy all workers when they change) or **hydrate from a store** on boot (and on invalidation) so every node registers the same metadata. There is no magic replication of the module-level `Map`s — only identical bootstrap logic per worker. Skill JSON + code `execute`: [07-definition-syntax.md](./07-definition-syntax.md) §9.2b.
+**Key rule**: **tool handlers** stay in-process (functions). For **definitions**, either ship them in code (redeploy all workers when they change) or **hydrate from a store** on boot (and on invalidation) so every node registers the same metadata — or use **per-job** hydration (**`AgentRuntime.dynamicDefinitionsStore`** + **`dispatch`**, or **`hydrateAgentDefinitionsFromStore`**) as in [21-dynamic-runtime-rest.md](./21-dynamic-runtime-rest.md). There is no magic replication of the module-level `Map`s — only identical bootstrap logic per worker. Skill JSON + code `execute`: [07-definition-syntax.md](./07-definition-syntax.md) §9.2b.
 
 ### 1.2 Shared (external infrastructure)
 
 | Component | Implementation | Cluster role |
 |-----------|---------------|-------------|
-| **MemoryAdapter** | **`RedisMemoryAdapter`** (TCP, `@agent-runtime/adapters-redis`), `UpstashRedisMemoryAdapter` (REST), Postgres | All workers read/write the same memory store. `InMemoryMemoryAdapter` is **single-process only** (tests / local dev). |
-| **RunStore** | `InMemoryRunStore` (tests/local), **`RedisRunStore`** (TCP, `@agent-runtime/adapters-redis`), `UpstashRunStore` (HTTP, `@agent-runtime/adapters-upstash`) | Persists `Run` so `wait` on node A can be `resume`d on node B. Pass **`runStore`** into **`AgentRuntime`** — see §3. |
-| **Job queue** (BullMQ / QStash) | **`@agent-runtime/adapters-bullmq`** — typed queue/worker + **`dispatchEngineJob(runtime, payload)`** | Distributes `run` / `resume` jobs across workers. QStash remains app-integrated (not packaged here). |
-| **MessageBus** | `InProcessMessageBus` (single process), **`RedisMessageBus`** (TCP Streams, `@agent-runtime/adapters-redis`), `UpstashRedisMessageBus` (REST) | Delivers `system_send_message` across workers when **`messageBus`** is set on **`AgentRuntime`**. |
+| **MemoryAdapter** | **`RedisMemoryAdapter`** (TCP, `@opencoreagents/adapters-redis`), `UpstashRedisMemoryAdapter` (REST), Postgres | All workers read/write the same memory store. `InMemoryMemoryAdapter` is **single-process only** (tests / local dev). |
+| **RunStore** | `InMemoryRunStore` (tests/local), **`RedisRunStore`** (TCP, `@opencoreagents/adapters-redis`), `UpstashRunStore` (HTTP, `@opencoreagents/adapters-upstash`) | Persists `Run` so `wait` on node A can be `resume`d on node B. Pass **`runStore`** into **`AgentRuntime`** — see §3. |
+| **Job queue** (BullMQ / QStash) | **`@opencoreagents/adapters-bullmq`** — typed queue/worker; **`dispatchEngineJob(runtime, payload)`** from **`core`** (re-exported) | Distributes `run` / `resume` jobs across workers. QStash remains app-integrated (not packaged here). |
+| **MessageBus** | `InProcessMessageBus` (single process), **`RedisMessageBus`** (TCP Streams, `@opencoreagents/adapters-redis`), `UpstashRedisMessageBus` (REST) | Delivers `system_send_message` across workers when **`messageBus`** is set on **`AgentRuntime`**. |
 | **VectorAdapter** | Upstash Vector | Shared semantic index — stateless queries from any node. |
 
 ---
@@ -72,9 +72,9 @@ Legend: **✓** = adapter(s) in repo. **○** = your app wires BullMQ (or anothe
 Every worker process must execute this sequence before handling jobs:
 
 ```typescript
-import { AgentRuntime, Agent, Tool, Skill } from "@agent-runtime/core";
-import { OpenAILLMAdapter } from "@agent-runtime/adapters-openai";
-import { RedisMemoryAdapter, RedisRunStore, RedisMessageBus } from "@agent-runtime/adapters-redis";
+import { AgentRuntime, Agent, Tool, Skill } from "@opencoreagents/core";
+import { OpenAILLMAdapter } from "@opencoreagents/adapters-openai";
+import { RedisMemoryAdapter, RedisRunStore, RedisMessageBus } from "@opencoreagents/adapters-redis";
 import Redis from "ioredis";
 
 const redis = new Redis(process.env.REDIS_URL!);
@@ -89,7 +89,7 @@ const runtime = new AgentRuntime({
 });
 
 // Alternative — Upstash REST (no TCP): same contracts, HTTP client to Redis
-// import { UpstashRedisMemoryAdapter, UpstashRunStore, UpstashRedisMessageBus } from "@agent-runtime/adapters-upstash";
+// import { UpstashRedisMemoryAdapter, UpstashRunStore, UpstashRedisMessageBus } from "@opencoreagents/adapters-upstash";
 // const redisUrl = process.env.UPSTASH_REDIS_URL!;
 // const redisToken = process.env.UPSTASH_REDIS_TOKEN!;
 // const runtime = new AgentRuntime({
@@ -122,7 +122,7 @@ If step 2 differs between workers, behavior is undefined: one node may refuse a 
 
 The engine keeps a `Run` in memory during `executeRun`. For clusters, **`RunBuilder` saves the run after each `executeRun` when `runStore` is set**, including when status is `waiting`, so another worker can call `Agent.resume`.
 
-### 3.1 Interface (implemented in `@agent-runtime/core`)
+### 3.1 Interface (implemented in `@opencoreagents/core`)
 
 ```typescript
 interface RunStore {
@@ -139,7 +139,7 @@ interface RunStore {
 | Impl | When |
 |------|------|
 | `InMemoryRunStore` | Tests, local dev, single-process |
-| `UpstashRunStore` (`@agent-runtime/adapters-upstash`) | Production cluster — JSON per `run` in `run:data:{runId}` plus `run:agent:{agentId}` SET for listing |
+| `UpstashRunStore` (`@opencoreagents/adapters-upstash`) | Production cluster — JSON per `run` in `run:data:{runId}` plus `run:agent:{agentId}` SET for listing |
 | DB-backed | High-volume production with audit requirements (implement `RunStore` yourself) |
 
 ### 3.3 Integration points
@@ -163,7 +163,7 @@ Full table: [`technical-debt.md` §8](../../technical-debt.md).
 
 ## 4. Job queue: cluster execution model (**BullMQ priority**)
 
-The job queue is **not** inside `packages/core` — it is **infrastructure** that invokes the engine. **`@agent-runtime/adapters-bullmq`** provides typed **queue** / **worker** helpers and **`dispatchEngineJob`** so workers call the same **`Agent.run`** / **`Agent.resume`** path as the SDK. QStash is **not** packaged here; integrate HTTP callbacks in your app if needed.
+The job queue is **not** inside `packages/core` — it is **infrastructure** that invokes the engine. **`@opencoreagents/adapters-bullmq`** provides typed **queue** / **worker** helpers. **`dispatchEngineJob(runtime, payload)`** is implemented in **`@opencoreagents/core`** and **re-exported** from **`adapters-bullmq`** for convenience; workers call the same **`Agent.run`** / **`Agent.resume`** path as the SDK. QStash is **not** packaged here; integrate HTTP callbacks in your app if needed.
 
 ```
 ┌────────────┐     ┌──────────────┐     ┌────────────┐
@@ -174,7 +174,7 @@ The job queue is **not** inside `packages/core` — it is **infrastructure** tha
 
 ### 4.1 BullMQ (primary) — `adapters-bullmq`
 
-- **Package**: `createEngineQueue`, `createEngineWorker`, `dispatchEngineJob`, `DEFAULT_ENGINE_QUEUE_NAME`, typed **`EngineJobPayload`** (`kind: "run" | "resume"`; optional **`expiresAtMs`**).
+- **Package**: `createEngineQueue`, `createEngineWorker`, `DEFAULT_ENGINE_QUEUE_NAME`; **re-exports** `dispatchEngineJob` and typed **`EngineJobPayload`** from **`@opencoreagents/core`** (`kind: "run" | "resume"`; optional **`expiresAtMs`**).
 - **Design**: one or more workers per queue, all running the same bootstrap (§2).
 - Worker **processor** typically **`await dispatchEngineJob(runtime, job.data)`** after constructing **`AgentRuntime`** + definitions — or (low-level) `getAgentDefinition` + `buildEngineDeps(agent, session, runtime)` + `createRun` / `executeRun` with `runStore.save` as in §3.3.
 - Retries, backoff, dead-letter are BullMQ config — the engine sees a normal run.
@@ -184,12 +184,12 @@ The job queue is **not** inside `packages/core` — it is **infrastructure** tha
 Minimal worker (same bootstrap as §2 — **`AgentRuntime`** + definitions before `Worker` starts):
 
 ```typescript
-import { AgentRuntime } from "@agent-runtime/core";
+import { AgentRuntime } from "@opencoreagents/core";
 import {
   DEFAULT_ENGINE_QUEUE_NAME,
   createEngineWorker,
   dispatchEngineJob,
-} from "@agent-runtime/adapters-bullmq";
+} from "@opencoreagents/adapters-bullmq";
 import type { Job } from "bullmq";
 
 // connection: BullMQ `ConnectionOptions` — often `{ url: process.env.REDIS_URL }` for TCP Redis
@@ -221,10 +221,10 @@ Enqueue from your API with **`createEngineQueue`** (`addRun` / `addResume`) usin
 
 | Mode | Scope | Implementation |
 |------|-------|----------------|
-| **In-process** | Single-process dev / tests | `InProcessMessageBus` (`@agent-runtime/core`) |
-| **Redis Streams (TCP)** | Cluster (multiple workers) | `RedisMessageBus` (`@agent-runtime/adapters-redis`) — stream `bus:agent:{toAgentId}`, `XRANGE` polling in `waitFor`. |
-| **Redis Streams (REST)** | Cluster (multiple workers) | `UpstashRedisMessageBus` (`@agent-runtime/adapters-upstash`) — same keys/semantics over HTTP. |
-| **BullMQ-backed** | *Optional app pattern* | For **`run`/`resume` jobs**, use **`@agent-runtime/adapters-bullmq`** (§4). Using BullMQ **as transport for `system_send_message`** (instead of Redis Streams) is a custom design — not a separate package. |
+| **In-process** | Single-process dev / tests | `InProcessMessageBus` (`@opencoreagents/core`) |
+| **Redis Streams (TCP)** | Cluster (multiple workers) | `RedisMessageBus` (`@opencoreagents/adapters-redis`) — stream `bus:agent:{toAgentId}`, `XRANGE` polling in `waitFor`. |
+| **Redis Streams (REST)** | Cluster (multiple workers) | `UpstashRedisMessageBus` (`@opencoreagents/adapters-upstash`) — same keys/semantics over HTTP. |
+| **BullMQ-backed** | *Optional app pattern* | For **`run`/`resume` jobs**, use **`@opencoreagents/adapters-bullmq`** (§4). Using BullMQ **as transport for `system_send_message`** (instead of Redis Streams) is a custom design — not a separate package. |
 
 In cluster mode, `system_send_message` from agent A (on worker 1) writes to Redis; agent B’s run (on worker 3) picks it up via `waitFor` when using `UpstashRedisMessageBus` or `RedisMessageBus`.
 
@@ -274,12 +274,12 @@ Workers are stateless and horizontally scalable for **engine** execution. Add or
 
 | Use case | Typical connection | Notes |
 |----------|-------------------|--------|
-| **TCP Redis adapters** (`RedisMemoryAdapter`, `RedisRunStore`, `RedisMessageBus` in `@agent-runtime/adapters-redis`) | **TCP** (`ioredis`) | **Default for clusters:** same semantics as REST adapters; one `REDIS_URL` can back engine state **and** BullMQ workers. |
+| **TCP Redis adapters** (`RedisMemoryAdapter`, `RedisRunStore`, `RedisMessageBus` in `@opencoreagents/adapters-redis`) | **TCP** (`ioredis`) | **Default for clusters:** same semantics as REST adapters; one `REDIS_URL` can back engine state **and** BullMQ workers. |
 | **Upstash REST adapters** (`UpstashRedisMemoryAdapter`, `UpstashRunStore`, `UpstashRedisMessageBus`) | Upstash **REST** (`fetch` JSON command arrays) | No persistent TCP connection; good for serverless/edge; `MessageBus.waitFor` uses polling over HTTP. |
-| **BullMQ** | **TCP** Redis (`ioredis` / `node-redis`) | Requires long-lived connection — **not** the REST-only Upstash client. Often the **same** TCP Redis as `@agent-runtime/adapters-redis`. |
+| **BullMQ** | **TCP** Redis (`ioredis` / `node-redis`) | Requires long-lived connection — **not** the REST-only Upstash client. Often the **same** TCP Redis as `@opencoreagents/adapters-redis`. |
 | **Practical split** | One or two connections | Prefer **one TCP Redis** for `adapters-redis` + BullMQ; add **Upstash REST** only if you need HTTP-only access; add **Upstash Vector** for hosted vectors (can pair with either). |
 
-You can run **Upstash Vector** with **Upstash Redis REST** for engine state and a **separate** TCP Redis for BullMQ — or consolidate on **TCP** for queues + `adapters-redis` and keep **only** `UpstashVectorAdapter` from `@agent-runtime/adapters-upstash`.
+You can run **Upstash Vector** with **Upstash Redis REST** for engine state and a **separate** TCP Redis for BullMQ — or consolidate on **TCP** for queues + `adapters-redis` and keep **only** `UpstashVectorAdapter` from `@opencoreagents/adapters-upstash`.
 
 ---
 

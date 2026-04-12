@@ -1,4 +1,4 @@
-import type { ToolAdapter, ToolDefinition, SkillDefinition } from "@agent-runtime/core";
+import type { ToolAdapter, ToolDefinition, SkillDefinition } from "@opencoreagents/core";
 import { fileReadTool, fileReadDefinition } from "./tools/fileRead.js";
 import { fileIngestTool, fileIngestDefinition } from "./tools/fileIngest.js";
 import { fileListTool, fileListDefinition } from "./tools/fileList.js";

@@ -17,9 +17,9 @@ Production deployments use **adapters** that satisfy the same core interfaces ([
 
 | Adapter / tool | MVP role |
 |----------------|----------|
-| **TCP Redis (`@agent-runtime/adapters-redis`)** | **Default** for clusters: `RedisMemoryAdapter`, `RedisRunStore`, `RedisMessageBus` on `REDIS_URL` — aligns with BullMQ and typical `redis://` infrastructure. |
-| **Upstash REST (`@agent-runtime/adapters-upstash`)** | HTTP Redis + **`UpstashVectorAdapter`** when you want serverless/edge-friendly access or to colocate vector with Upstash Redis in one package. |
-| **`@agent-runtime/adapters-bullmq` (priority)** | Typed **`createEngineQueue`** / **`createEngineWorker`** + **`dispatchEngineJob`** — async `run` / `resume`, delayed jobs after `wait` (`reason: scheduled`); same engine API as SDK/REST — [05-adapters.md](./05-adapters.md#job-queue-adapter-primary-bullmq). |
+| **TCP Redis (`@opencoreagents/adapters-redis`)** | **Default** for clusters: `RedisMemoryAdapter`, `RedisRunStore`, `RedisMessageBus` on `REDIS_URL` — aligns with BullMQ and typical `redis://` infrastructure. |
+| **Upstash REST (`@opencoreagents/adapters-upstash`)** | HTTP Redis + **`UpstashVectorAdapter`** when you want serverless/edge-friendly access or to colocate vector with Upstash Redis in one package. |
+| **`@opencoreagents/adapters-bullmq` (priority)** | Typed **`createEngineQueue`** / **`createEngineWorker`**; **`dispatchEngineJob`** implemented in **`@opencoreagents/core`** and re-exported here — async `run` / `resume`, delayed jobs after `wait` (`reason: scheduled`); same engine API as SDK/REST — [05-adapters.md](./05-adapters.md#job-queue-adapter-primary-bullmq). |
 | **Upstash QStash (alternative)** | If you skip BullMQ workers: HTTP callback to `POST /runs/:id/resume` (or internal equivalent) after a delay — serverless-friendly; **secondary** to BullMQ for the same semantics. |
 | **Upstash Vector (optional MVP+)** | Tool `system_vector_search` / `system_vector_upsert` or subset: embeddings + query for semantic memory; can ship in the same phase as MVP if the use case requires it. |
 
@@ -61,7 +61,7 @@ Detailed contracts: [10-llm-adapter.md](./10-llm-adapter.md), [11-context-builde
 1. LLM Adapter + parsing a single step type (`result` or `action`).
 2. ToolRunner + minimal memory (in-memory or file).
 3. Full loop + `wait` / `resume`; wire **`RunStore`** before relying on cross-worker resume.
-4. **Redis MemoryAdapter** — `@agent-runtime/adapters-redis` (TCP) or `@agent-runtime/adapters-upstash` (REST); same interface; key idempotency tests.
+4. **Redis MemoryAdapter** — `@opencoreagents/adapters-redis` (TCP) or `@opencoreagents/adapters-upstash` (REST); same interface; key idempotency tests.
 5. Hooks + hardening (timeouts, limits).
 6. **BullMQ** workers for background `run` / `resume` and scheduled `wait` (or **QStash** only if you explicitly choose the HTTP-callback path).
 7. (Optional MVP+) Vector search/upsert.

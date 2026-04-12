@@ -1,5 +1,5 @@
 {
-  "name": "@agent-runtime/example-rag",
+  "name": "@opencoreagents/example-rag",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -10,9 +10,9 @@
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
-    "@agent-runtime/adapters-openai": "workspace:*",
-    "@agent-runtime/core": "workspace:*",
-    "@agent-runtime/rag": "workspace:*"
+    "@opencoreagents/adapters-openai": "workspace:*",
+    "@opencoreagents/core": "workspace:*",
+    "@opencoreagents/rag": "workspace:*"
   },
   "devDependencies": {
     "tsx": "^4.19.3",

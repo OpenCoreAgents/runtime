@@ -6,7 +6,7 @@ import type {
   VectorDocument,
   VectorQuery,
   VectorResult,
-} from "@agent-runtime/core";
+} from "@opencoreagents/core";
 import {
   appendMemoryListEntryUpstash,
   readMemoryListUpstash,

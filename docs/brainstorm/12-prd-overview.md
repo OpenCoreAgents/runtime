@@ -55,7 +55,7 @@ Create agents dynamically at runtime:
 ### Usage example
 
 ```typescript
-import { Tool, Skill, Agent, AgentRuntime, Session, InMemoryMemoryAdapter } from "@agent-runtime/core";
+import { Tool, Skill, Agent, AgentRuntime, Session, InMemoryMemoryAdapter } from "@opencoreagents/core";
 
 // 1. Register tools
 await Tool.define({
@@ -90,7 +90,7 @@ await Agent.define({
 
 // 4. Instantiate and run
 const runtime = new AgentRuntime({
-  llmAdapter: chatAdapter, // your LLMAdapter (e.g. @agent-runtime/adapters-openai)
+  llmAdapter: chatAdapter, // your LLMAdapter (e.g. @opencoreagents/adapters-openai)
   memoryAdapter: new InMemoryMemoryAdapter(),
 });
 const session = new Session({ id: "queue-2026-04-01", projectId: "acme-corp" });
@@ -121,11 +121,11 @@ await agent.resume(runId, { type: "text", content: "approved — escalate to bil
 | **Upstash QStash (alternative)** | HTTP callback to `POST /runs/:id/resume` when BullMQ workers are not used — same wake semantics, serverless-oriented |
 
 ```typescript
-import { Agent, AgentRuntime, Session } from "@agent-runtime/core";
+import { Agent, AgentRuntime, Session } from "@opencoreagents/core";
 import {
   UpstashRedisMemoryAdapter,
   UpstashVectorAdapter,
-} from "@agent-runtime/adapters-upstash";
+} from "@opencoreagents/adapters-upstash";
 
 const runtime = new AgentRuntime({
   llmAdapter: chatAdapter, // your LLMAdapter

@@ -3,14 +3,14 @@
  * Catalog: `registerRagCatalog(runtime, projectId, sources)`; the model uses **ids**, not raw paths.
  * Native OpenAI `tool_calls` are handled inside `executeRun` (`normalizeLlmStepContent` in core).
  */
-import { OpenAILLMAdapter, OpenAIEmbeddingAdapter } from "@agent-runtime/adapters-openai";
+import { OpenAILLMAdapter, OpenAIEmbeddingAdapter } from "@opencoreagents/adapters-openai";
 import {
   Agent,
   AgentRuntime,
   Session,
   InMemoryMemoryAdapter,
-} from "@agent-runtime/core";
-import { registerRagCatalog, registerRagToolsAndSkills } from "@agent-runtime/rag";
+} from "@opencoreagents/core";
+import { registerRagCatalog, registerRagToolsAndSkills } from "@opencoreagents/rag";
 
 import { createDemoVectorAdapter } from "./demoAdapters.js";
 import { DEMO_FILE_READ_ROOT, DEMO_RAG_SOURCES } from "./fileSources.js";

@@ -2,18 +2,18 @@
  * Mock Telegram pipeline: fake webhook updates → ConversationGateway → mock sendMessage.
  * No TELEGRAM_BOT_TOKEN, no HTTP to Telegram.
  */
-import type { LLMAdapter, LLMRequest, LLMResponse } from "@agent-runtime/core";
+import type { LLMAdapter, LLMRequest, LLMResponse } from "@opencoreagents/core";
 import {
   Agent,
   AgentRuntime,
   InMemoryMemoryAdapter,
   InMemoryRunStore,
-} from "@agent-runtime/core";
+} from "@opencoreagents/core";
 import {
   ConversationGateway,
   findWaitingRunIdFromRunStore,
   type OutboundDispatcher,
-} from "@agent-runtime/conversation-gateway";
+} from "@opencoreagents/conversation-gateway";
 import { MockTelegramClient, chatIdFromConversationKey } from "./mockTelegramClient.js";
 import {
   telegramMessageToNormalized,

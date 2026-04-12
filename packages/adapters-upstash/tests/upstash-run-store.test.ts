@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { UpstashRunStore } from "../src/UpstashRunStore.js";
-import type { Run } from "@agent-runtime/core";
+import type { Run } from "@opencoreagents/core";
 
 describe("UpstashRunStore", () => {
   const store = new Map<string, string>();

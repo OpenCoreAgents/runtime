@@ -7,8 +7,8 @@ import {
   AgentRuntime,
   Session,
   InMemoryMemoryAdapter,
-} from "@agent-runtime/core";
-import { registerRagCatalog, registerRagToolsAndSkills } from "@agent-runtime/rag";
+} from "@opencoreagents/core";
+import { registerRagCatalog, registerRagToolsAndSkills } from "@opencoreagents/rag";
 
 import { createDemoEmbeddingAdapter, createDemoVectorAdapter } from "./demoAdapters.js";
 import {

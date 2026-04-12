@@ -5,8 +5,8 @@ import {
   InMemoryMemoryAdapter,
   InMemoryRunStore,
   clearAllRegistriesForTests,
-} from "@agent-runtime/core";
-import type { LLMAdapter, LLMRequest, LLMResponse } from "@agent-runtime/core";
+} from "@opencoreagents/core";
+import type { LLMAdapter, LLMRequest, LLMResponse } from "@opencoreagents/core";
 import {
   ConversationGateway,
   findWaitingRunIdFromRunStore,

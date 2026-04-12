@@ -1,4 +1,4 @@
-import type { Run } from "@agent-runtime/core";
+import type { Run } from "@opencoreagents/core";
 
 export function printRunSummary(run: Run): void {
   console.log("status:", run.status);

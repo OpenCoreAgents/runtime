@@ -1,8 +1,8 @@
-# `@agent-runtime/adapters-upstash`
+# `@opencoreagents/adapters-upstash`
 
-**Upstash REST** implementations for `@agent-runtime/core`: HTTP access to **Redis** (no long-lived TCP) plus **Upstash Vector** for RAG / `system_vector_search`.
+**Upstash REST** implementations for `@opencoreagents/core`: HTTP access to **Redis** (no long-lived TCP) plus **Upstash Vector** for RAG / `system_vector_search`.
 
-Use this package when you want **serverless- or edge-friendly** `fetch`-only calls, or when you colocate **vector** with Upstash Redis in one dependency. For a normal **`REDIS_URL`** and the same key layout over TCP, prefer **`@agent-runtime/adapters-redis`** (`ioredis`) for memory, `RunStore`, and `MessageBus`.
+Use this package when you want **serverless- or edge-friendly** `fetch`-only calls, or when you colocate **vector** with Upstash Redis in one dependency. For a normal **`REDIS_URL`** and the same key layout over TCP, prefer **`@opencoreagents/adapters-redis`** (`ioredis`) for memory, `RunStore`, and `MessageBus`.
 
 ## Exports
 

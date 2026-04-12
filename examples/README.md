@@ -6,7 +6,7 @@ Runnable sample programs under **`examples/*`**, linked as **`pnpm` workspace** 
 
 Most examples use **`InMemoryMemoryAdapter`**: it is **in-process only** (heap), **not durable** across restarts, and **wrong for multiple workers** — each process has its own empty store.
 
-For production or any shared runtime, swap to **`RedisMemoryAdapter`** (`@agent-runtime/adapters-redis`, TCP `REDIS_URL`) or **`UpstashRedisMemoryAdapter`** (`@agent-runtime/adapters-upstash`, HTTP), and pass that adapter into **`new AgentRuntime({ memoryAdapter: … })`**. Cluster guidance: [`docs/core/19-cluster-deployment.md`](../docs/core/19-cluster-deployment.md) §1.2; adapter inventory: [`docs/core/05-adapters.md`](../docs/core/05-adapters.md).
+For production or any shared runtime, swap to **`RedisMemoryAdapter`** (`@opencoreagents/adapters-redis`, TCP `REDIS_URL`) or **`UpstashRedisMemoryAdapter`** (`@opencoreagents/adapters-upstash`, HTTP), and pass that adapter into **`new AgentRuntime({ memoryAdapter: … })`**. Cluster guidance: [`docs/core/19-cluster-deployment.md`](../docs/core/19-cluster-deployment.md) §1.2; adapter inventory: [`docs/core/05-adapters.md`](../docs/core/05-adapters.md).
 
 ---
 
@@ -21,6 +21,9 @@ For production or any shared runtime, swap to **`RedisMemoryAdapter`** (`@agent-
 | Combine **RAG** with a **custom tool**, **`Session.sessionContext`** (e.g. email), **`contact_support`**, and **`Agent.resume`** after **`wait`** (**`InMemoryRunStore`**) | [`rag-contact-support/`](./rag-contact-support/) |
 | Wire **multi-agent** messaging: **`InProcessMessageBus`**, **`system_send_message`**, request/reply | [`multi-agent/`](./multi-agent/) |
 | **Express** BFF + **browser UI** (`public/`): **`POST /v1/chat`**, **`POST /v1/chat/stream`** (SSE hooks), **`GET /status`**, run + session status, **`wait`** + **`resume`** (optional **`OPENAI_API_KEY`** / **`ANTHROPIC_API_KEY`**) | [`real-world-with-express/`](./real-world-with-express/) |
+| **Redis** definitions + **BullMQ** worker + **per-job hydrate** (REST CRUD; API enqueues, worker runs engine) | [`dynamic-runtime-rest/`](./dynamic-runtime-rest/) |
+| **Plan-shaped REST** after **`Agent.define`**: **`@opencoreagents/rest-api`** **`createPlanRestRouter`** — `GET /agents`, `POST /agents/:id/run`, optional **`runStore`**, fixed or multi-**`projectId`**, optional **`apiKey`** ([`packages/rest-api/README.md`](../packages/rest-api/README.md)) | [`plan-rest-express/`](./plan-rest-express/) · [`docs/plan-rest.md`](../docs/plan-rest.md) |
+| **Custom BFF** (sync chat UI, SSE, your own routes): extend **`real-world-with-express`** or **`dynamic-runtime-rest`** (async BullMQ); see **`plan-rest.md` — Easiest HTTP server (today)** | [`real-world-with-express/`](./real-world-with-express/) · [`dynamic-runtime-rest/`](./dynamic-runtime-rest/) · [`docs/plan-rest.md`](../docs/plan-rest.md) |
 | **Telegram-shaped** webhook updates + **`ConversationGateway`**, **mock** outbound (no `api.telegram.org`) | [`telegram-example-mocked/`](./telegram-example-mocked/) |
 
 **Notes**
@@ -35,97 +38,110 @@ For production or any shared runtime, swap to **`RedisMemoryAdapter`** (`@agent-
 
 | Package | Directory | Summary |
 |---------|-----------|---------|
-| `@agent-runtime/example-minimal-run` | [`minimal-run/`](./minimal-run/) | **`Agent.run()`** end-to-end with a **deterministic mock LLM** and **`InMemoryMemoryAdapter`**. No network, no API keys. |
-| `@agent-runtime/example-openai-tools-skill` | [`openai-tools-skill/`](./openai-tools-skill/) | **`OpenAILLMAdapter`** (engine maps native `tool_calls` when `content` is empty), custom **`Tool.define`** (`roll_dice`), **`Skill.define`**, **`Agent.define`**. Requires **`OPENAI_API_KEY`**. |
-| `@agent-runtime/example-console-wait` | [`console-wait/`](./console-wait/) | Interactive **terminal**: mock LLM emits **`wait`**, **`RunBuilder.onWait`** reads stdin (`readline`), then continues in-process. No API keys. |
-| `@agent-runtime/example-rag` | [`rag/`](./rag/) | **`registerRagCatalog(runtime, …)`** (per project) + **`system_ingest_rag_source`** / **`system_vector_search`**; in-memory vector + hash embeddings (no API keys); optional OpenAI script. |
-| `@agent-runtime/example-multi-agent` | [`multi-agent/`](./multi-agent/) | **`InProcessMessageBus`** + **`system_send_message`**: fire-and-forget **event**, then **request** / **reply** with **`correlationId`** (mock LLM; no keys). |
-| `@agent-runtime/example-rag-contact-support` | [`rag-contact-support/`](./rag-contact-support/) | **RAG** + **`contact_support`**, **`Session.sessionContext`**, two CLI turns (KB vs ticket), **`wait`** + **`Agent.resume`** with **`InMemoryRunStore`** (scripted LLM; no keys). |
-| `@agent-runtime/example-real-world-with-express` | [`real-world-with-express/`](./real-world-with-express/) | **Express** BFF + **`public/`** HTML/JS UI: JSON chat + **SSE**, **`GET /status`**, run + session status, wait/resume; **`API_KEY`**, CORS, **`X-Request-Id`**, SIGTERM shutdown; **`InMemoryRunStore`**; mock or **OpenAI** / **Anthropic**. |
-| `@agent-runtime/example-telegram-mocked` | [`telegram-example-mocked/`](./telegram-example-mocked/) | **Mock** Telegram **`Update`** / **`Message`** → **`NormalizedInboundMessage`** → **`ConversationGateway`** → **`MockTelegramClient`** outbox (no Telegram network or bot token). |
+| `@opencoreagents/example-minimal-run` | [`minimal-run/`](./minimal-run/) | **`Agent.run()`** end-to-end with a **deterministic mock LLM** and **`InMemoryMemoryAdapter`**. No network, no API keys. |
+| `@opencoreagents/example-openai-tools-skill` | [`openai-tools-skill/`](./openai-tools-skill/) | **`OpenAILLMAdapter`** (engine maps native `tool_calls` when `content` is empty), custom **`Tool.define`** (`roll_dice`), **`Skill.define`**, **`Agent.define`**. Requires **`OPENAI_API_KEY`**. |
+| `@opencoreagents/example-console-wait` | [`console-wait/`](./console-wait/) | Interactive **terminal**: mock LLM emits **`wait`**, **`RunBuilder.onWait`** reads stdin (`readline`), then continues in-process. No API keys. |
+| `@opencoreagents/example-rag` | [`rag/`](./rag/) | **`registerRagCatalog(runtime, …)`** (per project) + **`system_ingest_rag_source`** / **`system_vector_search`**; in-memory vector + hash embeddings (no API keys); optional OpenAI script. |
+| `@opencoreagents/example-multi-agent` | [`multi-agent/`](./multi-agent/) | **`InProcessMessageBus`** + **`system_send_message`**: fire-and-forget **event**, then **request** / **reply** with **`correlationId`** (mock LLM; no keys). |
+| `@opencoreagents/example-rag-contact-support` | [`rag-contact-support/`](./rag-contact-support/) | **RAG** + **`contact_support`**, **`Session.sessionContext`**, two CLI turns (KB vs ticket), **`wait`** + **`Agent.resume`** with **`InMemoryRunStore`** (scripted LLM; no keys). |
+| `@opencoreagents/example-real-world-with-express` | [`real-world-with-express/`](./real-world-with-express/) | **Express** BFF + **`public/`** HTML/JS UI: JSON chat + **SSE**, **`GET /status`**, run + session status, wait/resume; **`API_KEY`**, CORS, **`X-Request-Id`**, SIGTERM shutdown; **`InMemoryRunStore`**; mock or **OpenAI** / **Anthropic**. |
+| `@opencoreagents/example-dynamic-runtime-rest` | [`dynamic-runtime-rest/`](./dynamic-runtime-rest/) | **`RedisDynamicDefinitionsStore`** (`store.Agent`, `store.methods`), BullMQ **`POST /v1/run`**, **`GET /v1/jobs/:id`**. |
+| `@opencoreagents/example-plan-rest-express` | [`plan-rest-express/`](./plan-rest-express/) | Minimal Express app: **`Agent.define`** + **`createPlanRestRouter`** (`@opencoreagents/rest-api`) — plan-rest-shaped JSON API; mock LLM + **`InMemoryRunStore`**. |
+| `@opencoreagents/example-telegram-mocked` | [`telegram-example-mocked/`](./telegram-example-mocked/) | **Mock** Telegram **`Update`** / **`Message`** → **`NormalizedInboundMessage`** → **`ConversationGateway`** → **`MockTelegramClient`** outbox (no Telegram network or bot token). |
 
-### `minimal-run` — `@agent-runtime/example-minimal-run`
+### `minimal-run` — `@opencoreagents/example-minimal-run`
 
 | | |
 |--|--|
-| **Workspace deps** | `@agent-runtime/core` |
+| **Workspace deps** | `@opencoreagents/core` |
 | **Scripts** | `pnpm start` → `tsx src/main.ts`; `pnpm typecheck` |
-| **Build first** | `pnpm turbo run build --filter=@agent-runtime/core` |
-| **Run** | `pnpm --filter @agent-runtime/example-minimal-run start` |
+| **Build first** | `pnpm turbo run build --filter=@opencoreagents/core` |
+| **Run** | `pnpm --filter @opencoreagents/example-minimal-run start` |
 | **Docs** | [minimal-run/README.md](./minimal-run/README.md) |
 
-### `openai-tools-skill` — `@agent-runtime/example-openai-tools-skill`
+### `openai-tools-skill` — `@opencoreagents/example-openai-tools-skill`
 
 | | |
 |--|--|
-| **Workspace deps** | `@agent-runtime/core`, `@agent-runtime/adapters-openai` |
+| **Workspace deps** | `@opencoreagents/core`, `@opencoreagents/adapters-openai` |
 | **Scripts** | `pnpm start` → `tsx src/main.ts`; `pnpm typecheck` |
 | **Env** | `OPENAI_API_KEY` (required); optional `OPENAI_MODEL` (default `gpt-4o-mini`) |
-| **Build first** | `pnpm turbo run build --filter=@agent-runtime/core --filter=@agent-runtime/adapters-openai` |
-| **Run** | `OPENAI_API_KEY=sk-... pnpm --filter @agent-runtime/example-openai-tools-skill start` |
+| **Build first** | `pnpm turbo run build --filter=@opencoreagents/core --filter=@opencoreagents/adapters-openai` |
+| **Run** | `OPENAI_API_KEY=sk-... pnpm --filter @opencoreagents/example-openai-tools-skill start` |
 | **Docs** | [openai-tools-skill/README.md](./openai-tools-skill/README.md), [openai-tools-skill/.env.example](./openai-tools-skill/.env.example) |
 
-### `console-wait` — `@agent-runtime/example-console-wait`
+### `console-wait` — `@opencoreagents/example-console-wait`
 
 | | |
 |--|--|
-| **Workspace deps** | `@agent-runtime/core` |
+| **Workspace deps** | `@opencoreagents/core` |
 | **Scripts** | `pnpm start` → `tsx src/main.ts`; `pnpm typecheck` |
-| **Build first** | `pnpm turbo run build --filter=@agent-runtime/core` |
-| **Run** | `pnpm --filter @agent-runtime/example-console-wait start` (interactive); or pipe a line: `printf 'hello\\n' \| pnpm --filter @agent-runtime/example-console-wait start` |
+| **Build first** | `pnpm turbo run build --filter=@opencoreagents/core` |
+| **Run** | `pnpm --filter @opencoreagents/example-console-wait start` (interactive); or pipe a line: `printf 'hello\\n' \| pnpm --filter @opencoreagents/example-console-wait start` |
 | **Docs** | [console-wait/README.md](./console-wait/README.md) |
 
-### `rag` — `@agent-runtime/example-rag`
+### `rag` — `@opencoreagents/example-rag`
 
 | | |
 |--|--|
-| **Workspace deps** | `@agent-runtime/core`, `@agent-runtime/rag` |
+| **Workspace deps** | `@opencoreagents/core`, `@opencoreagents/rag` |
 | **Scripts** | `pnpm start` → `tsx src/main.ts`; `pnpm typecheck` |
-| **Build first** | `pnpm turbo run build --filter=@agent-runtime/core --filter=@agent-runtime/rag` (add `--filter=@agent-runtime/adapters-openai` for `start:openai`) |
-| **Run** | `pnpm --filter @agent-runtime/example-rag start` (no keys); optional `pnpm --filter @agent-runtime/example-rag run start:openai` + `OPENAI_API_KEY` |
+| **Build first** | `pnpm turbo run build --filter=@opencoreagents/core --filter=@opencoreagents/rag` (add `--filter=@opencoreagents/adapters-openai` for `start:openai`) |
+| **Run** | `pnpm --filter @opencoreagents/example-rag start` (no keys); optional `pnpm --filter @opencoreagents/example-rag run start:openai` + `OPENAI_API_KEY` |
 | **Docs** | [rag/README.md](./rag/README.md) |
 
-### `multi-agent` — `@agent-runtime/example-multi-agent`
+### `multi-agent` — `@opencoreagents/example-multi-agent`
 
 | | |
 |--|--|
-| **Workspace deps** | `@agent-runtime/core` |
+| **Workspace deps** | `@opencoreagents/core` |
 | **Scripts** | `pnpm start` → `tsx src/main.ts`; `pnpm typecheck` |
-| **Build first** | `pnpm turbo run build --filter=@agent-runtime/core` |
-| **Run** | `pnpm --filter @agent-runtime/example-multi-agent start` |
+| **Build first** | `pnpm turbo run build --filter=@opencoreagents/core` |
+| **Run** | `pnpm --filter @opencoreagents/example-multi-agent start` |
 | **Docs** | [multi-agent/README.md](./multi-agent/README.md) |
 
-### `rag-contact-support` — `@agent-runtime/example-rag-contact-support`
+### `rag-contact-support` — `@opencoreagents/example-rag-contact-support`
 
 | | |
 |--|--|
-| **Workspace deps** | `@agent-runtime/core`, `@agent-runtime/rag` |
+| **Workspace deps** | `@opencoreagents/core`, `@opencoreagents/rag` |
 | **Scripts** | `pnpm start` → `tsx src/main.ts`; `pnpm typecheck` |
-| **Build first** | `pnpm turbo run build --filter=@agent-runtime/core --filter=@agent-runtime/rag` |
-| **Run** | `pnpm --filter @agent-runtime/example-rag-contact-support start` (**interactive** terminal recommended) |
+| **Build first** | `pnpm turbo run build --filter=@opencoreagents/core --filter=@opencoreagents/rag` |
+| **Run** | `pnpm --filter @opencoreagents/example-rag-contact-support start` (**interactive** terminal recommended) |
 | **Docs** | [rag-contact-support/README.md](./rag-contact-support/README.md) |
 
-### `real-world-with-express` — `@agent-runtime/example-real-world-with-express`
+### `real-world-with-express` — `@opencoreagents/example-real-world-with-express`
 
 | | |
 |--|--|
-| **Workspace deps** | `@agent-runtime/core`, `@agent-runtime/adapters-openai`, `@agent-runtime/adapters-anthropic`, `express`, `cors` |
+| **Workspace deps** | `@opencoreagents/core`, `@opencoreagents/adapters-openai`, `@opencoreagents/adapters-anthropic`, `express`, `cors` |
 | **Scripts** | `pnpm start` → `tsx src/server.ts`; `pnpm typecheck` |
 | **Env** | Optional `OPENAI_*` / `ANTHROPIC_*`; optional `EXPRESS_LLM_PROVIDER` (`openai` \| `anthropic`); optional `PORT`; optional `API_KEY` (bearer for `/v1/*`, not `/health` or `/status`); optional `SHUTDOWN_TIMEOUT_MS` |
-| **Build first** | `pnpm turbo run build --filter=@agent-runtime/core --filter=@agent-runtime/adapters-openai --filter=@agent-runtime/adapters-anthropic` |
-| **Run** | `pnpm --filter @agent-runtime/example-real-world-with-express start` |
+| **Build first** | `pnpm turbo run build --filter=@opencoreagents/core --filter=@opencoreagents/adapters-openai --filter=@opencoreagents/adapters-anthropic` |
+| **Run** | `pnpm --filter @opencoreagents/example-real-world-with-express start` |
 | **UI** | Static **`public/`** (`GET /`) — same-origin demo for **`/v1/*`** |
 | **Endpoints (v1)** | `POST /chat`, `POST /chat/stream`, `GET /runs/:runId`, `GET /sessions/:sessionId/status`, `POST /runs/wait-demo`, `POST /runs/:runId/resume` |
 | **Docs** | [real-world-with-express/README.md](./real-world-with-express/README.md), [real-world-with-express/.env.example](./real-world-with-express/.env.example) |
 
-### `telegram-example-mocked` — `@agent-runtime/example-telegram-mocked`
+### `plan-rest-express` — `@opencoreagents/example-plan-rest-express`
 
 | | |
 |--|--|
-| **Workspace deps** | `@agent-runtime/core`, `@agent-runtime/conversation-gateway` |
+| **Workspace deps** | `@opencoreagents/core`, `@opencoreagents/rest-api`, `express` |
+| **Scripts** | `pnpm start` → `tsx src/server.ts`; `pnpm typecheck` |
+| **Build first** | `pnpm turbo run build --filter=@opencoreagents/core --filter=@opencoreagents/rest-api` |
+| **Run** | `pnpm --filter @opencoreagents/example-plan-rest-express start` |
+| **Endpoints** | `GET /agents`, `POST /agents/:agentId/run`, `POST /agents/:agentId/resume`, `GET /runs/:runId` (see [`docs/plan-rest.md`](../docs/plan-rest.md)) |
+| **Docs** | [plan-rest-express/README.md](./plan-rest-express/README.md), [`packages/rest-api/README.md`](../packages/rest-api/README.md) |
+
+### `telegram-example-mocked` — `@opencoreagents/example-telegram-mocked`
+
+| | |
+|--|--|
+| **Workspace deps** | `@opencoreagents/core`, `@opencoreagents/conversation-gateway` |
 | **Scripts** | `pnpm start` → `tsx src/main.ts`; `pnpm typecheck` |
-| **Build first** | `pnpm turbo run build --filter=@agent-runtime/core --filter=@agent-runtime/conversation-gateway` |
-| **Run** | `pnpm --filter @agent-runtime/example-telegram-mocked start` |
+| **Build first** | `pnpm turbo run build --filter=@opencoreagents/core --filter=@opencoreagents/conversation-gateway` |
+| **Run** | `pnpm --filter @opencoreagents/example-telegram-mocked start` |
 | **Docs** | [telegram-example-mocked/README.md](./telegram-example-mocked/README.md) |
 
 ---
@@ -145,12 +161,12 @@ Prioritize by what you want to teach (operators vs integrators). None of these e
 
 - [ ] **TCP Redis** — `RedisMemoryAdapter` + **`RedisRunStore`** + optional **`RedisMessageBus`**; `REDIS_URL`; Docker Compose one-liner in README.
 - [ ] **Upstash REST** — `UpstashRedisMemoryAdapter` / **`UpstashRunStore`** / **`UpstashRedisMessageBus`** when HTTP-only Redis is required.
-- [ ] **BullMQ worker** — `createEngineWorker` + **`dispatchEngineJob`**; enqueue `run` or `resume` from a tiny script; Redis required (align with [`@agent-runtime/adapters-bullmq`](../packages/adapters-bullmq/)).
+- [x] **BullMQ worker** — [`dynamic-runtime-rest/`](./dynamic-runtime-rest/) (`createEngineWorker` + **`runtime.dispatch`** / **`dispatchEngineJob`** from **`core`**, enqueue from Express); see [`@opencoreagents/adapters-bullmq`](../packages/adapters-bullmq/).
 
 ### Tools, memory, RAG
 
 - [ ] **Built-in memory tools** — `system_save_memory` / `system_get_memory` with **`InMemoryMemoryAdapter`** or Redis-backed memory; show scopes (`shortTerm` / `working` / `longTerm`).
-- [x] **`@agent-runtime/rag`** — covered by [`rag/`](./rag/) (**`registerRagCatalog(runtime, projectId, sources)`**, catalog ingest tools, in-memory vector); swap embeddings/vector/OpenAI per [rag/README.md](./rag/README.md).
+- [x] **`@opencoreagents/rag`** — covered by [`rag/`](./rag/) (**`registerRagCatalog(runtime, projectId, sources)`**, catalog ingest tools, in-memory vector); swap embeddings/vector/OpenAI per [rag/README.md](./rag/README.md).
 - [x] **RAG + custom escalation tool** — [`rag-contact-support/`](./rag-contact-support/) (`contact_support` + **`skills: ["rag", "contact-support-skill"]`**).
 - [ ] **Vector tools only** — `system_vector_upsert` / `system_vector_search` with **`UpstashVectorAdapter`** or another **`VectorAdapter`** implementation.
 
@@ -161,7 +177,7 @@ Prioritize by what you want to teach (operators vs integrators). None of these e
 ### Providers & UX
 
 - [ ] **OpenAI + memory** — extend the OpenAI example with long-lived **`Session`** + `system_save_memory` / `system_get_memory` in the prompt loop.
-- [ ] **Anthropic** — if/when an `@agent-runtime/adapters-anthropic` (or similar) exists; same protocol JSON in `content`.
+- [ ] **Anthropic** — if/when an `@opencoreagents/adapters-anthropic` (or similar) exists; same protocol JSON in `content`.
 - [x] **Streaming / SSE (hook events)** — [`real-world-with-express/`](./real-world-with-express/) **`POST /v1/chat/stream`** streams **`RunBuilder`** hooks (`step`, `observation`, `done`). Token streaming from the provider is separate — see [`docs/plan-rest.md`](../docs/plan-rest.md).
 
 ### Ops & testing
@@ -173,7 +189,7 @@ Prioritize by what you want to teach (operators vs integrators). None of these e
 
 ## Adding another example
 
-1. Create `examples/<name>/` with its own `package.json` (`"name": "@agent-runtime/example-<something>"`, `"private": true`, `"type": "module"`).
+1. Create `examples/<name>/` with its own `package.json` (`"name": "@opencoreagents/example-<something>"`, `"private": true`, `"type": "module"`).
 2. Add `"examples/*"` if missing in root `pnpm-workspace.yaml` (already present).
-3. Depend on workspace packages with `"workspace:*"` (e.g. `@agent-runtime/core`).
+3. Depend on workspace packages with `"workspace:*"` (e.g. `@opencoreagents/core`).
 4. Register it in this file under **Inventory** and add a short subsection like the ones above; remove or check off the matching item in **Backlog** when implemented.

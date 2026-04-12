@@ -1,4 +1,4 @@
-# RAG example (`@agent-runtime/example-rag`)
+# RAG example (`@opencoreagents/example-rag`)
 
 End-to-end demo: a small **file catalog** (`id` + `description` + `source` path), then **`system_ingest_rag_source`** + **`system_vector_search`**. Default run uses a **scripted LLM** (no API keys); optional **`start:openai`** uses OpenAI.
 
@@ -7,9 +7,9 @@ End-to-end demo: a small **file catalog** (`id` + `description` + `source` path)
 Per-project catalog on **`AgentRuntime`** (must match **`Session.projectId`** / agent **`projectId`**):
 
 1. **`await registerRagToolsAndSkills()`** — RAG tools + **`rag`** skill (do this first; **`registerRagCatalog`** warns if tools are missing).
-2. **`registerRagCatalog(runtime, projectId, entries)`** from `@agent-runtime/rag` — replaces the catalog for that project (same as **`runtime.registerRagCatalog`**); pass **`[]`** to pin an empty catalog (no fallback to the legacy global map).
+2. **`registerRagCatalog(runtime, projectId, entries)`** from `@opencoreagents/rag` — replaces the catalog for that project (same as **`runtime.registerRagCatalog`**); pass **`[]`** to pin an empty catalog (no fallback to the legacy global map).
 
-Legacy (process-wide): **`registerRagFileCatalog(entries)`** from `@agent-runtime/rag` — only used if you do **not** register a per-project catalog for that session’s project.
+Legacy (process-wide): **`registerRagFileCatalog(entries)`** from `@opencoreagents/rag` — only used if you do **not** register a per-project catalog for that session’s project.
 
 Each catalog entry:
 
@@ -48,8 +48,8 @@ From the repo root:
 
 ```bash
 pnpm install
-pnpm turbo run build --filter=@agent-runtime/core --filter=@agent-runtime/rag
-pnpm --filter @agent-runtime/example-rag start
+pnpm turbo run build --filter=@opencoreagents/core --filter=@opencoreagents/rag
+pnpm --filter @opencoreagents/example-rag start
 ```
 
 Or from this directory:
@@ -77,9 +77,9 @@ pnpm start
 | `createDemoVectorAdapter` | Still in-memory in this demo; swap for production vector store. |
 
 ```bash
-pnpm turbo run build --filter=@agent-runtime/core --filter=@agent-runtime/rag --filter=@agent-runtime/adapters-openai
+pnpm turbo run build --filter=@opencoreagents/core --filter=@opencoreagents/rag --filter=@opencoreagents/adapters-openai
 export OPENAI_API_KEY=sk-...
-pnpm --filter @agent-runtime/example-rag run start:openai
+pnpm --filter @opencoreagents/example-rag run start:openai
 ```
 
 ## Production-shaped wiring

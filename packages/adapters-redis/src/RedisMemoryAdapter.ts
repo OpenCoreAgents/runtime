@@ -1,11 +1,11 @@
-import type { MemoryAdapter, MemoryScope } from "@agent-runtime/core";
+import type { MemoryAdapter, MemoryScope } from "@opencoreagents/core";
 import type Redis from "ioredis";
 import { memoryKeyPrefix } from "./keys.js";
 import { appendMemoryListEntry, readMemoryList } from "./memoryListSave.js";
 
 /**
  * Memory adapter using TCP Redis (`ioredis`) — same key semantics as
- * `UpstashRedisMemoryAdapter` in `@agent-runtime/adapters-upstash`.
+ * `UpstashRedisMemoryAdapter` in `@opencoreagents/adapters-upstash`.
  *
  * Each memory type uses a Redis **LIST**: `RPUSH` per `save` (atomic append under concurrency).
  * Legacy STRING values (JSON array) are migrated to LIST on first write after upgrade.

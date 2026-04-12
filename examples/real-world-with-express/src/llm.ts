@@ -2,9 +2,9 @@
  * Demo LLM: routes by agent system prompt tag. Chat uses OpenAI or Anthropic when a key is set
  * (see `expressLlmConfig`), otherwise a stateless mock. Wait/resume demo is fully scripted from the message list.
  */
-import { AnthropicLLMAdapter } from "@agent-runtime/adapters-anthropic";
-import { OpenAILLMAdapter } from "@agent-runtime/adapters-openai";
-import type { LLMAdapter, LLMRequest, LLMResponse } from "@agent-runtime/core";
+import { AnthropicLLMAdapter } from "@opencoreagents/adapters-anthropic";
+import { OpenAILLMAdapter } from "@opencoreagents/adapters-openai";
+import type { LLMAdapter, LLMRequest, LLMResponse } from "@opencoreagents/core";
 
 /** Must match strings used in **Agent.define** `systemPrompt` (composite routes on these tags). */
 export const EXPRESS_TAG_CHAT = "[EXPRESS_CHAT]";
@@ -102,7 +102,7 @@ function chatMockGenerate(req: LLMRequest): LLMResponse {
     content: JSON.stringify({
       type: "result",
       content:
-        "Hello from the Express + agent-runtime example (mock LLM — set OPENAI_API_KEY or ANTHROPIC_API_KEY; see README).",
+        "Hello from the Express + runtime example (mock LLM — set OPENAI_API_KEY or ANTHROPIC_API_KEY; see README).",
     }),
   };
 }

@@ -177,7 +177,7 @@ The **SecurityLayer** and **tenant rules** in this doc are **contracts** for you
 |------|------------------------------|
 | **Entry** | Authenticate every **`run`** / **`resume`**; map the principal to **`projectId`** (and **`endUserId`** when the agent serves end-users). Do not expose **`Agent.load`** / **`AgentRuntime`** construction without this step. |
 | **Runs** | Treat **`runId`** as sensitive; bind **resume** to the same **session/tenant** as create (see [`technical-debt.md` §7](../../technical-debt.md)). Use **`RunStore`** + queue **idempotency** in clusters ([`technical-debt.md` §8](../../technical-debt.md)). |
-| **Tools** | Treat every **`system_*`** tool registered by **`AgentRuntime`** or **`@agent-runtime/rag`** (memory, vector, RAG catalog, file I/O, messaging), plus any **custom** file/HTTP tools, as **privileged**; allowlist per product; cap **LLM** and **embedding** cost (**`topK`**, timeouts). |
+| **Tools** | Treat every **`system_*`** tool registered by **`AgentRuntime`** or **`@opencoreagents/rag`** (memory, vector, RAG catalog, file I/O, messaging), plus any **custom** file/HTTP tools, as **privileged**; allowlist per product; cap **LLM** and **embedding** cost (**`topK`**, timeouts). |
 | **Errors & logs** | Do not stream raw **tool** stack traces or internal **`e.message`** back to the model or client; log server-side with **`runId`**. |
 | **Infra** | Redis/vector **TLS**, **ACL**, key **prefixes** per environment; identical **bootstrap** (**`AgentRuntime`** wiring + definitions) on every worker ([19-cluster-deployment.md](./19-cluster-deployment.md)). |
 

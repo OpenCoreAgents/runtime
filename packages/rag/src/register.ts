@@ -1,4 +1,4 @@
-import { Tool, Skill } from "@agent-runtime/core";
+import { Tool, Skill } from "@opencoreagents/core";
 import { getRagRegistrations } from "./registrations.js";
 
 /**

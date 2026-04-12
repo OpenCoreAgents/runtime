@@ -3,7 +3,7 @@ import type {
   LLMAdapter,
   LLMRequest,
   LLMResponse,
-} from "@agent-runtime/core";
+} from "@opencoreagents/core";
 import { rethrowFetchFailure, throwForOpenAIHttpStatus } from "./errors.js";
 
 function mapOpenAiFinishReason(raw: unknown): string {

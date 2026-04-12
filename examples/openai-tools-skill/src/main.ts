@@ -2,7 +2,7 @@
  * OpenAI + custom tool + skill: the skill exposes `roll_dice`. The engine maps native
  * `tool_calls` (empty `content`) into `action` steps — no extra LLM wrapper required.
  */
-import { OpenAILLMAdapter } from "@agent-runtime/adapters-openai";
+import { OpenAILLMAdapter } from "@opencoreagents/adapters-openai";
 import {
   Agent,
   AgentRuntime,
@@ -10,7 +10,7 @@ import {
   Skill,
   Tool,
   InMemoryMemoryAdapter,
-} from "@agent-runtime/core";
+} from "@opencoreagents/core";
 
 const PROJECT_ID = "demo-openai";
 

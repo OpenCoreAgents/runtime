@@ -89,12 +89,18 @@ interface ToolContext {
 
 Others (`http_request`, messages to other agents) are extensions: the **loop** stays the same.
 
+### JSON-configured HTTP tools
+
+**`@opencoreagents/adapters-http-tool`** registers **`ToolAdapter`** instances from **serializable** HTTP config (URL, method, headers, query/body templates) so integrations do not require a per-tool `execute` function in TypeScript. Templates can inject **`input`**, **`ToolContext`** fields, and **`secrets`** resolved at bootstrap. Host allowlisting defaults to the URL’s hostname unless an explicit **`allowedHosts`** list is set. See [20-http-tool-adapter.md](./20-http-tool-adapter.md).
+
+**`@opencoreagents/dynamic-definitions`** combines a pluggable **definition store** with **upsert/sync** into the same registry (`Tool.define` / `Skill.define` / `Agent.define` + HTTP tool handlers). Use it when definitions arrive over **REST** or another API. See [21-dynamic-runtime-rest.md](./21-dynamic-runtime-rest.md).
+
 ## RunStore
 
 Persists **`Run`** snapshots so a **`waiting`** run can be **resumed** later — including on **another worker** after a queue handoff or load-balanced HTTP request. Not a substitute for **MemoryAdapter** (different contract).
 
 - **Wiring**: pass **`runStore`** (and other adapters) into **`new AgentRuntime({ … })`** once per worker ([19-cluster-deployment.md §2–§3](./19-cluster-deployment.md)).
-- **Implementations**: **`InMemoryRunStore`** (tests / single process), **`RedisRunStore`** (`@agent-runtime/adapters-redis`), **`UpstashRunStore`** (`@agent-runtime/adapters-upstash`).
+- **Implementations**: **`InMemoryRunStore`** (tests / single process), **`RedisRunStore`** (`@opencoreagents/adapters-redis`), **`UpstashRunStore`** (`@opencoreagents/adapters-upstash`).
 - **Consumers** using **`executeRun`** directly must **`runStore.save`** after each invocation when **`runStore`** is enabled (including **`waiting`** exits) — same persistence rules as **`RunBuilder`** / **`Agent.resume`**.
 
 ## Hooks vs adapters
@@ -110,7 +116,7 @@ A **MessageBus** does not replace ToolRunner: it is usually **another tool** (`s
 
 This is **not** a third core contract inside the loop (unlike `MemoryAdapter` / `ToolAdapter`). It is **pluggable infrastructure** used by **consumers**: workers dequeue jobs and call the same entry points as the SDK or REST — `run` / `resume` with `RunInput` / `ResumeInput`. The engine core does not import BullMQ.
 
-**Implementation priority:** **BullMQ on Redis** is the **first-class** path for async work and for waking runs after `wait` with `reason: scheduled` (delayed jobs, retries, DLQ, horizontal workers). Use **`@agent-runtime/adapters-bullmq`** for typed **`createEngineQueue`**, **`createEngineWorker`**, and **`dispatchEngineJob`** (`EngineJobPayload`: `run` | `resume`). QStash stays a **secondary** HTTP-only alternative when you do not run Redis workers.
+**Implementation priority:** **BullMQ on Redis** is the **first-class** path for async work and for waking runs after `wait` with `reason: scheduled` (delayed jobs, retries, DLQ, horizontal workers). Use **`@opencoreagents/adapters-bullmq`** for typed **`createEngineQueue`** and **`createEngineWorker`**. **`dispatchEngineJob(runtime, payload)`** and **`EngineJobPayload`** are implemented in **`@opencoreagents/core`** ([`dispatchJob.ts`](../../packages/core/src/engine/dispatchJob.ts), [`engineJobPayload.ts`](../../packages/core/src/engine/engineJobPayload.ts)); **`@opencoreagents/adapters-bullmq`** **re-exports** them so worker code can import queue + dispatch from one package. QStash stays a **secondary** HTTP-only alternative when you do not run Redis workers.
 
 | Use | Role |
 |-----|------|
@@ -126,14 +132,16 @@ When you **do not** want Redis-backed workers (e.g. purely serverless HTTP callb
 
 ---
 
-## Native TCP Redis (`@agent-runtime/adapters-redis`) — default for shared state
+## Native TCP Redis (`@opencoreagents/adapters-redis`) — default for shared state
 
 **Prefer this package** when you have a normal **`redis://`** / **`REDIS_URL`** (Docker, k8s, VM, or a vendor’s TCP endpoint). **`RedisMemoryAdapter`**, **`RedisRunStore`**, and **`RedisMessageBus`** use **`ioredis`** and match the **same key and stream layout** as the Upstash HTTP adapters, so you can swap transports without changing engine code. This is the **same connection style as BullMQ** — one Redis cluster can back queues and engine state.
 
-**Vector** search is not in this package; use **`UpstashVectorAdapter`** from `@agent-runtime/adapters-upstash` for hosted vectors, or plug in another `VectorAdapter` implementation. See [19-cluster-deployment.md §7.1](./19-cluster-deployment.md#71-tcp-redis-vs-upstash-rest-vs-bullmq).
+**Vector** search is not in this package; use **`UpstashVectorAdapter`** from `@opencoreagents/adapters-upstash` for hosted vectors, or plug in another `VectorAdapter` implementation. See [19-cluster-deployment.md §7.1](./19-cluster-deployment.md#71-tcp-redis-vs-upstash-rest-vs-bullmq).
+
+**Dynamic definitions:** **`RedisDynamicDefinitionsStore`** implements the **`DynamicDefinitionsStore`** facade from **`@opencoreagents/dynamic-definitions`** (**`store.methods`** for Redis I/O, **`store.Agent`** / **`Skill`** / **`HttpTool`** for CRUD); workers typically hydrate per job ([21-dynamic-runtime-rest.md](./21-dynamic-runtime-rest.md)).
 
 ---
 
-## Upstash REST (`@agent-runtime/adapters-upstash`) — HTTP Redis + vector
+## Upstash REST (`@opencoreagents/adapters-upstash`) — HTTP Redis + vector
 
-Use **`@agent-runtime/adapters-upstash`** when you want **Upstash’s REST API** (serverless/edge-friendly, no long-lived TCP to Redis) or when you adopt **`UpstashVectorAdapter`** alongside **`UpstashRedisMemoryAdapter`** / **`UpstashRunStore`** / **`UpstashRedisMessageBus`** in one place. Same `MemoryAdapter` / `RunStore` / `MessageBus` contracts as above; scope in [06-mvp.md](./06-mvp.md#upstash-adapters-in-mvp). **Async / scheduled `resume`:** implement **BullMQ** first (above); **QStash** remains the documented **alternative** for HTTP-triggered wakeups without a worker process.
+Use **`@opencoreagents/adapters-upstash`** when you want **Upstash’s REST API** (serverless/edge-friendly, no long-lived TCP to Redis) or when you adopt **`UpstashVectorAdapter`** alongside **`UpstashRedisMemoryAdapter`** / **`UpstashRunStore`** / **`UpstashRedisMessageBus`** in one place. Same `MemoryAdapter` / `RunStore` / `MessageBus` contracts as above; scope in [06-mvp.md](./06-mvp.md#upstash-adapters-in-mvp). **Async / scheduled `resume`:** implement **BullMQ** first (above); **QStash** remains the documented **alternative** for HTTP-triggered wakeups without a worker process.

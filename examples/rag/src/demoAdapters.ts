@@ -9,7 +9,7 @@ import type {
   VectorDocument,
   VectorQuery,
   VectorResult,
-} from "@agent-runtime/core";
+} from "@opencoreagents/core";
 
 const DIM = 64;
 

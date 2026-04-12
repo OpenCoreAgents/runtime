@@ -1,4 +1,4 @@
-import type { NormalizedInboundMessage } from "@agent-runtime/conversation-gateway";
+import type { NormalizedInboundMessage } from "@opencoreagents/conversation-gateway";
 import type { TelegramMessage, TelegramUpdate } from "./telegramTypes.js";
 
 /** Stable thread id for a private chat (extend for groups if needed). */

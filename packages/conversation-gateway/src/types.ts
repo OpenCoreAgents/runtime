@@ -1,4 +1,4 @@
-import type { AgentRuntime } from "@agent-runtime/core";
+import type { AgentRuntime } from "@opencoreagents/core";
 
 /** Inbound message after your webhook / SDK adapter (channel-agnostic). */
 export interface NormalizedInboundMessage {

@@ -1,7 +1,8 @@
 {
-  "name": "@agent-runtime/cli",
+  "name": "@opencoreagents/cli",
   "version": "0.0.0",
   "private": true,
+  "license": "Apache-2.0",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -14,7 +15,7 @@
   },
   "files": ["dist"],
   "bin": {
-    "agent-runtime": "./dist/bin.js"
+    "runtime": "./dist/bin.js"
   },
   "scripts": {
     "build": "tsup",
@@ -25,6 +26,6 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@agent-runtime/scaffold": "workspace:*"
+    "@opencoreagents/scaffold": "workspace:*"
   }
 }

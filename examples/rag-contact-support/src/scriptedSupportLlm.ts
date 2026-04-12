@@ -3,7 +3,7 @@
  * If the **first user line** looks like a warranty/KB question, the script does ingest → search → **result**
  * only. Otherwise it follows the refund / `contact_support` flow (session email or `wait` + resume).
  */
-import type { LLMAdapter, LLMRequest, LLMResponse } from "@agent-runtime/core";
+import type { LLMAdapter, LLMRequest, LLMResponse } from "@opencoreagents/core";
 
 export interface ScriptedSupportLlmOptions {
   catalogIngestId: string;
@@ -22,7 +22,7 @@ export interface ScriptedSupportLlmOptions {
 }
 
 const OBS_PREFIX = "Observation:";
-/** Same shape as {@link import("@agent-runtime/core").RunBuilder} in-process resume. */
+/** Same shape as {@link import("@opencoreagents/core").RunBuilder} in-process resume. */
 const RESUME_PREFIX = "[resume:text]";
 
 function countObservationTurns(messages: LLMRequest["messages"]): number {

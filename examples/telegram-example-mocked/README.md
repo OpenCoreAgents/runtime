@@ -4,7 +4,7 @@ Demonstrates the shape of a **Telegram Bot** integration **without** calling Tel
 
 - **Inbound:** objects look like Telegram [`Update`](https://core.telegram.org/bots/api#update) / [`Message`](https://core.telegram.org/bots/api#message) JSON (private chat, text).
 - **Normalize:** `telegramMessageToNormalized` → `NormalizedInboundMessage` (`conversationKey` = `telegram:chat:<chatId>`).
-- **Engine:** `ConversationGateway` + mock LLM (`@agent-runtime/core`).
+- **Engine:** `ConversationGateway` + mock LLM (`@opencoreagents/core`).
 - **Outbound:** `MockTelegramClient` appends to an **outbox** instead of `POST`ing to `api.telegram.org`.
 
 ## Run
@@ -12,8 +12,8 @@ Demonstrates the shape of a **Telegram Bot** integration **without** calling Tel
 From repo root (after `pnpm install`):
 
 ```bash
-pnpm turbo run build --filter=@agent-runtime/core --filter=@agent-runtime/conversation-gateway
-pnpm --filter @agent-runtime/example-telegram-mocked start
+pnpm turbo run build --filter=@opencoreagents/core --filter=@opencoreagents/conversation-gateway
+pnpm --filter @opencoreagents/example-telegram-mocked start
 ```
 
 ## Risks and gaps (real product)

@@ -1,14 +1,14 @@
 /**
- * Minimal @agent-runtime/core example: deterministic mock LLM (no API keys),
+ * Minimal @opencoreagents/core example: deterministic mock LLM (no API keys),
  * InMemoryMemoryAdapter, one agent and one run().
  */
-import type { LLMAdapter, LLMRequest, LLMResponse } from "@agent-runtime/core";
+import type { LLMAdapter, LLMRequest, LLMResponse } from "@opencoreagents/core";
 import {
   Agent,
   AgentRuntime,
   Session,
   InMemoryMemoryAdapter,
-} from "@agent-runtime/core";
+} from "@opencoreagents/core";
 
 /** Returns fixed protocol steps so the loop completes without a real model. */
 class DeterministicDemoLlm implements LLMAdapter {
@@ -22,7 +22,7 @@ class DeterministicDemoLlm implements LLMAdapter {
           })
         : JSON.stringify({
             type: "result",
-            content: "Hello from the minimal agent-runtime example.",
+            content: "Hello from the minimal runtime example.",
           });
     return { content };
   }

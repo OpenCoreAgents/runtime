@@ -18,7 +18,7 @@ Register an agent from Node or REST; configuration is stored durably.
 ### Conceptual usage
 
 ```javascript
-// Agent, AgentRuntime, Session — @agent-runtime/core; llmAdapter + memoryAdapter from your app
+// Agent, AgentRuntime, Session — @opencoreagents/core; llmAdapter + memoryAdapter from your app
 await Agent.define({
   id: "workflow-agent",
   name: "Workflow agent",

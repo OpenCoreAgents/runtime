@@ -4,7 +4,7 @@ import {
   LLMRateLimitError,
   LLMTransportError,
   RunCancelledError,
-} from "@agent-runtime/core";
+} from "@opencoreagents/core";
 import { AnthropicLLMAdapter } from "../src/index.js";
 
 describe("AnthropicLLMAdapter", () => {

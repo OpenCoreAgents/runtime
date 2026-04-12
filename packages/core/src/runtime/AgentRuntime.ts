@@ -1,6 +1,8 @@
 import { registerBuiltinToolHandlers } from "../tools/builtins.js";
 import { registerVectorToolHandlers } from "../tools/vectorTools.js";
 import { registerSendMessageToolHandler } from "../tools/sendMessage.js";
+import { dispatchEngineJob } from "../engine/dispatchJob.js";
+import type { EngineJobPayload } from "../engine/engineJobPayload.js";
 import {
   type EngineConfig,
   type ResolvedEngineConfig,
@@ -10,6 +12,7 @@ import {
 import type { RagFileSourceEntry } from "../ragCatalogTypes.js";
 import { validateRagFileCatalog } from "../ragCatalogTypes.js";
 import { resolveToolRegistry } from "../define/registry.js";
+import type { Run } from "../protocol/types.js";
 
 function ragCatalogToolsLookRegistered(): boolean {
   return resolveToolRegistry("").has("system_list_rag_sources");
@@ -51,9 +54,9 @@ function normalizeRagEntries(
  * omit it or pass `"*"` for no extra restriction.
  *
  * RAG file catalogs are per **`projectId`**: call **`registerRagCatalog(projectId, entries)`** (or
- * **`registerRagCatalog(runtime, projectId, entries)`** from **`@agent-runtime/rag`**) so
+ * **`registerRagCatalog(runtime, projectId, entries)`** from **`@opencoreagents/rag`**) so
  * `system_list_rag_sources` / `system_ingest_rag_source` use that list for sessions in that project; if a project
- * was never registered, tools fall back to the process-global map in `@agent-runtime/rag`.
+ * was never registered, tools fall back to the process-global map in `@opencoreagents/rag`.
  */
 export class AgentRuntime {
   private readonly _config: ResolvedEngineConfig;
@@ -77,7 +80,7 @@ export class AgentRuntime {
    * Replaces any previous catalog for that project. Pass **`[]`** to pin the project to an empty catalog
    * (tools will not fall back to the global `registerRagFileCatalog` map for that project).
    *
-   * **Order:** register RAG tools first (e.g. `registerRagToolsAndSkills()` from `@agent-runtime/rag`),
+   * **Order:** register RAG tools first (e.g. `registerRagToolsAndSkills()` from `@opencoreagents/rag`),
    * then call this — otherwise a **console warning** is emitted once per runtime (skipped under test).
    */
   registerRagCatalog(
@@ -94,7 +97,7 @@ export class AgentRuntime {
       this._warnedMissingRagTools = true;
       console.warn(
         "[AgentRuntime] registerRagCatalog: `system_list_rag_sources` is not registered yet. " +
-          "Call `registerRagToolsAndSkills()` from `@agent-runtime/rag` (or register RAG tools) before `registerRagCatalog` to avoid this warning and ensure catalog tools run.",
+          "Call `registerRagToolsAndSkills()` from `@opencoreagents/rag` (or register RAG tools) before `registerRagCatalog` to avoid this warning and ensure catalog tools run.",
       );
     }
     validateRagFileCatalog(sources);
@@ -109,5 +112,13 @@ export class AgentRuntime {
     const pid = projectId.trim();
     if (!this._ragCatalogByProject.has(pid)) return undefined;
     return this._ragCatalogByProject.get(pid)!;
+  }
+
+  /**
+   * Same as {@link dispatchEngineJob}(this, payload) — `Agent.load` → `run` or `resume` for one job payload
+   * (e.g. from BullMQ). When **`config.dynamicDefinitionsStore`** is set, dispatch hydrates from the store first.
+   */
+  dispatch(payload: EngineJobPayload): Promise<Run> {
+    return dispatchEngineJob(this, payload);
   }
 }

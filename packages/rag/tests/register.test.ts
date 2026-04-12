@@ -1,7 +1,7 @@
 import { describe, it, beforeEach, expect } from "vitest";
 import { registerRagToolsAndSkills } from "../src/register.js";
 import { __resetRagFileCatalogForTests } from "../src/catalog.js";
-import { clearAllRegistriesForTests } from "@agent-runtime/core";
+import { clearAllRegistriesForTests } from "@opencoreagents/core";
 import { RAG_SYSTEM_TOOL_IDS, isRagSystemToolId } from "../src/systemToolIds.js";
 
 describe("registerRagToolsAndSkills", () => {

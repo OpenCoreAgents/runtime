@@ -1,29 +1,29 @@
-# agent-runtime (monorepo)
+# runtime (monorepo)
 
 Stateful agent **engine** for Node.js: a typed loop (`thought` → `action` → `observation` → `result`, plus `wait` / `resume`), pluggable adapters (LLM, memory, vector, queues), RAG tools, multi-agent messaging, and a CLI/scaffold.
 
 ---
 
-## Not production-ready
+## Scope: library first
 
-This repository is a **library and research-oriented monorepo**, not a turnkey SaaS or a hardened platform. Before you ship anything customer-facing, read [**`docs/technical-debt.md`**](docs/technical-debt.md) and [**`docs/core/08-scope-and-security.md`**](docs/core/08-scope-and-security.md): auth and tenant isolation belong in **your** host layer; several adapters and examples are meant for **local demos** (mock LLM, in-memory vector, permissive roles). Use it to **build** your own API, workers, and policies—not as a drop-in production backend without review.
+This monorepo is a **library and research-oriented codebase**—not a **ready-to-launch** product out of the box; treat it as a foundation you harden and wire into your own stack. For customer-facing deployments, plan **auth and tenant isolation in your host layer**, and review [**`docs/technical-debt.md`**](docs/technical-debt.md) and [**`docs/core/08-scope-and-security.md`**](docs/core/08-scope-and-security.md) as part of your own hardening checklist. Several adapters and examples target **local learning and demos** (mock LLM, in-memory vector, permissive roles); treat them as starting points while you add APIs, workers, and policies that match your environment.
 
 ---
 
 ## Why developers use it
 
-You define **tools**, **skills**, and **agents** in code (or hydrate from a store), wire a single **`AgentRuntime`** per process/worker, then **`Agent.load(id, runtime, { session })`** and **`run()`**. The engine handles the protocol loop, memory scopes, optional **`RunStore`** for cluster **`resume`**, and **`dispatchEngineJob(runtime, payload)`** for BullMQ workers—without hiding execution behind a global singleton.
+You define **tools**, **skills**, and **agents** in code (or hydrate from a store), wire a single **`AgentRuntime`** per process/worker, then **`Agent.load(id, runtime, { session })`** and **`run()`**. The engine handles the protocol loop, memory scopes, optional **`RunStore`** for cluster **`resume`**, and **`dispatchEngineJob(runtime, payload)`** (**`@opencoreagents/core`**, also re-exported from **`@opencoreagents/adapters-bullmq`**) for BullMQ workers—without hiding execution behind a global singleton.
 
 **Minimal example** (no API keys; same idea as [`examples/minimal-run`](examples/minimal-run/)):
 
 ```typescript
-import type { LLMAdapter, LLMRequest, LLMResponse } from "@agent-runtime/core";
+import type { LLMAdapter, LLMRequest, LLMResponse } from "@opencoreagents/core";
 import {
   Agent,
   AgentRuntime,
   Session,
   InMemoryMemoryAdapter,
-} from "@agent-runtime/core";
+} from "@opencoreagents/core";
 
 class DemoLlm implements LLMAdapter {
   private step = 0;
@@ -36,7 +36,7 @@ class DemoLlm implements LLMAdapter {
           })
         : JSON.stringify({
             type: "result",
-            content: "Hello from agent-runtime.",
+            content: "Hello from runtime.",
           });
     return { content };
   }
@@ -84,7 +84,7 @@ await agent
   });
 ```
 
-Swap **`DemoLlm`** for **`OpenAILLMAdapter`** from **`@agent-runtime/adapters-openai`**, add **`@agent-runtime/adapters-redis`** for shared memory and **`@agent-runtime/adapters-bullmq`** for background jobs when you move past the demo.
+Swap **`DemoLlm`** for **`OpenAILLMAdapter`** from **`@opencoreagents/adapters-openai`**, add **`@opencoreagents/adapters-redis`** for shared memory and **`@opencoreagents/adapters-bullmq`** for background jobs when you move past the demo.
 
 ---
 
@@ -92,15 +92,19 @@ Swap **`DemoLlm`** for **`OpenAILLMAdapter`** from **`@agent-runtime/adapters-op
 
 | Package | Role |
 |---------|------|
-| `@agent-runtime/core` | Engine, `Tool` / `Skill` / `Agent`, `RunBuilder`, `executeRun`, built-in tools |
-| `@agent-runtime/adapters-openai` | OpenAI chat + embeddings |
-| `@agent-runtime/adapters-redis` | TCP Redis: memory, `RunStore`, `MessageBus` |
-| `@agent-runtime/adapters-upstash` | Upstash REST Redis + vector |
-| `@agent-runtime/adapters-bullmq` | BullMQ queue/worker + `dispatchEngineJob` |
-| `@agent-runtime/utils` | Parsers, chunking, file resolver |
-| `@agent-runtime/rag` | File/RAG tools + skills |
-| `@agent-runtime/scaffold` | Programmatic project generation |
-| `@agent-runtime/cli` | `agent-runtime` CLI (`init`, `generate`, …) |
+| `@opencoreagents/core` | Engine, `Tool` / `Skill` / `Agent`, `RunBuilder`, `executeRun`, built-in tools |
+| `@opencoreagents/adapters-openai` | OpenAI chat + embeddings |
+| `@opencoreagents/adapters-redis` | TCP Redis: memory, `RunStore`, `MessageBus`, `RedisDynamicDefinitionsStore` (`DynamicDefinitionsStore`: `store.methods` + `store.Agent` / `Skill` / `HttpTool`) |
+| `@opencoreagents/adapters-upstash` | Upstash REST Redis + vector |
+| `@opencoreagents/adapters-bullmq` | BullMQ queue/worker (re-exports `dispatchEngineJob` from `core`) |
+| `@opencoreagents/adapters-http-tool` | JSON-configured HTTP `ToolAdapter`s (`registerHttpToolsFromDefinitions`) |
+| `@opencoreagents/dynamic-definitions` | Store + upsert/sync agents, skills, HTTP tools into the registry |
+| `@opencoreagents/utils` | Parsers, chunking, file resolver |
+| `@opencoreagents/rag` | File/RAG tools + skills |
+| `@opencoreagents/conversation-gateway` | Normalized inbound messages + gateway helpers for webhooks |
+| `@opencoreagents/rest-api` | Express **`createPlanRestRouter`** — plan-rest-shaped JSON API after **`Agent.define`** ([`docs/plan-rest.md`](docs/plan-rest.md)) |
+| `@opencoreagents/scaffold` | Programmatic project generation |
+| `@opencoreagents/cli` | `runtime` CLI (`init`, `generate`, …) |
 
 ---
 
@@ -113,6 +117,7 @@ Swap **`DemoLlm`** for **`OpenAILLMAdapter`** from **`@agent-runtime/adapters-op
 - **RAG + support ticket tool:** [`examples/rag-contact-support`](examples/rag-contact-support/) — `contact_support` after KB search (scripted LLM).
 - **Multi-agent (in-process bus):** [`examples/multi-agent`](examples/multi-agent/).
 - **Express HTTP API + static HTML/JS UI (chat, SSE hook stream, `/status`, run + session status, wait/resume):** [`examples/real-world-with-express`](examples/real-world-with-express/).
+- **Plan-shaped REST (`GET /agents`, `POST /agents/:id/run`, …) via `@opencoreagents/rest-api`:** [`examples/plan-rest-express`](examples/plan-rest-express/) — see [`docs/plan-rest.md`](docs/plan-rest.md).
 
 ---
 
@@ -124,6 +129,7 @@ Swap **`DemoLlm`** for **`OpenAILLMAdapter`** from **`@agent-runtime/adapters-op
 - **Implementation plan:** [`docs/plan.md`](docs/plan.md)
 - **Known gaps:** [`docs/technical-debt.md`](docs/technical-debt.md)
 - **Monorepo layout:** [`docs/scaffold.md`](docs/scaffold.md)
+- **REST API shape (roadmap + plugin):** [`docs/plan-rest.md`](docs/plan-rest.md)
 
 ---
 
@@ -140,4 +146,4 @@ CI runs the same via [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
 
 ## License
 
-Private / TBD — see repository settings.
+Apache License 2.0. See [LICENSE](./LICENSE).

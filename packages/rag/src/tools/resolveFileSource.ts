@@ -1,6 +1,6 @@
-import type { ToolContext } from "@agent-runtime/core";
-import type { ResolvedFile } from "@agent-runtime/utils";
-import { resolveSource } from "@agent-runtime/utils";
+import type { ToolContext } from "@opencoreagents/core";
+import type { ResolvedFile } from "@opencoreagents/utils";
+import { resolveSource } from "@opencoreagents/utils";
 
 function isHttpSource(s: string): boolean {
   const t = s.trim();

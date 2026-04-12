@@ -18,7 +18,7 @@
  */
 import { fileURLToPath } from "node:url";
 import path from "node:path";
-import type { RagSourceDefinition } from "@agent-runtime/rag";
+import type { RagSourceDefinition } from "@opencoreagents/rag";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 

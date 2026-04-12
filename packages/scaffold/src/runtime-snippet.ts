@@ -53,18 +53,18 @@ export function buildRuntimeTs(opts: {
   },`;
 
   const imports: string[] = [
-    `import type { RuntimeConfig } from "@agent-runtime/core";`,
-    `import { AgentRuntime, InMemoryMemoryAdapter } from "@agent-runtime/core";`,
+    `import type { RuntimeConfig } from "@opencoreagents/core";`,
+    `import { AgentRuntime, InMemoryMemoryAdapter } from "@opencoreagents/core";`,
   ];
 
   let memoryInit: string;
   if (adapter === "redis") {
     imports.push(`import Redis from "ioredis";`);
-    imports.push(`import { RedisMemoryAdapter } from "@agent-runtime/adapters-redis";`);
+    imports.push(`import { RedisMemoryAdapter } from "@opencoreagents/adapters-redis";`);
     memoryInit = `const redis = new Redis(process.env.REDIS_URL!);
   const memoryAdapter = new RedisMemoryAdapter(redis);`;
   } else if (adapter === "upstash") {
-    imports.push(`import { UpstashRedisMemoryAdapter } from "@agent-runtime/adapters-upstash";`);
+    imports.push(`import { UpstashRedisMemoryAdapter } from "@opencoreagents/adapters-upstash";`);
     memoryInit = `const memoryAdapter = new UpstashRedisMemoryAdapter(
     process.env.UPSTASH_REDIS_URL!,
     process.env.UPSTASH_REDIS_TOKEN!,
@@ -109,10 +109,10 @@ export function buildRuntimeTs(opts: {
 }`;
 
   if (llm === "openai") {
-    imports.push(`import { OpenAILLMAdapter } from "@agent-runtime/adapters-openai";`);
+    imports.push(`import { OpenAILLMAdapter } from "@opencoreagents/adapters-openai";`);
   }
   if (llm === "anthropic") {
-    imports.push(`import { AnthropicLLMAdapter } from "@agent-runtime/adapters-anthropic";`);
+    imports.push(`import { AnthropicLLMAdapter } from "@opencoreagents/adapters-anthropic";`);
   }
 
   const configDecl = `const config = {

@@ -9,13 +9,13 @@ The LLM is a **small mock** (no API keys): turn 1 → `wait`, turn 2 → `result
 ## Prerequisite
 
 ```bash
-pnpm turbo run build --filter=@agent-runtime/core
+pnpm turbo run build --filter=@opencoreagents/core
 ```
 
 ## Run
 
 ```bash
-pnpm --filter @agent-runtime/example-console-wait start
+pnpm --filter @opencoreagents/example-console-wait start
 ```
 
 You should see a pause, a prompt (`Type a line and press Enter…`), then a final **result** line that quotes your input.

@@ -1,6 +1,6 @@
-import type { ToolContext, EmbeddingAdapter, VectorAdapter } from "@agent-runtime/core";
-import { parseFile, chunkText } from "@agent-runtime/utils";
-import type { ChunkOptions } from "@agent-runtime/utils";
+import type { ToolContext, EmbeddingAdapter, VectorAdapter } from "@opencoreagents/core";
+import { parseFile, chunkText } from "@opencoreagents/utils";
+import type { ChunkOptions } from "@opencoreagents/utils";
 import { resolveSourceForTool } from "./resolveFileSource.js";
 
 function getVectorNamespace(ctx: ToolContext): string {
