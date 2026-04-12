@@ -2,7 +2,7 @@
 
 > **Product vision:** an HTTP/JSON layer for **`run` / `resume` / memory / logs / inter-agent send`** with SDK semantics. **Monorepo reality:** the engine is **`@opencoreagents/core`**; transport is **your** BFF or a **library router** — see **`@opencoreagents/rest-api`** below (this file is the **contract reference** for that package’s URL shape).
 
-Sources: [`brainstorm/07-multi-agente-rest-sesiones.md`](./brainstorm/07-multi-agente-rest-sesiones.md) §REST, [`core/14-consumers.md`](./core/14-consumers.md) §REST API, [`technical-debt.md`](./technical-debt.md) §1 / §5 / §7.
+Sources: [`brainstorm/07-multi-agente-rest-sesiones.md`](../brainstorm/07-multi-agente-rest-sesiones.md) §REST, [`core/14-consumers.md`](../core/14-consumers.md) §REST API, [`technical-debt.md`](./technical-debt.md) §1 / §5 / §7.
 
 ---
 
@@ -10,17 +10,17 @@ Sources: [`brainstorm/07-multi-agente-rest-sesiones.md`](./brainstorm/07-multi-a
 
 | Concept | Meaning |
 |---------|---------|
-| **This file** | **Roadmap** (phases, gaps) **plus** the **URL contract** that [`@opencoreagents/rest-api`](../packages/rest-api/) implements for **`GET /agents`**, **`GET /agents/:agentId/memory`** and **`POST /agents/:fromAgentId/send`** (with **`runtime`**; send needs **`runtime.config.messageBus`**), **`POST /agents/:agentId/run`**, **`POST /agents/:agentId/resume`**, **`GET /runs/:runId`**, **`GET /runs/:runId/history`**, **`GET /agents/:agentId/runs`** (with **`runStore`**), optional **`GET /jobs/:jobId`**. |
+| **This file** | **Roadmap** (phases, gaps) **plus** the **URL contract** that [`@opencoreagents/rest-api`](../../packages/rest-api/) implements for **`GET /agents`**, **`GET /agents/:agentId/memory`** and **`POST /agents/:fromAgentId/send`** (with **`runtime`**; send needs **`runtime.config.messageBus`**), **`POST /agents/:agentId/run`**, **`POST /agents/:agentId/resume`**, **`GET /runs/:runId`**, **`GET /runs/:runId/history`**, **`GET /agents/:agentId/runs`** (with **`runStore`**), optional **`GET /jobs/:jobId`**. |
 | **Not included** | There is **no** single “product REST server” binary in the repo (no `rest serve` CLI, no rate limits inside `core`). Auth, tenancy policy, and extra routes stay in **your** app or examples. |
-| **What you build** | **`AgentRuntime`** + **`Agent.load` / `run` / `resume`** (or **`dispatch` / `dispatchEngineJob`** on workers). HTTP is optional glue — [`19-cluster-deployment.md`](./core/19-cluster-deployment.md). |
+| **What you build** | **`AgentRuntime`** + **`Agent.load` / `run` / `resume`** (or **`dispatch` / `dispatchEngineJob`** on workers). HTTP is optional glue — [`19-cluster-deployment.md`](../core/19-cluster-deployment.md). |
 
-**Non-goals:** Business auth, rate limits, multi-region — **outside** `packages/core`. Same as [`08-scope-and-security.md`](./core/08-scope-and-security.md).
+**Non-goals:** Business auth, rate limits, multi-region — **outside** `packages/core`. Same as [`08-scope-and-security.md`](../core/08-scope-and-security.md).
 
 ---
 
 ## Implemented today: `@opencoreagents/rest-api`
 
-Express **`Router`** from **`createRuntimeRestRouter(options)`** after **`Agent.define`**. Canonical detail: [`packages/rest-api/README.md`](../packages/rest-api/README.md).
+Express **`Router`** from **`createRuntimeRestRouter(options)`** after **`Agent.define`**. Canonical detail: [`packages/rest-api/README.md`](../../packages/rest-api/README.md).
 
 | Method | Path | Behavior |
 |--------|------|----------|
@@ -40,7 +40,7 @@ Express **`Router`** from **`createRuntimeRestRouter(options)`** after **`Agent.
 
 **Limits / gaps (library, not product):** JSON body **512kb**; **no** **`endUserId`** / **`expiresAtMs`** on **`POST` run/resume** bodies (use **`dispatch`** / **`EngineJobPayload`** if needed); **read-only** memory via **`GET …/memory`** ( **`endUserId`** as query only); **no** define CRUD routes; **no** in-router rate limit or idempotency; legacy **`Run`** rows without **`projectId`** skip tenant check on **`GET /runs`** until migrated on resume — [`technical-debt.md`](./technical-debt.md) §7. Non-**`EngineError`** failures still return generic bodies (**500** / **400**). **`MessageBus`** keys are **`toAgentId`**-scoped — same shared-store caveats as [**`technical-debt.md`**](./technical-debt.md) §1 (**`run:agent:{id}`** / **`bus:agent:{id}`**). With **`swagger`**, **`/openapi.json`** and **`/docs`** skip API-key middleware and Swagger UI loads from **unpkg** — host CSP / network policy: [**`technical-debt.md`**](./technical-debt.md) §1 (**`rest-api`** row), §7 (**OpenAPI / Swagger UI**), §9.
 
-**Try it:** [`examples/plan-rest-express/`](../examples/plan-rest-express/) — enables **`swagger`** (**`GET /openapi.json`**, **`GET /docs`**) without **`REST_API_KEY`**.
+**Try it:** [`examples/plan-rest-express/`](../../examples/plan-rest-express/) — enables **`swagger`** (**`GET /openapi.json`**, **`GET /docs`**) without **`REST_API_KEY`**.
 
 ---
 
@@ -48,11 +48,11 @@ Express **`Router`** from **`createRuntimeRestRouter(options)`** after **`Agent.
 
 | Area | Status |
 |------|--------|
-| **Runtime REST router (library)** | **Shipped** — section above + [`packages/rest-api/`](../packages/rest-api/). |
-| **Minimal sample** | [`examples/plan-rest-express/`](../examples/plan-rest-express/). |
-| **Richer BFF (different URLs)** | [`examples/real-world-with-express/`](../examples/real-world-with-express/) — **`/v1/chat`**, SSE, etc. |
-| **Async + Redis definitions CRUD** | [`examples/dynamic-runtime-rest/`](../examples/dynamic-runtime-rest/) — BullMQ worker, hydrate, **not** the same path layout as **`rest-api`** (map URLs yourself or mount **`createRuntimeRestRouter`** beside **`/v1/...`**). |
-| **Dynamic definitions package** | [`@opencoreagents/dynamic-definitions`](../packages/dynamic-definitions/) — [`21-dynamic-runtime-rest.md`](./core/21-dynamic-runtime-rest.md). |
+| **Runtime REST router (library)** | **Shipped** — section above + [`packages/rest-api/`](../../packages/rest-api/). |
+| **Minimal sample** | [`examples/plan-rest-express/`](../../examples/plan-rest-express/). |
+| **Richer BFF (different URLs)** | [`examples/real-world-with-express/`](../../examples/real-world-with-express/) — **`/v1/chat`**, SSE, etc. |
+| **Async + Redis definitions CRUD** | [`examples/dynamic-runtime-rest/`](../../examples/dynamic-runtime-rest/) — BullMQ worker, hydrate, **not** the same path layout as **`rest-api`** (map URLs yourself or mount **`createRuntimeRestRouter`** beside **`/v1/...`**). |
+| **Dynamic definitions package** | [`@opencoreagents/dynamic-definitions`](../../packages/dynamic-definitions/) — [`21-dynamic-runtime-rest.md`](../core/21-dynamic-runtime-rest.md). |
 
 **Clarification — `dynamic-runtime-rest`:** That example focuses on **infrastructure** (queue, worker, Redis definitions). It **does not have to** expose **`POST /agents/:id/run`** as public paths; **`@opencoreagents/rest-api`** **does** expose that shape. You can combine both: same **`addRun` / `addResume`** payload, **`createRuntimeRestRouter({ dispatch })`** on the API, worker from the example.
 
@@ -60,7 +60,7 @@ Express **`Router`** from **`createRuntimeRestRouter(options)`** after **`Agent.
 
 ## REST without dynamic definitions
 
-Orthogonal to [`@opencoreagents/dynamic-definitions`](../packages/dynamic-definitions/): **`Agent.define`** at bootstrap, **`AgentRuntime`** without **`dynamicDefinitionsStore`**, **`GET /agents`** from registry (as **`rest-api`** does when **`agentIds`** is omitted). Omit Redis definition CRUD if you do not need them.
+Orthogonal to [`@opencoreagents/dynamic-definitions`](../../packages/dynamic-definitions/): **`Agent.define`** at bootstrap, **`AgentRuntime`** without **`dynamicDefinitionsStore`**, **`GET /agents`** from registry (as **`rest-api`** does when **`agentIds`** is omitted). Omit Redis definition CRUD if you do not need them.
 
 ---
 
@@ -68,7 +68,7 @@ Orthogonal to [`@opencoreagents/dynamic-definitions`](../packages/dynamic-defini
 
 | Shape | Status in monorepo |
 |-------|---------------------|
-| **A — Example app** | e.g. [`plan-rest-express`](../examples/plan-rest-express/), [`dynamic-runtime-rest`](../examples/dynamic-runtime-rest/). |
+| **A — Example app** | e.g. [`plan-rest-express`](../../examples/plan-rest-express/), [`dynamic-runtime-rest`](../../examples/dynamic-runtime-rest/). |
 | **B — Library router** | **`@opencoreagents/rest-api`** — `import { createRuntimeRestRouter } from '@opencoreagents/rest-api'`. |
 | **B′ — Package + CLI `serve`** | **Not** shipped; optional future — [`plan-cli.md`](./plan-cli.md). |
 | **C — `cli rest serve`** | Roadmap only. |
@@ -89,10 +89,10 @@ Idempotency, JWT → **`projectId`** (**`resolveProjectId`**), mTLS, rate limits
 
 | Goal | Start here |
 |------|------------|
-| **This doc’s URL shape on Express** | [`@opencoreagents/rest-api`](../packages/rest-api/) + [`plan-rest-express`](../examples/plan-rest-express/). |
-| **Chat-shaped BFF + SSE** | [`real-world-with-express`](../examples/real-world-with-express/). |
-| **202 + worker + Redis definitions** | [`dynamic-runtime-rest`](../examples/dynamic-runtime-rest/) (add **`createRuntimeRestRouter({ dispatch })`** if you want **`/agents/...`** on the same API). |
-| **No HTTP** | [`minimal-run`](../examples/minimal-run/). |
+| **This doc’s URL shape on Express** | [`@opencoreagents/rest-api`](../../packages/rest-api/) + [`plan-rest-express`](../../examples/plan-rest-express/). |
+| **Chat-shaped BFF + SSE** | [`real-world-with-express`](../../examples/real-world-with-express/). |
+| **202 + worker + Redis definitions** | [`dynamic-runtime-rest`](../../examples/dynamic-runtime-rest/) (add **`createRuntimeRestRouter({ dispatch })`** if you want **`/agents/...`** on the same API). |
+| **No HTTP** | [`minimal-run`](../../examples/minimal-run/). |
 
 **TLS:** Terminate at reverse proxy or dev tooling — not in `core`.
 
@@ -124,7 +124,7 @@ Long-term product surface (from brainstorm **`07`**). **`rest-api`** covers only
 |-------|------|----------------|
 | **R0 — Contract** | OpenAPI + error model | **`swagger`** + **`buildRuntimeRestOpenApiSpec`**: **`RuntimeRestJsonError`**; paths gated by **`hasDispatch`**, **`hasMemoryRead`**, **`hasInterAgentSend`**, **`hasRunStore`** (incl. **`/agents/{agentId}/runs`**, **`/runs/{runId}/history`**, **`/agents/{fromAgentId}/send`**). **`mapEngineErrorToHttp`** for **`EngineError`** on inline **`run` / `resume` / `GET /runs*`**. **`RUNTIME_REST_ENGINE_ERROR_CODES`**. |
 | **R1 — Minimal server** | run / resume / run read / inter-agent | **`rest-api`** inline + **`runStore`**; **`GET /agents/:id/memory`**, **`GET /agents/:id/runs`**, **`GET /runs/:id`**, **`GET /runs/:id/history`**, **`POST …/send`** with **`runtime`** (**`messageBus`** for send); tests cover memory, list, history, **`MessageBus`**, resume after **`wait`**, **`agentIds`** ∩ registry. |
-| **R2 — Async** | **202** + poll | **`dispatch`** + **`GET /jobs/:jobId`**, **`wait=1`** (tested); **`isBullmqJobWaitTimeoutError`** for **504** vs **502** on **`waitUntilFinished`**; worker = [`dispatchEngineJob`](../packages/core/src/engine/dispatchJob.ts) / [`21-dynamic-runtime-rest.md`](./core/21-dynamic-runtime-rest.md). |
+| **R2 — Async** | **202** + poll | **`dispatch`** + **`GET /jobs/:jobId`**, **`wait=1`** (tested); **`isBullmqJobWaitTimeoutError`** for **504** vs **502** on **`waitUntilFinished`**; worker = [`dispatchEngineJob`](../../packages/core/src/engine/dispatchJob.ts) / [`21-dynamic-runtime-rest.md`](../core/21-dynamic-runtime-rest.md). |
 | **R3 — Multi-tenant** | Safe tenancy | Fixed / resolved **`projectId`**, **`allowedProjectIds`**, **`resolveApiKey`**; **`Run.projectId`** + **`GET /runs`** **403** on mismatch; legacy runs → [`technical-debt.md`](./technical-debt.md) **§7**. |
 | **R4 — Streaming** | SSE / hooks on wire | Not in **`rest-api`**; see **`real-world-with-express`**. |
 
@@ -145,14 +145,14 @@ For the **URL table in § Implemented today**, the **`@opencoreagents/rest-api`*
 
 ## References
 
-- [`brainstorm/07-multi-agente-rest-sesiones.md`](./brainstorm/07-multi-agente-rest-sesiones.md)
-- [`core/14-consumers.md`](./core/14-consumers.md)
-- [`packages/rest-api/README.md`](../packages/rest-api/README.md)
-- [`examples/plan-rest-express/`](../examples/plan-rest-express/)
-- [`examples/real-world-with-express/`](../examples/real-world-with-express/)
-- [`examples/dynamic-runtime-rest/`](../examples/dynamic-runtime-rest/)
-- [`examples/README.md`](../examples/README.md)
+- [`brainstorm/07-multi-agente-rest-sesiones.md`](../brainstorm/07-multi-agente-rest-sesiones.md)
+- [`core/14-consumers.md`](../core/14-consumers.md)
+- [`packages/rest-api/README.md`](../../packages/rest-api/README.md)
+- [`examples/plan-rest-express/`](../../examples/plan-rest-express/)
+- [`examples/real-world-with-express/`](../../examples/real-world-with-express/)
+- [`examples/dynamic-runtime-rest/`](../../examples/dynamic-runtime-rest/)
+- [`examples/README.md`](../../examples/README.md)
 - [`plan.md`](./plan.md)
 - [`technical-debt.md`](./technical-debt.md)
-- Cluster: [`core/19-cluster-deployment.md`](./core/19-cluster-deployment.md)
-- Dynamic runtime: [`core/21-dynamic-runtime-rest.md`](./core/21-dynamic-runtime-rest.md)
+- Cluster: [`core/19-cluster-deployment.md`](../core/19-cluster-deployment.md)
+- Dynamic runtime: [`core/21-dynamic-runtime-rest.md`](../core/21-dynamic-runtime-rest.md)

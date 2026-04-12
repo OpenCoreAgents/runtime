@@ -1,6 +1,6 @@
 # MCP planning (Model Context Protocol)
 
-> Roadmap for exposing the runtime to **MCP hosts** (Cursor, Claude Desktop, etc.) as a **channel**, not a second engine. The core loop stays in **`packages/core`**; MCP maps **tools/resources** to your policies and optionally to HTTP or in-process calls. Source context: [`core/14-consumers.md`](./core/14-consumers.md) §MCP, [`01-purpose.md`](./core/01-purpose.md) (layers).
+> Roadmap for exposing the runtime to **MCP hosts** (Cursor, Claude Desktop, etc.) as a **channel**, not a second engine. The core loop stays in **`packages/core`**; MCP maps **tools/resources** to your policies and optionally to HTTP or in-process calls. Source context: [`core/14-consumers.md`](../core/14-consumers.md) §MCP, [`01-purpose.md`](../core/01-purpose.md) (layers).
 
 **Principle:** MCP **does not replace** the engine — it is a **plug** through which the host’s model may invoke **your** tools or trigger **your** `run`/`resume` pipeline.
 
@@ -34,7 +34,7 @@ Recommended default for a **platform**: **A** or **A + C** (MCP tool list is a c
 | **M1 — Scope** | List which user actions MCP exposes: e.g. “start run”, “resume with text”, “query memory”, **not** raw arbitrary tool execution unless allowlisted. | Written threat model (prompt injection, tool exfiltration). |
 | **M2 — Protocol skeleton** | Minimal MCP server package (or example repo) implementing handshake + one **tool** calling **`POST /agents/:id/run`** or local **`new AgentRuntime({…})`** → **`Agent.load(agentId, runtime, { session }).run(...)`**. | Manual test with one host (e.g. Cursor). |
 | **M3 — Parity** | Tool definitions stay in sync with **`Tool.define`** / project registry — generation or shared manifest to avoid drift. | CI check or codegen from definitions. |
-| **M4 — Multi-agent** | If hosts need “message agent B”, expose a single MCP tool that maps to **`system_send_message`** + bus semantics ([`09-communication-multiagent.md`](./core/09-communication-multiagent.md)). | Document correlation / `wait` expectations. |
+| **M4 — Multi-agent** | If hosts need “message agent B”, expose a single MCP tool that maps to **`system_send_message`** + bus semantics ([`09-communication-multiagent.md`](../core/09-communication-multiagent.md)). | Document correlation / `wait` expectations. |
 
 ---
 
@@ -47,7 +47,7 @@ Recommended default for a **platform**: **A** or **A + C** (MCP tool list is a c
 
 ## References
 
-- Consumers summary: [`core/14-consumers.md`](./core/14-consumers.md)
+- Consumers summary: [`core/14-consumers.md`](../core/14-consumers.md)
 - REST plan (often under MCP): [`plan-rest.md`](./plan-rest.md)
 - CLI (alternative surface): [`plan-cli.md`](./plan-cli.md)
-- Brainstorm library + hooks philosophy: [`brainstorm/06-libreria-adapters-cli.md`](./brainstorm/06-libreria-adapters-cli.md)
+- Brainstorm library + hooks philosophy: [`brainstorm/06-libreria-adapters-cli.md`](../brainstorm/06-libreria-adapters-cli.md)

@@ -6,7 +6,7 @@
 
 | Document | Audience | Contents |
 |----------|----------|----------|
-| **`docs/scaffold.md` (this file)** | Implementers of the monorepo | Turborepo layout, **all** `packages/*` boundaries, dependency graph, canonical types, implementation phases, testing matrix. |
+| **`docs/planning/scaffold.md` (this file)** | Implementers of the monorepo | Turborepo layout, **all** `packages/*` boundaries, dependency graph, canonical types, implementation phases, testing matrix. |
 | **`docs/core/18-scaffold.md`** | Users of the product CLI / programmatic API | `init` / `generate` commands, flags, generated **end-user** project layout, post-scaffold checklist. |
 
 End-user “what files appear in `my-project/`” belongs in `18-scaffold`. Monorepo “what files belong in `packages/cli/` vs `packages/scaffold/`” belongs here.
@@ -39,6 +39,7 @@ agents/                    → repo root
 ```yaml
 packages:
   - "packages/*"
+  - "examples/*"
 ```
 
 ### 0.3 Root `package.json`
@@ -204,20 +205,20 @@ export default defineConfig({
 Packages reference each other with `"workspace:*"` in `dependencies`:
 
 ```
-@opencoreagents/core              → no internal deps (pure interfaces + engine + built-in tools)
-@opencoreagents/utils             → no internal deps (pure functions)
-@opencoreagents/adapters-redis    → depends on @opencoreagents/core (interfaces); TCP Redis via ioredis (preferred for shared memory / RunStore / MessageBus)
-@opencoreagents/adapters-upstash  → depends on @opencoreagents/core (interfaces); REST Redis + Upstash Vector
-@opencoreagents/adapters-bullmq   → depends on @opencoreagents/core + **bullmq** — **priority** job queue (`createEngineQueue`, `createEngineWorker`; **`dispatchEngineJob`** implemented in **`core`**, re-exported here)
-@opencoreagents/adapters-http-tool → depends on @opencoreagents/core — JSON-configured outbound HTTP tools ([`20-http-tool-adapter.md`](./core/20-http-tool-adapter.md))
-@opencoreagents/dynamic-definitions → depends on @opencoreagents/core + **adapters-http-tool** — definition store + **`hydrateAgentDefinitionsFromStore`** ([`21-dynamic-runtime-rest.md`](./core/21-dynamic-runtime-rest.md))
-@opencoreagents/adapters-anthropic → depends on @opencoreagents/core — Claude / Anthropic LLM adapter
+@opencoreagents/core               → no workspace deps (engine + interfaces + built-in tools)
+@opencoreagents/utils              → no workspace deps (parsers, chunking, file-resolver)
+@opencoreagents/adapters-http-tool → depends on @opencoreagents/core — JSON-configured outbound HTTP tools ([`20-http-tool-adapter.md`](../core/20-http-tool-adapter.md))
+@opencoreagents/dynamic-definitions → depends on @opencoreagents/core + **adapters-http-tool** — definition store + **`hydrateAgentDefinitionsFromStore`** ([`21-dynamic-runtime-rest.md`](../core/21-dynamic-runtime-rest.md))
+@opencoreagents/adapters-redis     → depends on @opencoreagents/core + **adapters-http-tool** + **dynamic-definitions** + **ioredis** — TCP Redis memory / RunStore / MessageBus / Redis-backed definitions facade
+@opencoreagents/adapters-upstash   → depends on @opencoreagents/core — REST Redis + Upstash Vector
+@opencoreagents/adapters-bullmq    → depends on @opencoreagents/core + **bullmq** (npm) — **`createEngineQueue`**, **`createEngineWorker`**; **`dispatchEngineJob`** implemented in **`core`**, re-exported here
+@opencoreagents/adapters-openai    → depends on @opencoreagents/core
+@opencoreagents/adapters-anthropic → depends on @opencoreagents/core — Claude / Anthropic **`LLMAdapter`**
 @opencoreagents/conversation-gateway → depends on @opencoreagents/core — inbound message normalization + gateway helpers
-@opencoreagents/rest-api → depends on @opencoreagents/core + **express** — **`createRuntimeRestRouter`**, **`resolveApiKey`** ([`plan-rest.md`](./plan-rest.md))
-@opencoreagents/adapters-openai   → depends on @opencoreagents/core (interfaces)
-@opencoreagents/rag               → depends on @opencoreagents/core, @opencoreagents/utils (RAG tools that need parsers/chunking)
-@opencoreagents/cli               → depends on @opencoreagents/core, @opencoreagents/scaffold
-@opencoreagents/scaffold          → depends on @opencoreagents/core
+@opencoreagents/rest-api           → depends on @opencoreagents/core + **express** (npm); optional **peer** **`adapters-bullmq`** / **`bullmq`** for dispatch tests — **`createRuntimeRestRouter`** ([`plan-rest.md`](./plan-rest.md))
+@opencoreagents/rag                → depends on @opencoreagents/core + **utils**
+@opencoreagents/scaffold           → no workspace deps today (templates reference **`@opencoreagents/core`** in generated apps)
+@opencoreagents/cli                → depends on **scaffold** only
 ```
 
 RAG tools that import utils (e.g. `system_file_ingest`, `system_file_read`) live in `@opencoreagents/rag` to keep `core` free of internal dependencies. Built-in tools that only need `MemoryAdapter` (`system_save_memory`, `system_get_memory`, `update_state`) and vector tools that only need adapter interfaces (`system_vector_search`, `system_vector_upsert`, `system_vector_delete`) remain in `core`.
@@ -226,23 +227,23 @@ Turborepo `^build` in `dependsOn` ensures transitive builds run in correct order
 
 ### 0.8 Per-package inventory (all workspace packages)
 
-**Fourteen** packages under `packages/`. Edges match §0.7; **status** reflects this repository (incremental implementation).
+**Fourteen** packages under `packages/`. Edges match §0.7; **status** reflects this repository (incremental implementation). The **Workspace / npm deps** column lists `workspace:*` edges plus notable npm packages; optional **peer** deps are called out where they matter for builds/tests.
 
-| Package | Role | `workspace:*` deps | Status (typical) |
-|---------|------|--------------------|------------------|
-| `@opencoreagents/core` | Engine loop, `Tool`/`Skill`/`Agent`/`Session` (optional **`expiresAtMs`** / **`SessionExpiredError`**), registries, built-in memory tools, vector tools, `system_send_message`, `InProcessMessageBus`, `RunStore`, **`buildEngineDeps`** / **`createRun`** / **`executeRun`**, **`dispatchEngineJob`** / **`EngineJobPayload`**, **`RunBuilder.onWait`**, **`effectiveToolAllowlist`**, optional **`toolTimeoutMs`**, **`dynamicDefinitionsStore`** (runtime `import()` of **`dynamic-definitions`**), adapters as interfaces | — | **Implemented** (Phases 1–4, 4b, 6–7; worker API + cluster docs — see `docs/plan.md` **Progress snapshot**) |
-| `@opencoreagents/utils` | Parsers, chunking, file-resolver ([`16-utils.md`](./core/16-utils.md)) | — | **Implemented** (parsers: txt/md/json/csv/html; chunking: fixed_size/sentence/paragraph/recursive; file-resolver: local/http) |
-| `@opencoreagents/adapters-redis` | `RedisMemoryAdapter`, `RedisRunStore`, `RedisMessageBus` (`ioredis`, Redis Streams) | `core` | **Implemented** — **default** for `REDIS_URL` / cluster memory + runs + bus (no vector here) |
+| Package | Role | Workspace / npm deps | Status (typical) |
+|---------|------|----------------------|------------------|
+| `@opencoreagents/core` | Engine loop, `Tool`/`Skill`/`Agent`/`Session` (optional **`expiresAtMs`** / **`SessionExpiredError`**), registries, built-in memory tools, vector tools, `system_send_message`, `InProcessMessageBus`, `RunStore`, **`buildEngineDeps`** / **`createRun`** / **`executeRun`**, **`dispatchEngineJob`** / **`EngineJobPayload`**, **`RunBuilder.onWait`**, **`effectiveToolAllowlist`**, optional **`toolTimeoutMs`**, **`dynamicDefinitionsStore`** (runtime `import()` of **`dynamic-definitions`**), adapters as interfaces | — | **Implemented** (Phases 1–4, 4b, 6–7; worker API + cluster docs — see `docs/planning/plan.md` **Progress snapshot**) |
+| `@opencoreagents/utils` | Parsers, chunking, file-resolver ([`16-utils.md`](../core/16-utils.md)) | — | **Implemented** (parsers: txt/md/json/csv/html; chunking: fixed_size/sentence/paragraph/recursive; file-resolver: local/http) |
+| `@opencoreagents/adapters-http-tool` | `registerHttpToolsFromDefinitions`, `HttpToolConfig`, host allowlist + templates ([`20-http-tool-adapter.md`](../core/20-http-tool-adapter.md)) | `core` | **Implemented** |
+| `@opencoreagents/dynamic-definitions` | `DynamicDefinitionsStore` facade, `hydrateAgentDefinitionsFromStore`, upsert/sync ([`21-dynamic-runtime-rest.md`](../core/21-dynamic-runtime-rest.md)) | `core`, `adapters-http-tool` | **Implemented** |
+| `@opencoreagents/adapters-redis` | `RedisMemoryAdapter`, `RedisRunStore`, `RedisMessageBus` (`ioredis`, Redis Streams) + Redis-backed definitions helpers | `core`, `adapters-http-tool`, `dynamic-definitions`; **ioredis** (npm) | **Implemented** — **default** for `REDIS_URL` / cluster memory + runs + bus (no vector here) |
 | `@opencoreagents/adapters-upstash` | `UpstashRedisMemoryAdapter`, `UpstashVectorAdapter`, `UpstashRunStore`, `UpstashRedisMessageBus` (HTTP) | `core` | **Implemented** — REST + vector; optional vs TCP Redis |
 | `@opencoreagents/adapters-openai` | `OpenAILLMAdapter`, `OpenAIEmbeddingAdapter` (fetch) | `core` | **Implemented** |
-| `@opencoreagents/adapters-bullmq` | `createEngineQueue`, `createEngineWorker`; **re-exports** `dispatchEngineJob`, `EngineJobPayload` from **`core`** (**BullMQ** — priority async / workers) | `core`, `bullmq` | **Implemented** (orchestrate delayed `resume` in app) |
-| `@opencoreagents/adapters-http-tool` | `registerHttpToolsFromDefinitions`, `HttpToolConfig`, host allowlist + templates ([`20-http-tool-adapter.md`](./core/20-http-tool-adapter.md)) | `core` | **Implemented** |
-| `@opencoreagents/dynamic-definitions` | `DynamicDefinitionsStore` facade, `hydrateAgentDefinitionsFromStore`, upsert/sync ([`21-dynamic-runtime-rest.md`](./core/21-dynamic-runtime-rest.md)) | `core`, `adapters-http-tool` | **Implemented** |
-| `@opencoreagents/adapters-anthropic` | Anthropic / Claude **`LLMAdapter`** | `core` | **Implemented** |
+| `@opencoreagents/adapters-anthropic` | **`AnthropicLLMAdapter`** (Claude Messages API) | `core` | **Implemented** |
+| `@opencoreagents/adapters-bullmq` | `createEngineQueue`, `createEngineWorker`; **re-exports** `dispatchEngineJob`, `EngineJobPayload` from **`core`** | `core`; **bullmq** (npm) | **Implemented** (orchestrate delayed `resume` in app) |
 | `@opencoreagents/conversation-gateway` | Normalized inbound messages + run/reply helpers for webhooks | `core` | **Implemented** |
-| `@opencoreagents/rest-api` | **`createRuntimeRestRouter`** — Express routes per [`plan-rest.md`](./plan-rest.md) after **`Agent.define`**; tenancy, **`resolveApiKey`**, allowlists — [`packages/rest-api/README.md`](../packages/rest-api/README.md) | `core` + **`express`** (npm) | **Implemented** |
-| `@opencoreagents/rag` | File-based RAG tools + skills ([`17-rag-pipeline.md`](./core/17-rag-pipeline.md)) | `core`, `utils` | **Implemented** (system_file_read, system_file_ingest, system_file_list tools; rag, rag-reader skills) |
-| `@opencoreagents/scaffold` | Programmatic `scaffold.initProject` / `generate*` ([`18-scaffold.md`](./core/18-scaffold.md) API) | `core` | **Implemented** (TS templates, manifest) |
+| `@opencoreagents/rest-api` | **`createRuntimeRestRouter`** — Express routes per [`plan-rest.md`](./plan-rest.md) after **`Agent.define`**; tenancy, **`resolveApiKey`**, allowlists — [`packages/rest-api/README.md`](../../packages/rest-api/README.md) | `core`; **express** (npm); optional **peer** **`adapters-bullmq`**, **`bullmq`** | **Implemented** |
+| `@opencoreagents/rag` | File-based RAG tools + skills ([`17-rag-pipeline.md`](../core/17-rag-pipeline.md)) | `core`, `utils` | **Implemented** (system_file_read, system_file_ingest, system_file_list tools; rag, rag-reader skills) |
+| `@opencoreagents/scaffold` | Programmatic `scaffold.initProject` / `generate*` ([`18-scaffold.md`](../core/18-scaffold.md) API) | — *(no `workspace:*` in repo `package.json`)* | **Implemented** (TS templates, manifest) |
 | `@opencoreagents/cli` | `runtime` binary + `runCli()` (delegates to `scaffold`) | `scaffold` | **Implemented** (argv → scaffold API) |
 
 ---
@@ -308,15 +309,40 @@ agents/                    → repo root (Turborepo)
 │   │   ├── tsconfig.json
 │   │   └── tsup.config.ts
 │   │
-│   ├── adapters-redis/               → @opencoreagents/adapters-redis (TCP Redis, ioredis)
+│   ├── adapters-anthropic/           → @opencoreagents/adapters-anthropic
 │   │   ├── src/
-│   │   │   ├── keys.ts
-│   │   │   ├── RedisMemoryAdapter.ts
-│   │   │   ├── RedisMessageBus.ts
-│   │   │   ├── RedisRunStore.ts
+│   │   │   ├── errors.ts
+│   │   │   └── index.ts              → AnthropicLLMAdapter
+│   │   ├── tests/
+│   │   ├── package.json              → deps: @opencoreagents/core (workspace:*)
+│   │   ├── tsconfig.json
+│   │   └── tsup.config.ts
+│   │
+│   ├── adapters-http-tool/           → @opencoreagents/adapters-http-tool
+│   │   ├── src/
+│   │   │   ├── createHttpToolAdapter.ts, register.ts, template.ts, hostAllowlist.ts, types.ts
 │   │   │   └── index.ts
 │   │   ├── tests/
-│   │   ├── package.json              → deps: @opencoreagents/core, ioredis
+│   │   ├── package.json              → deps: @opencoreagents/core (workspace:*)
+│   │   ├── tsconfig.json
+│   │   └── tsup.config.ts
+│   │
+│   ├── dynamic-definitions/          → @opencoreagents/dynamic-definitions
+│   │   ├── src/
+│   │   │   ├── store.ts, register.ts
+│   │   │   └── index.ts
+│   │   ├── tests/
+│   │   ├── package.json              → deps: core + adapters-http-tool (workspace:*)
+│   │   ├── tsconfig.json
+│   │   └── tsup.config.ts
+│   │
+│   ├── adapters-redis/               → @opencoreagents/adapters-redis (TCP Redis, ioredis)
+│   │   ├── src/
+│   │   │   ├── keys.ts, memoryListSave.ts
+│   │   │   ├── RedisMemoryAdapter.ts, RedisRunStore.ts, RedisMessageBus.ts, RedisDynamicDefinitionsStore.ts
+│   │   │   └── index.ts
+│   │   ├── tests/
+│   │   ├── package.json              → deps: core + adapters-http-tool + dynamic-definitions (workspace:*), ioredis
 │   │   ├── tsconfig.json
 │   │   └── tsup.config.ts
 │   │
@@ -329,6 +355,24 @@ agents/                    → repo root (Turborepo)
 │   │   │   └── index.ts
 │   │   ├── tests/
 │   │   ├── package.json              → deps: @opencoreagents/core, bullmq
+│   │   ├── tsconfig.json
+│   │   └── tsup.config.ts
+│   │
+│   ├── rest-api/                     → @opencoreagents/rest-api
+│   │   ├── src/
+│   │   │   ├── runtimeRestRouter.ts, engineErrorHttp.ts, openapi.ts, summarizeRun.ts, bullmqJobWaitTimeout.ts
+│   │   │   └── index.ts
+│   │   ├── tests/
+│   │   ├── package.json              → deps: core (workspace:*), express; optional peer: adapters-bullmq, bullmq
+│   │   ├── tsconfig.json
+│   │   └── tsup.config.ts
+│   │
+│   ├── conversation-gateway/         → @opencoreagents/conversation-gateway
+│   │   ├── src/
+│   │   │   ├── ConversationGateway.ts, findWaitingRun.ts, replyText.ts, types.ts
+│   │   │   └── index.ts
+│   │   ├── tests/
+│   │   ├── package.json              → deps: @opencoreagents/core (workspace:*)
 │   │   ├── tsconfig.json
 │   │   └── tsup.config.ts
 │   │
@@ -353,7 +397,7 @@ agents/                    → repo root (Turborepo)
 │   │   ├── src/
 │   │   │   └── index.ts              → entry (parse argv; delegate to @opencoreagents/scaffold)
 │   │   ├── tests/
-│   │   ├── package.json              → deps: @opencoreagents/core, @opencoreagents/scaffold (workspace:*)
+│   │   ├── package.json              → deps: @opencoreagents/scaffold (workspace:*)
 │   │   ├── tsconfig.json
 │   │   └── tsup.config.ts
 │   │       (Phase 8 may add src/commands/*.ts — still delegates to @opencoreagents/scaffold)
@@ -386,10 +430,13 @@ agents/                    → repo root (Turborepo)
 │       │       ├── minimal.ts
 │       │       └── multi-agent.ts
 │       ├── tests/
-│       ├── package.json              → deps: @opencoreagents/core (workspace:*)
+│       ├── package.json              → no workspace deps in repo (templates reference @opencoreagents/core in generated apps)
 │       ├── tsconfig.json
 │       ├── tsup.config.ts
 │       └── vitest.config.ts
+│
+├── examples/                         → runnable samples (pnpm workspace members; not published packages)
+│   └── …                             → e.g. minimal-run, openai-tools-skill, plan-rest-express, dynamic-runtime-rest
 │
 └── docs/                             → documentation (not a package)
 ```
@@ -1294,7 +1341,7 @@ Scope resolution: **project first**, then **global**. Project definition wins on
 
 1. Load `AgentDefinition.skills` → resolve each id: project → global.
 2. Union tools from all resolved skills + direct `agent.tools` → candidate set.
-3. Intersect with the **tool registry** and optional **`AgentRuntime.allowedToolIds`** → effective allowlist for **`ContextBuilder`** (today **`SecurityContext` does not further hide tools** in core — see [`08-scope-and-security.md`](./core/08-scope-and-security.md) §2).
+3. Intersect with the **tool registry** and optional **`AgentRuntime.allowedToolIds`** → effective allowlist for **`ContextBuilder`** (today **`SecurityContext` does not further hide tools** in core — see [`08-scope-and-security.md`](../core/08-scope-and-security.md) §2).
 4. Inject skill descriptions/instructions into context if skill is "active".
 5. `execute` hook: deferred past MVP (declarative + template only).
 
@@ -1307,7 +1354,7 @@ Scope resolution: **project first**, then **global**. Project definition wins on
 | Operation | Minimum control |
 |-----------|-----------------|
 | `Agent.define` / `Tool.define` / `Skill.define` | Admin scope; `projectId` bound to org. `end_user` NEVER gets define perms. |
-| `Agent.load(agentId, runtime, { session })` | Principal authorized on project; agent exists in namespace; **`AgentRuntime`** matches deployment ([`19-cluster-deployment.md`](./core/19-cluster-deployment.md)). |
+| `Agent.load(agentId, runtime, { session })` | Principal authorized on project; agent exists in namespace; **`AgentRuntime`** matches deployment ([`19-cluster-deployment.md`](../core/19-cluster-deployment.md)). |
 | `run` / `resume` | Same project + agent; optional concurrent run quota. Validate `endUserId`. |
 | Tool execution | Agent allowlist + scope for sensitive tools. |
 | MessageBus | Same `projectId` only (default). |
@@ -1389,12 +1436,13 @@ Each phase builds on the previous. Interfaces from §2 are implemented progressi
 | 0f | Scaffold empty `packages/utils/` | Same template |
 | 0g | Scaffold empty `packages/adapters-upstash/` | Same template, add `workspace:*` dep on core |
 | 0h | Scaffold empty `packages/adapters-openai/` | Same template, add `workspace:*` dep on core |
-| 0i | Scaffold empty `packages/cli/` | Same template, add `workspace:*` deps |
-| 0j | Scaffold empty `packages/rag/` | Same template, add `workspace:*` deps on core + utils |
-| 0k | Scaffold empty `packages/scaffold/` | Same template, add `workspace:*` dep on core |
+| 0i | Scaffold empty `packages/scaffold/` | Same template; generated apps reference **`@opencoreagents/core`** — the scaffold package may ship **without** `workspace:*` deps (see repo `packages/scaffold/package.json`) |
+| 0j | Scaffold empty `packages/cli/` | Same template, add `workspace:*` dep on **`scaffold`** |
+| 0k | Scaffold empty `packages/rag/` | Same template, add `workspace:*` deps on core + utils |
 | 0l | `pnpm install` | Verify workspace links |
 | 0m | Verify `pnpm turbo build` runs all packages in order | — |
 | 0n | Add root `eslint.config.mjs` (or `.eslintrc.cjs`), `.prettierrc`, `.gitignore` | — |
+| 0o | Add remaining workspace packages | **`adapters-http-tool`** → **`dynamic-definitions`** → **`adapters-redis`** (depends on both + core), **`adapters-bullmq`**, **`adapters-anthropic`**, **`rest-api`**, **`conversation-gateway`** — numbered steps **0.16–0.22** in [`plan.md`](./plan.md) Phase 0; dependency graph in same section |
 
 ### Phase 1 — Core loop (no persistence) — `packages/core`
 
@@ -1436,7 +1484,7 @@ After Phase 1 (including rows 15–17): `pnpm turbo build --filter=@opencoreagen
 | 16a | Key pattern implementation | `src/keys.ts` |
 | 17a | Barrel export | `src/index.ts` |
 
-After Phases 2 / 2a / 5: `pnpm turbo build` builds core first (via `^build`), then `adapters-redis`, `adapters-upstash`, and `adapters-bullmq`.
+After Phases 2 / 2a / 5: `pnpm turbo build` builds **`core`** first (via `^build`), then **`adapters-http-tool`** and **`dynamic-definitions`** before **`adapters-redis`**; **`adapters-upstash`** and **`adapters-bullmq`** sit with other `core`-only adapter leaves. See **`plan.md`** dependency graph.
 
 ### Phase 3 — LLM provider — `packages/adapters-openai`
 
@@ -1463,7 +1511,7 @@ After Phases 2 / 2a / 5: `pnpm turbo build` builds core first (via `^build`), th
 | 23c | `Agent.resume()` using RunStore | `packages/core/src/define/Agent.ts`, `RunBuilder.ts` ✅ |
 | 23d | Redis RunStore (production) | `packages/adapters-redis/src/RedisRunStore.ts` ✅ (TCP); `packages/adapters-upstash/src/UpstashRunStore.ts` ✅ (REST) |
 
-RunStore enables `wait`/`resume` across cluster nodes — see [`19-cluster-deployment.md §3`](./core/19-cluster-deployment.md).
+RunStore enables `wait`/`resume` across cluster nodes — see [`19-cluster-deployment.md §3`](../core/19-cluster-deployment.md).
 
 ### Phase 5 — Job queue + cluster — `packages/adapters-bullmq` (**BullMQ priority**)
 
@@ -1474,7 +1522,7 @@ RunStore enables `wait`/`resume` across cluster nodes — see [`19-cluster-deplo
 | 25a | In-process MessageBus impl | `packages/core/src/bus/InProcessMessageBus.ts` | ✅ |
 | 25b | Redis Streams MessageBus | `packages/adapters-redis/src/RedisMessageBus.ts` ✅ (TCP); `packages/adapters-upstash/src/UpstashRedisMessageBus.ts` ✅ (REST) |
 
-**BullMQ** is the primary production pattern — see [`19-cluster-deployment.md` §4](./core/19-cluster-deployment.md). **QStash** remains an optional integration you build in the host app.
+**BullMQ** is the primary production pattern — see [`19-cluster-deployment.md` §4](../core/19-cluster-deployment.md). **QStash** remains an optional integration you build in the host app.
 
 ### Phase 6 — RAG pipeline — `packages/utils` + `packages/core` + `packages/rag` + adapter packages ✅
 
@@ -1505,7 +1553,7 @@ After Phase 6: `pnpm turbo build` builds all packages in topological order. `@op
 | 36 | CLI commands (init, generate) — argv parsing, exit codes | `packages/cli` | **Implemented** |
 | 37 | Project templates (TypeScript modules returning file trees) | `packages/scaffold/src/templates/` (`default`, `minimal`, `multi-agent`) | **Implemented** |
 
-**In-repo status:** Phases **0–4**, **4b** (RunStore), **5** (**`adapters-bullmq`** — BullMQ priority), and **6–8** (RAG, multi-agent, CLI + scaffold) are implemented — `pnpm turbo run build test lint` passes for all **fourteen** workspace packages under `packages/`. **CI:** `.github/workflows/ci.yml` runs the same pipeline on push/PR. **QStash** is not a package; integrate via HTTP if needed (see [`19-cluster-deployment.md`](./core/19-cluster-deployment.md)). **Phase 9** (full integration hardening, including optional E2E with live keys) is partial. See **`docs/plan.md` → Progress snapshot**.
+**In-repo status:** Phases **0–4**, **4b** (RunStore), **5** (**`adapters-bullmq`** — BullMQ priority), and **6–8** (RAG, multi-agent, CLI + scaffold) are implemented — `pnpm turbo run build test lint` passes for all **fourteen** workspace packages under `packages/`. **CI:** `.github/workflows/ci.yml` runs the same pipeline on push/PR. **QStash** is not a package; integrate via HTTP if needed (see [`19-cluster-deployment.md`](../core/19-cluster-deployment.md)). **Phase 9** (full integration hardening, including optional E2E with live keys) is partial. See **`docs/planning/plan.md` → Progress snapshot**.
 
 ---
 
@@ -1644,7 +1692,7 @@ export default defineWorkspace(["packages/*/vitest.config.ts"]);
 | `core` | Context Builder | Deterministic output from same inputs | Unit, mock memory/security |
 | `core` | Engine loop | Full cycles: thought→action→result, wait→resume, max iterations, parse recovery | Integration with in-memory adapters |
 | `core` | ToolRunner | Allowlist enforcement, validate, execute, error observation | Unit with mock tools |
-| `core` | Security | **`projectId`** isolation in keys/adapters; prompt tool set = agent allowlist ∩ registry (+ optional **`AgentRuntime.allowedToolIds`**) — **`SecurityContext` is not applied in `ContextBuilder` yet** ([`08-scope-and-security.md`](./core/08-scope-and-security.md) §2, [`technical-debt.md`](./technical-debt.md) §7); principal auth stays in the host **`SecurityLayer`** | Unit for allowlist/prefixes; host integration for HTTP |
+| `core` | Security | **`projectId`** isolation in keys/adapters; prompt tool set = agent allowlist ∩ registry (+ optional **`AgentRuntime.allowedToolIds`**) — **`SecurityContext` is not applied in `ContextBuilder` yet** ([`08-scope-and-security.md`](../core/08-scope-and-security.md) §2, [`technical-debt.md`](./technical-debt.md) §7); principal auth stays in the host **`SecurityLayer`** | Unit for allowlist/prefixes; host integration for HTTP |
 | `core` | Define API | `Tool.define`→`Agent.define`→`new AgentRuntime({…})`→`Agent.load`→`run` end-to-end | Integration |
 | `adapters-upstash` | Memory Adapter | Key pattern correctness, save/query/delete, endUserId scoping | Unit (mocked Redis), integration (real Upstash, CI-only) |
 | `adapters-openai` | LLM Adapter | Request mapping, error classification, retry behavior | Unit with HTTP mocks |

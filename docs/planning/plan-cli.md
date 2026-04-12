@@ -1,6 +1,6 @@
 # CLI planning (`@opencoreagents/cli`)
 
-> Roadmap for the **command-line** surface: what exists today vs the **library-parity** CLI sketched in [`brainstorm/06-libreria-adapters-cli.md`](./brainstorm/06-libreria-adapters-cli.md). Complements [`plan.md`](./plan.md) (monorepo/engine) and [`core/14-consumers.md`](./core/14-consumers.md) §CLI.
+> Roadmap for the **command-line** surface: what exists today vs the **library-parity** CLI sketched in [`brainstorm/06-libreria-adapters-cli.md`](../brainstorm/06-libreria-adapters-cli.md). Complements [`plan.md`](./plan.md) (monorepo/engine) and [`core/14-consumers.md`](../core/14-consumers.md) §CLI.
 
 **Non-goals:** Reimplementing the engine loop in the CLI — all execution stays in **`packages/core`** via **`AgentRuntime`**, **`Agent.load(agentId, runtime, { session })`**, **`RunBuilder`**, hooks.
 
@@ -34,7 +34,7 @@ Implementation notes:
 
 - **Session**: construct `Session` (optional `expiresAtMs`, `endUserId`) from flags or env; map **`SessionExpiredError`** to a clear exit code / stderr message.
 - **Persistence**: optional local state (e.g. `.agent/` — last `runId`, config) so `resume` and `logs` are usable without passing IDs by hand.
-- **Output**: stream or print **hooks** (`onThought`, `onAction`, …) for terminal-friendly inspection (align with [`watchUsage`](../packages/core/src/engine/watchUsage.ts) if billing-style metrics matter).
+- **Output**: stream or print **hooks** (`onThought`, `onAction`, …) for terminal-friendly inspection (align with [`watchUsage`](../../packages/core/src/engine/watchUsage.ts) if billing-style metrics matter).
 
 ---
 
@@ -53,13 +53,13 @@ Implementation notes:
 
 - **Engine**: stable **`Agent`**, **`RunBuilder`**, **`AgentRuntime`**, **`Session`** (incl. expiry).
 - **Scaffold**: templates that expose a **single way** to load env + adapters so the CLI does not fork configuration logic.
-- **Multi-agent**: [`system_send_message`](../packages/core/src/tools/sendMessage.ts) + bus — CLI `send` is orchestration glue, not core.
+- **Multi-agent**: [`system_send_message`](../../packages/core/src/tools/sendMessage.ts) + bus — CLI `send` is orchestration glue, not core.
 
 ---
 
 ## References
 
-- Runnable baseline without runtime subcommands: [`examples/minimal-run`](../examples/minimal-run/) (`Agent.run` + mock LLM).
-- Brainstorm: [`06-libreria-adapters-cli.md`](./brainstorm/06-libreria-adapters-cli.md) (folder layout, MVP bullets).
-- Multi-agent + CLI snippet: [`07-multi-agente-rest-sesiones.md`](./brainstorm/07-multi-agente-rest-sesiones.md) §Extra CLI.
-- Consumers overview: [`core/14-consumers.md`](./core/14-consumers.md).
+- Runnable baseline without runtime subcommands: [`examples/minimal-run`](../../examples/minimal-run/) (`Agent.run` + mock LLM).
+- Brainstorm: [`06-libreria-adapters-cli.md`](../brainstorm/06-libreria-adapters-cli.md) (folder layout, MVP bullets).
+- Multi-agent + CLI snippet: [`07-multi-agente-rest-sesiones.md`](../brainstorm/07-multi-agente-rest-sesiones.md) §Extra CLI.
+- Consumers overview: [`core/14-consumers.md`](../core/14-consumers.md).

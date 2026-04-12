@@ -2,7 +2,7 @@
 
 CLI and programmatic helpers that generate the **initial directory structure**, configuration files, and starter definitions for a new project or agent. Scaffolding produces files — the **engine** and **adapters** remain unchanged.
 
-Related: [07-definition-syntax.md](./07-definition-syntax.md) (what gets generated), [14-consumers.md](./14-consumers.md) (CLI consumer), [05-adapters.md](./05-adapters.md) (adapter config templates). Monorepo package layout and implementation phases: [`../scaffold.md`](../scaffold.md) (not duplicated here).
+Related: [07-definition-syntax.md](./07-definition-syntax.md) (what gets generated), [14-consumers.md](./14-consumers.md) (CLI consumer), [05-adapters.md](./05-adapters.md) (adapter config templates). Monorepo package layout and implementation phases: [`../planning/scaffold.md`](../planning/scaffold.md) (not duplicated here).
 
 ---
 
@@ -206,7 +206,7 @@ Variables and flags line up with the API described in §5:
 | `toolIds` | `--tools` / `generateAgent({ tools })` |
 | `skillIds` | `--skills` / `generateAgent({ skills })` |
 
-File-level structure of each template module is specified in [`../scaffold.md`](../scaffold.md) §1 (`packages/scaffold`).
+File-level structure of each template module is specified in [`../planning/scaffold.md`](../planning/scaffold.md) §1 (`packages/scaffold`).
 
 ---
 

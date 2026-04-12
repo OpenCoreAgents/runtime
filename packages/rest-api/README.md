@@ -1,6 +1,6 @@
 # `@opencoreagents/rest-api`
 
-**Plugin-style** Express **`Router`**: after you **`Agent.define`** (and tools/skills), mount **`createRuntimeRestRouter({ … })`** to expose JSON routes for agents/runs/jobs (URL contract: **`docs/plan-rest.md`**) without copying handlers from scratch. A minimal runnable host is [`examples/plan-rest-express`](../../examples/plan-rest-express/) (enables **`swagger`** → **`GET /openapi.json`**, **`GET /docs`**).
+**Plugin-style** Express **`Router`**: after you **`Agent.define`** (and tools/skills), mount **`createRuntimeRestRouter({ … })`** to expose JSON routes for agents/runs/jobs (URL contract: **`docs/planning/plan-rest.md`**) without copying handlers from scratch. A minimal runnable host is [`examples/plan-rest-express`](../../examples/plan-rest-express/) (enables **`swagger`** → **`GET /openapi.json`**, **`GET /docs`**).
 
 **Execution modes**
 
@@ -48,7 +48,7 @@ When **`agentIds` is omitted**, every agent registered for that tenant (plus glo
 
 For **`EngineError`** subclasses from **`@opencoreagents/core`**, inline **`POST …/run`**, **`POST …/resume`**, **`GET /runs/:runId`**, and **`GET /runs/:runId/history`** return a stable **`code`** (e.g. **`SESSION_EXPIRED`** → **401**, **`RUN_INVALID_STATE`** → **409**, **`LLM_RATE_LIMIT`** → **429**) plus **`error`** text. You can reuse **`mapEngineErrorToHttp(err)`** in your own middleware. Non-engine failures keep generic status bodies. The OpenAPI spec includes **`components.schemas.RuntimeRestJsonError`** (`error` required, `code` optional); **`RUNTIME_REST_ENGINE_ERROR_CODES`** lists codes with explicit HTTP mapping in **`mapEngineErrorToHttp`**.
 
-## Phased plan ([`docs/plan-rest.md`](../../docs/plan-rest.md))
+## Phased plan ([`docs/planning/plan-rest.md`](../../docs/planning/plan-rest.md))
 
 | Phase | In this package |
 |-------|-----------------|
@@ -188,10 +188,10 @@ Set **`swagger: true`** (or an object) on **`createRuntimeRestRouter`** to add:
 
 Defaults: **`openapi.json`** + **`docs`**. Customize with **`swagger: { openApiPath, uiPath, info?: { title, version, description } }`**.
 
-These routes are registered **before** API-key and tenant middleware, so they do not require **`Authorization`** or **`X-Project-Id`**. Put **`app.use`** in front of the router if you need to protect them. Production notes (CSP, public spec): [`docs/technical-debt.md`](../../docs/technical-debt.md) §7 (*OpenAPI / Swagger UI*).
+These routes are registered **before** API-key and tenant middleware, so they do not require **`Authorization`** or **`X-Project-Id`**. Put **`app.use`** in front of the router if you need to protect them. Production notes (CSP, public spec): [`docs/planning/technical-debt.md`](../../docs/planning/technical-debt.md) §7 (*OpenAPI / Swagger UI*).
 
 You can also call **`buildRuntimeRestOpenApiSpec({ … })`** and **`runtimeRestSwaggerUiHtml(openApiPath, uiPath)`** from **`@opencoreagents/rest-api`** to serve the spec or UI yourself.
 
 ## Docs
 
-[`docs/plan-rest.md`](../../docs/plan-rest.md) (roadmap + contract table). This package implements the **Implemented today** surface (inline **`runtime`**, optional **`dispatch`**, **`runStore`**, **`swagger`**). Worker wiring for BullMQ matches [`examples/dynamic-runtime-rest/`](../../examples/dynamic-runtime-rest/).
+[`docs/planning/plan-rest.md`](../../docs/planning/plan-rest.md) (roadmap + contract table). This package implements the **Implemented today** surface (inline **`runtime`**, optional **`dispatch`**, **`runStore`**, **`swagger`**). Worker wiring for BullMQ matches [`examples/dynamic-runtime-rest/`](../../examples/dynamic-runtime-rest/).

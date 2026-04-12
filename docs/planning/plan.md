@@ -1,8 +1,8 @@
 # Implementation plan
 
-> Actionable step-by-step guide to build the `@opencoreagents` monorepo from zero. Each phase has a **gate** — criteria that must pass before moving on. Derived from `docs/scaffold.md` and `docs/core/`.
+> Actionable step-by-step guide to build the `@opencoreagents` monorepo from zero. Each phase has a **gate** — criteria that must pass before moving on. Derived from `docs/planning/scaffold.md` and `docs/core/`.
 
-**Canonical contracts:** [`docs/core/README.md`](./core/README.md) (engine, adapters, cluster). **Monorepo package map / file tree:** [`docs/scaffold.md`](./scaffold.md) §0–§1.
+**Canonical contracts:** [`docs/core/README.md`](../core/README.md) (engine, adapters, cluster). **Monorepo package map / file tree:** [`docs/planning/scaffold.md`](./scaffold.md) §0–§1.
 
 **Related planning (consumer surfaces, not part of the core monorepo phases above):**
 
@@ -11,8 +11,9 @@
 | [`plan-cli.md`](./plan-cli.md) | **`@opencoreagents/cli`**: scaffold (done) vs future **`run` / `resume` / memory / logs**. |
 | [`plan-rest.md`](./plan-rest.md) | **HTTP/JSON** — vision + **`@opencoreagents/rest-api`** (`createRuntimeRestRouter`), async **`dispatch`**, tenancy, gaps. |
 | [`plan-mcp.md`](./plan-mcp.md) | **Model Context Protocol** — MCP server as channel over SDK or REST. |
+| [`technical-debt.md`](./technical-debt.md) | **Gaps and deferrals** — security, tenancy, REST/MCP product shape; pairs with **§9** below. |
 
-**Runnable examples:** [`examples/minimal-run`](../examples/minimal-run/) (mock LLM, **`AgentRuntime`**, no keys); [`examples/openai-tools-skill`](../examples/openai-tools-skill/) (`OpenAILLMAdapter` + tool + skill, **`OPENAI_API_KEY`**); [`examples/console-wait`](../examples/console-wait/) (**`onWait`** + stdin); [`examples/rag`](../examples/rag/) (**`registerRagToolsAndSkills`**, **`registerRagCatalog(runtime, …)`**, **`system_ingest_rag_source`** / **`system_vector_search`**; optional **`start:openai`**); [`examples/rag-contact-support`](../examples/rag-contact-support/) (same RAG stack + custom **`contact_support`** tool, scripted LLM).
+**Runnable examples:** [`examples/minimal-run`](../../examples/minimal-run/) (mock LLM, **`AgentRuntime`**, no keys); [`examples/openai-tools-skill`](../../examples/openai-tools-skill/) (`OpenAILLMAdapter` + tool + skill, **`OPENAI_API_KEY`**); [`examples/console-wait`](../../examples/console-wait/) (**`onWait`** + stdin); [`examples/rag`](../../examples/rag/) (**`registerRagToolsAndSkills`**, **`registerRagCatalog(runtime, …)`**, **`system_ingest_rag_source`** / **`system_vector_search`**; optional **`start:openai`**); [`examples/rag-contact-support`](../../examples/rag-contact-support/) (same RAG stack + custom **`contact_support`** tool, scripted LLM).
 
 ---
 
@@ -24,17 +25,17 @@
 | **RunStore + resume** (`AgentRuntime` + **`runStore`**, `InMemoryRunStore`, **`RedisRunStore`** / `UpstashRunStore`, `Agent.resume`, `RunBuilder` persistence) | **Done** — see `docs/core/19-cluster-deployment.md` §3 |
 | **Worker / direct engine API** (`buildEngineDeps(agent, session, runtime)`, `createRun`, `executeRun`, `dispatchEngineJob(runtime, payload)` in **`packages/core`**, `effectiveToolAllowlist`, optional **`AgentRuntime.allowedToolIds`**, `getAgentDefinition`, `resolveToolRegistry`, `securityContextForAgent`) | **Done** — same loop as `RunBuilder`; BullMQ package re-exports dispatch; tests: `packages/core/tests/engine.test.ts`, `adapters-bullmq/tests/dispatch.test.ts` |
 | **`RunBuilder.onWait`** (in-process continuation after `wait` when callback returns text) | **Done** |
-| **Per-tool timeout** (`toolTimeoutMs` on **`AgentRuntime`**, `ToolTimeoutError` / `TOOL_TIMEOUT`) | **Done** — [`ToolRunner`](../packages/core/src/tools/ToolRunner.ts) |
+| **Per-tool timeout** (`toolTimeoutMs` on **`AgentRuntime`**, `ToolTimeoutError` / `TOOL_TIMEOUT`) | **Done** — [`ToolRunner`](../../packages/core/src/tools/ToolRunner.ts) |
 | **Phases 6–8** (RAG pipeline, multi-agent `MessageBus` + `system_send_message`, CLI + scaffold) | **Done** |
 | **Phase 5** (**BullMQ priority**) | **`@opencoreagents/adapters-bullmq` shipped** — typed `createEngineQueue` / `createEngineWorker`; **`dispatchEngineJob`** in **`core`** (re-exported); **QStash** still not in monorepo; delayed-job orchestration for `wait` remains app-specific on top of BullMQ |
 | **Phase 2** (`@opencoreagents/adapters-redis` — **preferred** for `REDIS_URL` / BullMQ-style stacks) | **Done** — TCP `ioredis`: memory, RunStore, MessageBus. Vector stays in **Phase 2a** / **`UpstashVectorAdapter`** unless you swap `VectorAdapter`. |
 | **Phase 2a** (`@opencoreagents/adapters-upstash` — REST + vector) | **Done** — `UpstashRedisMemoryAdapter`, `UpstashRunStore`, `UpstashRedisMessageBus`, `UpstashVectorAdapter` for serverless/edge or when you want HTTP-only Redis. |
-| **CI** (GitHub Actions) | **Done** — [`.github/workflows/ci.yml`](../.github/workflows/ci.yml): `pnpm install --frozen-lockfile` → `pnpm turbo run build test lint`; **Redis** service + `REDIS_INTEGRATION=1` runs **`adapters-bullmq`** [`redis-queue.integration.test.ts`](../packages/adapters-bullmq/tests/redis-queue.integration.test.ts) (enqueue → worker → **`dispatchEngineJob(runtime, payload)`**) |
+| **CI** (GitHub Actions) | **Done** — [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml): `pnpm install --frozen-lockfile` → `pnpm turbo run build test lint`; **Redis** service + `REDIS_INTEGRATION=1` runs **`adapters-bullmq`** [`redis-queue.integration.test.ts`](../../packages/adapters-bullmq/tests/redis-queue.integration.test.ts) (enqueue → worker → **`dispatchEngineJob(runtime, payload)`**) |
 | **Phase 9** (full-stack integration hardening) | **Partial** — CI: **BullMQ + Redis**. Core: **`memory-scope`** (9.2 **`InMemory`**), **`parse-recovery`**, **`runtime-limits`**, **`watch-usage`**, **`hooks`**, **`multi-agent`**, plus **`rag-file-catalog`**, **`vector-limits`**, **`send-message-validation`**, **`tool-failure-observation`**, **`run-store`**. **E2E with real API keys**, **9.1**, **9.2** on TCP Redis, **9.4** still optional / manual |
 | **Core Vitest suite** (`packages/core/tests`) | **Green in CI** — includes **`engine`**, **`run-store`**, **`session-expiry`**, **`rag-file-catalog`**, **`runtime-tool-allowlist`**, **`send-message-validation`**, **`vector-limits`**, **`tool-failure-observation`**, **`memory-scope`**, **`parse-recovery`**, **`runtime-limits`**, **`watch-usage`**, **`hooks`**, **`multi-agent`**, plus **`skill-define`**, **`tool-runner`**, **`resolve-llm-adapter`** |
 | **Session expiry** | **Done** — optional **`SessionOptions.expiresAtMs`** / **`Session.isExpired()`**; **`RunBuilder`** rejects expired sessions on **`run`**, **`resume`**, and **`onWait`** continuations; **`SessionExpiredError`** (`SESSION_EXPIRED`) — tests: `packages/core/tests/session-expiry.test.ts` |
 
-For package-level detail, see **`docs/scaffold.md` §0.8** and **§12**. Known gaps and deferrals: [**`docs/technical-debt.md`**](./technical-debt.md).
+For package-level detail, see **`docs/planning/scaffold.md` §0.8** and **§12**. Known gaps and deferrals: [**`docs/planning/technical-debt.md`**](./technical-debt.md).
 
 ---
 
@@ -54,13 +55,18 @@ For package-level detail, see **`docs/scaffold.md` §0.8** and **§12**. Known g
 | 0.8 | Scaffold `packages/adapters-upstash/` — add `workspace:*` dep on `core` | — |
 | 0.9 | Scaffold `packages/adapters-openai/` — add `workspace:*` dep on `core` | — |
 | 0.10 | Scaffold `packages/rag/` — add `workspace:*` deps on `core` + `utils` | — |
-| 0.11 | Scaffold `packages/cli/` — add `workspace:*` deps on `core` + `scaffold` | — |
-| 0.12 | Scaffold `packages/scaffold/` — add `workspace:*` dep on `core` | — |
+| 0.11 | Scaffold `packages/scaffold/` — templates reference **`@opencoreagents/core`** in generated apps; the scaffold package itself has **no** `workspace:*` deps today | — |
+| 0.12 | Scaffold `packages/cli/` — add `workspace:*` dep on `scaffold` | — |
 | 0.13 | `pnpm install` — verify workspace links | All packages in `pnpm-workspace.yaml` linked |
-| 0.16 | *(Phase 2)* Add `packages/adapters-redis/` | Same scaffold as 0.8 (`workspace:*` → `core`); eighth workspace package |
-| 0.17 | *(Phase 5)* Add `packages/adapters-bullmq/` — `workspace:*` → `core`, dependency on **`bullmq`** | Ninth package; primary job-queue integration |
 | 0.14 | Add `.eslintrc.js` (or `eslint.config.mjs`), `.prettierrc`, `.gitignore`, `.env.example` | — |
 | 0.15 | Add optional `vitest.workspace.ts` at root | — |
+| 0.16 | Scaffold `packages/adapters-http-tool/` — `workspace:*` → `core` | Required **before** `adapters-redis` / `dynamic-definitions` consumers |
+| 0.17 | Scaffold `packages/dynamic-definitions/` — `workspace:*` → `core` + `adapters-http-tool` | — |
+| 0.18 | Scaffold `packages/adapters-redis/` — `workspace:*` → `core` + `adapters-http-tool` + `dynamic-definitions` | TCP Redis: memory, RunStore, MessageBus, definitions store |
+| 0.19 | Scaffold `packages/adapters-bullmq/` — `workspace:*` → `core`, dependency on **`bullmq`** | Primary job-queue integration |
+| 0.20 | Scaffold `packages/adapters-anthropic/` — `workspace:*` → `core` | Same pattern as `adapters-openai` |
+| 0.21 | Scaffold `packages/rest-api/` — `workspace:*` → `core`; optional **`peerDependencies`** on **`adapters-bullmq`**, **`bullmq`** for dispatch tests | Express **`createRuntimeRestRouter`** — contract in **`plan-rest.md`** |
+| 0.22 | Scaffold `packages/conversation-gateway/` — `workspace:*` → `core` | — |
 
 **Gate:** `pnpm turbo build` completes for all packages. `pnpm turbo typecheck` passes. All `dist/` dirs created with `index.js` + `index.d.ts`.
 
@@ -81,7 +87,7 @@ For package-level detail, see **`docs/scaffold.md` §0.8** and **§12**. Known g
 | 1.5 | `InMemoryMemoryAdapter` | `src/adapters/memory/InMemoryMemoryAdapter.ts` | Unit: save/query/delete/getState with scope |
 | 1.6 | `ToolAdapter`, `ToolContext`, `ObservationContent` interfaces | `src/adapters/tool/ToolAdapter.ts` | Type-only |
 | 1.7 | `SecurityContext`, `SessionOptions` types | `src/security/types.ts` | Type-only |
-| 1.8 | `SecurityContext` + `SessionOptions`; embedded context via **`securityContextForAgent`** (`buildEngineDeps`) | `src/security/types.ts`, `src/engine/buildEngineDeps.ts` | No in-core HTTP **`SecurityLayer`** module — hosts authenticate **before** **`Agent.load`**; see [`08-scope-and-security.md`](./core/08-scope-and-security.md) |
+| 1.8 | `SecurityContext` + `SessionOptions`; embedded context via **`securityContextForAgent`** (`buildEngineDeps`) | `src/security/types.ts`, `src/engine/buildEngineDeps.ts` | No in-core HTTP **`SecurityLayer`** module — hosts authenticate **before** **`Agent.load`**; see [`08-scope-and-security.md`](../core/08-scope-and-security.md) |
 | 1.9 | `parseStep` — JSON parse + fence stripping + schema validation | `src/engine/parseStep.ts` | Unit: valid JSON (all 4 step types), invalid JSON, fenced JSON, missing fields |
 | 1.10 | `ToolRunner` — registry, allowlist check, validate, execute | `src/tools/ToolRunner.ts` | Unit: register, resolve, allowlist deny, validate fail, execute success/error |
 | 1.11 | Built-in tools: `system_save_memory`, `system_get_memory` | `src/tools/builtins.ts` | Unit: each tool with mock `MemoryAdapter` |
@@ -137,7 +143,7 @@ Use **`@opencoreagents/adapters-upstash`** when you want **HTTP-only** Redis (se
 
 | Step | Module | File(s) | Test |
 |------|--------|---------|------|
-| 2a.1 | Memory key prefix matches TCP Redis: `m:{projectId}:{agentId}:{sessionId}:eu:{endUserId}:…` when `endUserId` is set, else `…:sess:…` ([`adapters-redis` `memoryKeyPrefix`](../packages/adapters-redis/src/keys.ts)) | `src/index.ts` (`UpstashRedisMemoryAdapter`) | Same contract as **`adapters-redis`** |
+| 2a.1 | Memory key prefix matches TCP Redis: `m:{projectId}:{agentId}:{sessionId}:eu:{endUserId}:…` when `endUserId` is set, else `…:sess:…` ([`adapters-redis` `memoryKeyPrefix`](../../packages/adapters-redis/src/keys.ts)) | `src/index.ts` (`UpstashRedisMemoryAdapter`) | Same contract as **`adapters-redis`** |
 | 2a.2 | `UpstashRedisMemoryAdapter` implementing `MemoryAdapter` (LIST-backed append + legacy STRING migration) | `src/index.ts` | Unit: mocked `fetch` / REST command array. Integration (real Upstash, optional): round-trip |
 | 2a.3 | `UpstashRunStore`, `UpstashRedisMessageBus`, `UpstashVectorAdapter` | `src/UpstashRunStore.ts`, `src/UpstashRedisMessageBus.ts`, `src/index.ts` (vector) | Unit: mocked `fetch` — see `packages/adapters-upstash/tests/` |
 | 2a.4 | Shared REST helper for memory lists | `src/upstashMemoryList.ts` | Used by memory adapter |
@@ -292,23 +298,43 @@ Use **`@opencoreagents/adapters-upstash`** when you want **HTTP-only** Redis (se
 
 ## Dependency graph (build order)
 
-```
-                    ┌──────────┐
-                    │   core   │  ← no workspace deps
-                    └────┬─────┘
-          ┌──────────────┼──────────────┬────────────────┬────────────────┬───────────────┐
-          ▼              ▼              ▼                ▼                ▼               ▼
-  ┌────────────────┐ ┌───────────────┐ ┌───────────────┐ ┌──────────┐ ┌──────────┐ ┌──────────────┐
-  │ adapters-redis │ │adapters-upstash│ │adapters-bullmq│ │  utils   │ │ scaffold │ │adapters-openai│
-  └────────────────┘ └───────────────┘ └───────────────┘ └────┬─────┘ └────┬─────┘ └──────────────┘
-                         │                              │
-                         ▼                              ▼
-                    ┌──────────┐                   ┌──────────┐
-                    │   rag    │                   │   cli    │
-                    └──────────┘                   └──────────┘
+Workspace **`dependencies`** (Turbo/`pnpm` order). **`core`** has no workspace deps.
+
+```mermaid
+flowchart BT
+  core[core]
+  aht[adapters-http-tool]
+  dd[dynamic-definitions]
+  ar[adapters-redis]
+  ab[adapters-bullmq]
+  ao[adapters-openai]
+  aa[adapters-anthropic]
+  au[adapters-upstash]
+  ut[utils]
+  rag[rag]
+  sc[scaffold]
+  cli[cli]
+  ra[rest-api]
+  cg[conversation-gateway]
+  aht --> core
+  dd --> core
+  dd --> aht
+  ar --> core
+  ar --> aht
+  ar --> dd
+  ao --> core
+  aa --> core
+  au --> core
+  ab --> core
+  ut --> core
+  rag --> core
+  rag --> ut
+  ra --> core
+  cg --> core
+  cli --> sc
 ```
 
-`adapters-redis`, `adapters-upstash`, and **`adapters-bullmq`** sit in the same layer (depend only on `core`). **`dynamic-definitions`** depends on **`core`** + **`adapters-http-tool`** (and is loaded at runtime by **`core`** via dynamic `import()` when **`dynamicDefinitionsStore`** is set — not a `core` `package.json` dependency). **BullMQ** uses Redis TCP — pair with **`adapters-redis`** for shared `REDIS_URL` when it fits your topology.
+**Also:** **`dynamic-definitions`** may be loaded at runtime by **`core`** via dynamic `import()` when **`dynamicDefinitionsStore`** is set — that path is not a `core` `package.json` dependency. **`rest-api`** lists **`adapters-bullmq`** / **`bullmq`** as **optional peers** (required for dispatch integration tests). **BullMQ** uses Redis TCP — pair with **`adapters-redis`** for shared `REDIS_URL` when it fits your topology. **`scaffold`** has no workspace deps; **`cli`** depends only on **`scaffold`**.
 
 ---
 

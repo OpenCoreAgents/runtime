@@ -21,7 +21,7 @@ There is also an optional path where **prompts and tool configs live in Redis** 
 - [How it works](#how-it-works)
 - [Packages](#packages)
 - [Examples](#examples)
-- [Docs](#docs)
+- [Docs](#docs) (includes [Planning](#planning))
 - [Develop](#develop)
 - [License](#license)
 
@@ -44,9 +44,9 @@ There is also an optional path where **prompts and tool configs live in Redis** 
 | You are building… | What here helps |
 |-------------------|-----------------|
 | **B2B / multi-tenant “configurable agents”** | Store **agents, skills, and HTTP tool JSON** in Redis (`RedisDynamicDefinitionsStore`); workers **hydrate per job** so prompt/tool changes apply **without redeploy**.<br><br>Walkthrough: [`examples/dynamic-runtime-rest`](examples/dynamic-runtime-rest/) · [`docs/core/21-dynamic-runtime-rest.md`](docs/core/21-dynamic-runtime-rest.md) |
-| **HTTP API + workers (classic SaaS shape)** | **`@opencoreagents/rest-api`** for plan-shaped routes; **`dispatchEngineJob`** / **`AgentRuntime.dispatch`** for **BullMQ**—enqueue from the API, execute in workers.<br><br>Minimal REST-only: [`examples/plan-rest-express`](examples/plan-rest-express/). Full stack (Redis + queue): [`examples/dynamic-runtime-rest`](examples/dynamic-runtime-rest/). [`docs/plan-rest.md`](docs/plan-rest.md) |
+| **HTTP API + workers (classic SaaS shape)** | **`@opencoreagents/rest-api`** for plan-shaped routes; **`dispatchEngineJob`** / **`AgentRuntime.dispatch`** for **BullMQ**—enqueue from the API, execute in workers.<br><br>Minimal REST-only: [`examples/plan-rest-express`](examples/plan-rest-express/). Full stack (Redis + queue): [`examples/dynamic-runtime-rest`](examples/dynamic-runtime-rest/). [`docs/planning/plan-rest.md`](docs/planning/plan-rest.md) |
 | **Support or internal copilots** | **RAG** packages + **HTTP tools** to reach tickets/CRMs; **`wait` / `resume`** when the agent needs human input.<br><br>[`examples/rag-contact-support`](examples/rag-contact-support/) · [`examples/real-world-with-express`](examples/real-world-with-express/) |
-| **Multi-agent or gateway flows** | In-process **message bus**, **conversation-gateway** for normalized inbound events.<br><br>[`examples/multi-agent`](examples/multi-agent/) |
+| **Multi-agent or gateway flows** | In-process **message bus**, **`@opencoreagents/conversation-gateway`** for normalized inbound events (e.g. messaging webhooks).<br><br>[`examples/multi-agent`](examples/multi-agent/) · [`examples/telegram-example-mocked`](examples/telegram-example-mocked/) (mock Telegram → gateway, no real Bot API) |
 
 **Skip this repo** if you only need a single `chat.completions` call with no tools, session memory, or background jobs—the vendor SDK is enough.
 
@@ -66,7 +66,7 @@ You keep **auth, tenant isolation, billing, and your data plane**.
 
 This codebase gives you the **agent runtime and integration patterns** so you are not rebuilding loops, job dispatch, and dynamic registration from scratch.
 
-Before customer traffic, read [**`docs/technical-debt.md`**](docs/technical-debt.md) and [**`docs/core/08-scope-and-security.md`**](docs/core/08-scope-and-security.md).
+Before customer traffic, read [**`docs/planning/technical-debt.md`**](docs/planning/technical-debt.md) and [**`docs/core/08-scope-and-security.md`**](docs/core/08-scope-and-security.md).
 
 Demos use permissive defaults (mock LLM, in-memory stores) on purpose—**swap them for Redis, real LLMs, and strict keys** in your deployment.
 
@@ -153,7 +153,7 @@ When you move past a single process, add **`RedisMemoryAdapter`** / **`RedisRunS
 
 Mount **`createRuntimeRestRouter`** after **`Agent.define`** and **`AgentRuntime`** so HTTP clients use the plan-shaped JSON routes (`GET /agents`, `POST /agents/:id/run`, run history, optional Swagger).
 
-Runnable demo: [`examples/plan-rest-express`](examples/plan-rest-express/). Route contract: [`docs/plan-rest.md`](docs/plan-rest.md).
+Runnable demo: [`examples/plan-rest-express`](examples/plan-rest-express/). Route contract: [`docs/planning/plan-rest.md`](docs/planning/plan-rest.md).
 
 ```typescript
 import express from "express";
@@ -235,7 +235,7 @@ Your **HTTP control plane** (Express or any framework) typically **writes defini
 |---------|------|
 | [`@opencoreagents/adapters-http-tool`](packages/adapters-http-tool/README.md) | JSON-configured HTTP `ToolAdapter`s (`registerHttpToolsFromDefinitions`) |
 | [`@opencoreagents/conversation-gateway`](packages/conversation-gateway/README.md) | Normalized inbound messages + gateway helpers for webhooks |
-| [`@opencoreagents/rest-api`](packages/rest-api/README.md) | Express **`createRuntimeRestRouter`** — JSON routes per [`docs/plan-rest.md`](docs/plan-rest.md) after **`Agent.define`** |
+| [`@opencoreagents/rest-api`](packages/rest-api/README.md) | Express **`createRuntimeRestRouter`** — JSON routes per [`docs/planning/plan-rest.md`](docs/planning/plan-rest.md) after **`Agent.define`** |
 
 ### RAG and shared utilities
 
@@ -255,6 +255,8 @@ Your **HTTP control plane** (Express or any framework) typically **writes defini
 
 ## Examples
 
+**Index (all 10 samples, scripts, backlog):** [`examples/README.md`](examples/README.md).
+
 ### Core loop and tools
 
 - **Runnable minimal run:** [`examples/minimal-run`](examples/minimal-run/) — mock LLM, no keys.
@@ -270,10 +272,11 @@ Your **HTTP control plane** (Express or any framework) typically **writes defini
 
 - **Multi-agent (in-process bus):** [`examples/multi-agent`](examples/multi-agent/).
 - **Express HTTP API + static HTML/JS UI (chat, SSE hook stream, `/status`, run + session status, wait/resume):** [`examples/real-world-with-express`](examples/real-world-with-express/).
+- **Telegram-shaped webhook + `ConversationGateway` (mock outbound, no Bot API keys):** [`examples/telegram-example-mocked`](examples/telegram-example-mocked/).
 
 ### REST and dynamic definitions
 
-- **Plan-shaped REST (`@opencoreagents/rest-api`):** [`examples/plan-rest-express`](examples/plan-rest-express/) — minimal Express with **`createRuntimeRestRouter`** and in-code **`Agent.define`**; routes match [`docs/plan-rest.md`](docs/plan-rest.md) (`GET /agents`, `POST /agents/:id/run`, …).
+- **Plan-shaped REST (`@opencoreagents/rest-api`):** [`examples/plan-rest-express`](examples/plan-rest-express/) — minimal Express with **`createRuntimeRestRouter`** and in-code **`Agent.define`**; routes match [`docs/planning/plan-rest.md`](docs/planning/plan-rest.md) (`GET /agents`, `POST /agents/:id/run`, …).
 
 - **Dynamic definitions + HTTP API + BullMQ:** [`examples/dynamic-runtime-rest`](examples/dynamic-runtime-rest/) — **`RedisDynamicDefinitionsStore`**, Express control plane (custom routes that write definitions and enqueue jobs), worker with **`dynamicDefinitionsStore`** / **`runtime.dispatch`** and per-job hydration (**`@opencoreagents/dynamic-definitions`**). For **`createRuntimeRestRouter`** only, use [`examples/plan-rest-express`](examples/plan-rest-express/). Doc: [`docs/core/21-dynamic-runtime-rest.md`](docs/core/21-dynamic-runtime-rest.md).
 
@@ -284,21 +287,23 @@ Your **HTTP control plane** (Express or any framework) typically **writes defini
 **Start here**
 
 - [`docs/getting-started.md`](docs/getting-started.md) — tutorial, architecture summary, further reading ([`docs/README.md`](docs/README.md) is a short index that points there first)
+- [`examples/README.md`](examples/README.md) — runnable **`examples/*`** workspace packages (minimal run, RAG, REST, BullMQ + Redis defs, …)
 
 **Engine and layout**
 
 - [`docs/core/README.md`](docs/core/README.md) — engine reference
-- [`docs/scaffold.md`](docs/scaffold.md) — monorepo layout
+- [`docs/planning/scaffold.md`](docs/planning/scaffold.md) — monorepo layout
 
 **APIs and dynamic config**
 
-- [`docs/plan-rest.md`](docs/plan-rest.md) — REST API shape (roadmap + plugin)
+- [`docs/planning/plan-rest.md`](docs/planning/plan-rest.md) — REST API shape (roadmap + plugin)
 - [`docs/core/21-dynamic-runtime-rest.md`](docs/core/21-dynamic-runtime-rest.md) — dynamic definitions, Redis, workers (no redeploy for prompt/tool edits)
 
-**Project health**
+### Planning
 
-- [`docs/plan.md`](docs/plan.md) — implementation plan
-- [`docs/technical-debt.md`](docs/technical-debt.md) — known gaps
+- [`docs/planning/README.md`](docs/planning/README.md) — index (plan, scaffold, technical debt, REST, CLI, MCP)
+- [`docs/planning/plan.md`](docs/planning/plan.md) — implementation plan
+- [`docs/planning/technical-debt.md`](docs/planning/technical-debt.md) — known gaps and deferrals
 
 ---
 

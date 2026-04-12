@@ -34,7 +34,7 @@ function statePartitionKey(scope: MemoryScope): Key {
  *
  * **Not suitable for cluster deployments** — data lives in the heap of a single
  * process. Use `RedisMemoryAdapter` / `UpstashRedisMemoryAdapter` in production;
- * their key layout for **`longTerm`** may differ — see `docs/technical-debt.md`.
+ * their key layout for **`longTerm`** may differ — see `docs/planning/technical-debt.md`.
  * See also docs/core/19-cluster-deployment.md §1.2.
  */
 export class InMemoryMemoryAdapter implements MemoryAdapter {

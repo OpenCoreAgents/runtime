@@ -1,6 +1,6 @@
 # Dynamic definitions: one runtime, REST-configured agents
 
-Related: [20-http-tool-adapter.md](./20-http-tool-adapter.md) (JSON HTTP tools), [07-definition-syntax.md](./07-definition-syntax.md) (`Tool.define` / `Skill.define` / `Agent.define`), [19-cluster-deployment.md](./19-cluster-deployment.md) (per-process registry, worker bootstrap), [14-consumers.md](./14-consumers.md) (REST as consumer), [05-adapters.md](./05-adapters.md) (BullMQ, Redis adapters), [`plan-rest.md`](../plan-rest.md).
+Related: [20-http-tool-adapter.md](./20-http-tool-adapter.md) (JSON HTTP tools), [07-definition-syntax.md](./07-definition-syntax.md) (`Tool.define` / `Skill.define` / `Agent.define`), [19-cluster-deployment.md](./19-cluster-deployment.md) (per-process registry, worker bootstrap), [14-consumers.md](./14-consumers.md) (REST as consumer), [05-adapters.md](./05-adapters.md) (BullMQ, Redis adapters), [`plan-rest.md`](../planning/plan-rest.md).
 
 This document describes the **library-supported** pattern for **fully dynamic** agent configuration: definitions live in a **durable store** (typically **Redis** via **`RedisDynamicDefinitionsStore`**), **runs are executed by queue workers** (e.g. **BullMQ** on the same Redis), and each worker holds **`AgentRuntime`** plus **per-job hydration** — no TypeScript per tenant integration.
 
@@ -116,7 +116,7 @@ See [08-scope-and-security.md](./08-scope-and-security.md) for hardening.
 
 ## 5. REST surface vs `plan-rest.md`
 
-[`plan-rest.md`](../plan-rest.md) lists a **full product** vision (memory routes, inter-agent HTTP, …). **`@opencoreagents/rest-api`** implements the **run / resume / runs / jobs** subset on Express — see *Implemented today* in that doc. **`dynamic-definitions`** focuses on **definition CRUD** (**`store.Agent.define`** / **`store.Skill.define`** / **`store.HttpTool.define`** on the **`DynamicDefinitionsStore`** facade, with **`projectId` on each payload**) and **per-job hydration** (**`Agent.prepare`**, **`hydrateAgentDefinitionsFromStore`**, or **`AgentRuntime`** **`dynamicDefinitionsStore`**) (or optional full **`sync`**) so your BFF can match the plan while reusing the same engine primitives.
+[`plan-rest.md`](../planning/plan-rest.md) lists a **full product** vision (memory routes, inter-agent HTTP, …). **`@opencoreagents/rest-api`** implements the **run / resume / runs / jobs** subset on Express — see *Implemented today* in that doc. **`dynamic-definitions`** focuses on **definition CRUD** (**`store.Agent.define`** / **`store.Skill.define`** / **`store.HttpTool.define`** on the **`DynamicDefinitionsStore`** facade, with **`projectId` on each payload**) and **per-job hydration** (**`Agent.prepare`**, **`hydrateAgentDefinitionsFromStore`**, or **`AgentRuntime`** **`dynamicDefinitionsStore`**) (or optional full **`sync`**) so your BFF can match the plan while reusing the same engine primitives.
 
 ---
 

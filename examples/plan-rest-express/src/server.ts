@@ -1,5 +1,5 @@
 /**
- * After `Agent.define`, mount **`createRuntimeRestRouter`** — routes match **`docs/plan-rest.md`** (fixed **`projectId`**; no **`messageBus`** here so **`POST …/send`** returns **501**).
+ * After `Agent.define`, mount **`createRuntimeRestRouter`** — routes match **`docs/planning/plan-rest.md`** (fixed **`projectId`**; no **`messageBus`** here so **`POST …/send`** returns **501**).
  */
 import express from "express";
 import type { LLMAdapter, LLMRequest, LLMResponse } from "@opencoreagents/core";
@@ -60,7 +60,7 @@ app.use(
       info: {
         title: "plan-rest-express",
         version: "0.0.0",
-        description: "OpenAPI for routes on this demo (see docs/plan-rest.md).",
+        description: "OpenAPI for routes on this demo (see docs/planning/plan-rest.md).",
       },
     },
   }),

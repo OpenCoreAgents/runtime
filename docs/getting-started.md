@@ -283,8 +283,8 @@ The sections below point to documentation in this repository that goes beyond th
 |----------|----------------|
 | [Documentation index](./README.md) | Hub: **Getting started** (this guide), **[Agent Engine overview](./agent-engine-overview.md)** (full narrative), quick links to **Engine reference** and other docs. |
 | [Repository root README](../README.md) | Monorepo layout, `pnpm` / Turbo commands, how packages relate. |
-| [plan.md](./plan.md) | Roadmap and implementation progress. |
-| [technical-debt.md](./technical-debt.md) | Known gaps and deferrals. |
+| [plan.md](./planning/plan.md) | Roadmap and implementation progress. |
+| [technical-debt.md](./planning/technical-debt.md) | Known gaps and deferrals. |
 
 ### Core engine reference (`docs/core/`)
 
@@ -297,7 +297,7 @@ Highlights that this guide does **not** spell out:
 | Internal components and boundaries | [core/02-architecture.md](./core/02-architecture.md) |
 | Run lifecycle, states, **RunStore**, wait/resume mechanics | [core/03-execution-model.md](./core/03-execution-model.md) |
 | Message envelope, protocol rules, durable **waiting** | [core/04-protocol.md](./core/04-protocol.md) |
-| **Adapters**: memory, tools, RunStore; OpenAI; **Redis** (TCP); Upstash; **BullMQ** queues; per-tool timeouts | [core/05-adapters.md](./core/05-adapters.md) |
+| **Adapters**: memory, tools, RunStore; OpenAI / Anthropic; **Redis** (TCP); Upstash; **BullMQ** queues; **HTTP tools** JSON + **dynamic-definitions**; per-tool timeouts | [core/05-adapters.md](./core/05-adapters.md) |
 | **`Tool.define` / `Skill.define` / `Agent.define`**, `defineBatch`, persisted shapes | [core/07-definition-syntax.md](./core/07-definition-syntax.md) |
 | **`scope`**, **`projectId`**, **SecurityLayer**, production checklist | [core/08-scope-and-security.md](./core/08-scope-and-security.md) |
 | **MessageBus**, **`system_send_message`**, multi-agent **wait**/**resume** | [core/09-communication-multiagent.md](./core/09-communication-multiagent.md) |
@@ -310,6 +310,8 @@ Highlights that this guide does **not** spell out:
 | **RAG**: embeddings, vector adapters, catalog tools, patterns | [core/17-rag-pipeline.md](./core/17-rag-pipeline.md) |
 | **Scaffold** CLI (`init`, `generate`, templates) | [core/18-scaffold.md](./core/18-scaffold.md) |
 | **Cluster**: shared Redis, RunStore, MessageBus, horizontal scaling | [core/19-cluster-deployment.md](./core/19-cluster-deployment.md) |
+| **HTTP tools from JSON** (`adapters-http-tool`) | [core/20-http-tool-adapter.md](./core/20-http-tool-adapter.md) |
+| **Dynamic definitions** store + hydrate (`dynamic-definitions`, Redis REST) | [core/21-dynamic-runtime-rest.md](./core/21-dynamic-runtime-rest.md) |
 
 Additional core docs: purpose and MVP scope ([core/01-purpose.md](./core/01-purpose.md), [core/06-mvp.md](./core/06-mvp.md)), internal **utils** ([core/16-utils.md](./core/16-utils.md)).
 
@@ -323,9 +325,11 @@ Additional core docs: purpose and MVP scope ([core/01-purpose.md](./core/01-purp
 
 | Resource | What you get |
 |----------|----------------|
-| [plan-rest.md](./plan-rest.md) | REST roadmap + **`@opencoreagents/rest-api`** (`createRuntimeRestRouter`, **`resolveApiKey`**, tenancy) + **`plan-rest-express`**; BFF: `real-world-with-express`; async: `dynamic-runtime-rest`. |
-| [plan-cli.md](./plan-cli.md) | CLI direction. |
-| [plan-mcp.md](./plan-mcp.md) | MCP direction. |
+| [planning/README.md](./planning/README.md) | Index: reading order, roadmap, monorepo **scaffold** spec, technical debt, REST, CLI, MCP. |
+| [planning/scaffold.md](./planning/scaffold.md) | Monorepo package map, dependency graph, and codegen blueprint. |
+| [plan-rest.md](./planning/plan-rest.md) | REST roadmap + **`@opencoreagents/rest-api`** (`createRuntimeRestRouter`, **`resolveApiKey`**, tenancy) + **`plan-rest-express`**; BFF: `real-world-with-express`; async: `dynamic-runtime-rest`. |
+| [plan-cli.md](./planning/plan-cli.md) | CLI direction. |
+| [plan-mcp.md](./planning/plan-mcp.md) | MCP direction. |
 
 ### Design brainstorms (non-normative)
 

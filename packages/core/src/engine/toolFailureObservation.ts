@@ -8,7 +8,7 @@ import {
 
 /**
  * Shape appended to run history when `ToolRunner.execute` throws.
- * Does not forward arbitrary third-party error messages to the LLM (see `technical-debt.md` §7).
+ * Does not forward arbitrary third-party error messages to the LLM (see `docs/planning/technical-debt.md` §7).
  */
 export function observationForToolFailure(error: unknown): {
   success: false;

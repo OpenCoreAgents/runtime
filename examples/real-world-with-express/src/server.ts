@@ -1,7 +1,7 @@
 /**
  * Express **host** in front of **AgentRuntime**: one process-global runtime, JSON API, optional OpenAI or Anthropic.
  *
- * ## Routes in *this* example (shape is **not** `docs/plan-rest.md`)
+ * ## Routes in *this* example (shape is **not** `docs/planning/plan-rest.md`)
  *
  * Use **`@opencoreagents/rest-api`** + **`createRuntimeRestRouter`** when you want the documented contract
  * (`GET /agents`, `POST /agents/:id/run`, `GET /runs/:id/history`, `POST /agents/:from/send`, …). This file is a

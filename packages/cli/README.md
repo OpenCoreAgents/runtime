@@ -4,4 +4,4 @@
 
 ## Related docs
 
-[`docs/core/18-scaffold.md`](../../docs/core/18-scaffold.md), [`docs/scaffold.md`](../../docs/scaffold.md).
+[`docs/core/18-scaffold.md`](../../docs/core/18-scaffold.md), [`docs/planning/scaffold.md`](../../docs/planning/scaffold.md).

@@ -15,10 +15,12 @@ Developer **monorepo** entry (packages, `pnpm` commands): [README](../README.md)
 | Topic | Document |
 |--------|----------|
 | **Engine index** (all core topics) | [core/README.md](./core/README.md) |
-| **Monorepo layout / file tree** | [scaffold.md](./scaffold.md) |
-| **REST plugin (`createRuntimeRestRouter`)** | [plan-rest.md](./plan-rest.md) |
+| **Planning** (roadmap, scaffold, technical debt, REST/CLI/MCP) | [planning/README.md](./planning/README.md) |
+| **Monorepo layout / file tree** | [planning/scaffold.md](./planning/scaffold.md) |
+| **REST plugin (`createRuntimeRestRouter`)** | [planning/plan-rest.md](./planning/plan-rest.md) |
 | **Dynamic definitions + Redis + workers** | [core/21-dynamic-runtime-rest.md](./core/21-dynamic-runtime-rest.md) |
-| **Roadmap** | [plan.md](./plan.md) |
-| **Known gaps** | [technical-debt.md](./technical-debt.md) |
+| **Roadmap** | [planning/plan.md](./planning/plan.md) |
+| **Known gaps** | [technical-debt.md](./planning/technical-debt.md) |
 | **Scope and security** | [core/08-scope-and-security.md](./core/08-scope-and-security.md) |
 | **Agent Engine (product overview)** | [agent-engine-overview.md](./agent-engine-overview.md) |
+| **Runnable examples** (`examples/*` index) | [examples/README.md](../examples/README.md) |
