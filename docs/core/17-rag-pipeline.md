@@ -2,7 +2,7 @@
 
 How the engine supports **Retrieval-Augmented Generation**: dedicated adapters, tools, utils, and the agent patterns that connect them. RAG is not a special module — it is an agent that uses vector search tools inside the standard `thought → action → observation → result` loop.
 
-Related: [05-adapters.md](./05-adapters.md) (MemoryAdapter, ToolAdapter), [11-context-builder.md](./11-context-builder.md) (prompt assembly), [16-utils.md](./16-utils.md) (parsers, chunking, file-resolver).
+Related: [05-adapters-contracts.md](./05-adapters-contracts.md) (MemoryAdapter, ToolAdapter), [11-context-builder.md](./11-context-builder.md) (prompt assembly), [16-utils.md](./16-utils.md) (parsers, chunking, file-resolver).
 
 ---
 
@@ -86,7 +86,7 @@ interface VectorDeleteParams {
 {projectId}:{agentId}:eu:{endUserId} → per-end-user embeddings
 ```
 
-This aligns with the `vectorMemory` key patterns in [05-adapters.md](./05-adapters.md).
+This aligns with the `vectorMemory` key patterns in [05-adapters-contracts.md](./05-adapters-contracts.md).
 
 **Reference implementation**: Upstash Vector — serverless, HTTP-based, supports metadata filtering. Same operational model as Upstash Redis for `MemoryAdapter`.
 
@@ -448,7 +448,7 @@ const agent = await Agent.load("support-rag", runtime, { session });
 await agent.run("My order #8812 hasn't arrived");
 ```
 
-The agent searches the **project-wide** knowledge base (help articles, policies) and reads the **end-user's** long-term memory (past interactions, preferences) — both scoped correctly by the namespace conventions in [05-adapters.md](./05-adapters.md).
+The agent searches the **project-wide** knowledge base (help articles, policies) and reads the **end-user's** long-term memory (past interactions, preferences) — both scoped correctly by the namespace conventions in [05-adapters-contracts.md](./05-adapters-contracts.md).
 
 ### 4.4 Multi-agent RAG
 

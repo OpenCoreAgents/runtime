@@ -8,10 +8,12 @@ Roadmap, monorepo layout, known gaps, and planned or shipped consumer surfaces (
 
 ## Suggested reading order
 
-1. **[Implementation plan](./plan.md)** — phased build-out, progress snapshot, Phase 0 bootstrap order.
-2. **[Scaffold](./scaffold.md)** — package map, file tree, implementation detail (large reference).
-3. **[Technical debt](./technical-debt.md)** — hub; deferrals split by priority (**[security & production](./technical-debt-security-production.md)**, **[platform / core / CI](./technical-debt-platform-core-ci.md)**, **[deferred (examples, OSS)](./technical-debt-deferred.md)**).
-4. Surface docs as needed: **[REST](./plan-rest.md)**, **[CLI](./plan-cli.md)**, **[MCP](./plan-mcp.md)**.
+1. **[Agent Engine overview](./agent-engine-overview.md)** — product narrative: loop, invariants, dynamic definitions, consumers; read alongside **[Getting started](../getting-started.md)**.
+2. **[Implementation plan](./plan.md)** — phased build-out, progress snapshot, Phase 0 bootstrap order.
+3. **[MVP](./mvp.md)** — minimum engine scope, adapter choices, risks, suggested build order (normative contracts in `docs/core/`).
+4. **[Scaffold](./scaffold.md)** — package map, file tree, implementation detail (large reference).
+5. **[Technical debt](./technical-debt.md)** — hub; deferrals split by priority (**[security & production](./technical-debt-security-production.md)**, **[platform / core / CI](./technical-debt-platform-core-ci.md)**, **[deferred (examples, OSS)](./technical-debt-deferred.md)**).
+6. Surface docs as needed: **[REST](./plan-rest.md)**, **[CLI](./plan-cli.md)**, **[MCP](./plan-mcp.md)**.
 
 ---
 
@@ -19,7 +21,9 @@ Roadmap, monorepo layout, known gaps, and planned or shipped consumer surfaces (
 
 | Document | Contents |
 |----------|----------|
+| [Agent Engine overview](./agent-engine-overview.md) | Full product narrative; loop; consumers (SDK / REST / MCP); links to `docs/core/` |
 | [Implementation plan](./plan.md) | Phased monorepo build-out; gates; dependency graph |
+| [MVP](./mvp.md) | Engine MVP scope, persistent adapters, risks, implementation order |
 | [Scaffold](./scaffold.md) | Package map, file tree, implementation phases |
 | [Technical debt](./technical-debt.md) | Hub; intentional deferrals and gaps (see child files by priority) |
 | [Technical debt — security & production](./technical-debt-security-production.md) | Sections **1–3**: security, multi-worker, host checklist |

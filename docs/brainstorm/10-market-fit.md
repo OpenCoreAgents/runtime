@@ -102,6 +102,6 @@ This avoids the false dichotomy “SaaS only vs library only”: strong **market
 | Is there a gap? | **Yes**, at the intersection of **state + protocol + controlled execution + wait/resume + operability (CLI/API)**, not “more LLM.” |
 | OSS library? | **Solid gap** if the message is **engine with invariants** and clear adapters; you compete with fragmentation, not absence of code. |
 | SaaS? | **Conditional gap**: viable as **hosted same engine** or **vertical**; risky as “another generic agent builder.” |
-| What to do first? | Aligned with [`02`](./02-micro-saas-playground.md) and [`06-mvp`](../core/06-mvp.md): **engine and one real case** before fancy UI; OSS core accelerates technical credibility; SaaS later if there is demand for delegated ops. |
+| What to do first? | Aligned with [`02`](./02-micro-saas-playground.md) and [`mvp`](../planning/mvp.md): **engine and one real case** before fancy UI; OSS core accelerates technical credibility; SaaS later if there is demand for delegated ops. |
 
 This document is **strategy and framing**; implementation detail remains in [`docs/core/`](../core/README.md) and the pitch in [`00-elevator-pitch.md`](./00-elevator-pitch.md).

@@ -13,6 +13,6 @@ Use this package when you want **serverless- or edge-friendly** `fetch`-only cal
 
 ## Docs
 
-- [05-adapters.md](../../docs/core/05-adapters.md)
+- [06-adapters-infrastructure.md](../../docs/core/06-adapters-infrastructure.md) (Upstash REST + vector)
 - [17-rag-pipeline.md](../../docs/core/17-rag-pipeline.md) (vector tools)
 - [19-cluster-deployment.md](../../docs/core/19-cluster-deployment.md)

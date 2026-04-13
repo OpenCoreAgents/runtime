@@ -17,9 +17,7 @@ const bundles = {
       ["docs/core", "core"],
       ["docs/planning", "planning"],
     ],
-    rootFiles: ["README.md", "getting-started.md", "agent-engine-overview.md"].map((n) =>
-      join("docs", n),
-    ),
+    rootFiles: ["README.md", "getting-started.md"].map((n) => join("docs", n)),
     packageReadmes: ["core/README.md", "rest-api/README.md", "rag/README.md"],
   },
   "opencoreagents-engine": {
@@ -29,8 +27,8 @@ const bundles = {
       "02-architecture.md",
       "03-execution-model.md",
       "04-protocol.md",
-      "05-adapters.md",
-      "06-mvp.md",
+      "05-adapters-contracts.md",
+      "06-adapters-infrastructure.md",
       "07-definition-syntax.md",
       "08-scope-and-security.md",
       "09-communication-multiagent.md",
@@ -40,6 +38,7 @@ const bundles = {
       "13-errors-parsing-and-recovery.md",
       "19-cluster-deployment.md",
     ],
+    planningFiles: ["mvp.md"],
     packageReadmes: ["core/README.md"],
   },
   "opencoreagents-rest-workers": {

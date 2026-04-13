@@ -1,6 +1,6 @@
 # Dynamic definitions: one runtime, REST-configured agents
 
-Related: [20-http-tool-adapter.md](./20-http-tool-adapter.md) (JSON HTTP tools), [07-definition-syntax.md](./07-definition-syntax.md) (`Tool.define` / `Skill.define` / `Agent.define`), [19-cluster-deployment.md](./19-cluster-deployment.md) (per-process registry, worker bootstrap), [14-consumers.md](./14-consumers.md) (REST as consumer), [05-adapters.md](./05-adapters.md) (BullMQ, Redis adapters), [`plan-rest.md`](../planning/plan-rest.md).
+Related: [20-http-tool-adapter.md](./20-http-tool-adapter.md) (JSON HTTP tools), [07-definition-syntax.md](./07-definition-syntax.md) (`Tool.define` / `Skill.define` / `Agent.define`), [19-cluster-deployment.md](./19-cluster-deployment.md) (per-process registry, worker bootstrap), [14-consumers.md](./14-consumers.md) (REST as consumer), [06-adapters-infrastructure.md](./06-adapters-infrastructure.md) (BullMQ, Redis adapters), [`plan-rest.md`](../planning/plan-rest.md).
 
 This document describes the **library-supported** pattern for **fully dynamic** agent configuration: definitions live in a **durable store** (typically **Redis** via **`RedisDynamicDefinitionsStore`**), **runs are executed by queue workers** (e.g. **BullMQ** on the same Redis), and each worker holds **`AgentRuntime`** plus **per-job hydration** — no TypeScript per tenant integration.
 
@@ -11,7 +11,7 @@ This document describes the **library-supported** pattern for **fully dynamic** 
 | Layer | Role |
 |--------|------|
 | **Redis (definitions)** | Source of truth for agents, skills, HTTP tool JSON (`RedisDynamicDefinitionsStore`). |
-| **BullMQ** | **`run` / `resume`** jobs; **one worker** processes a given job at a time; payload includes **`projectId`**, **`agentId`**, session/run ids, user input. See [05-adapters.md § Job queue](./05-adapters.md#job-queue-adapter-primary-bullmq). |
+| **BullMQ** | **`run` / `resume`** jobs; **one worker** processes a given job at a time; payload includes **`projectId`**, **`agentId`**, session/run ids, user input. See [06-adapters-infrastructure.md § Job queue](./06-adapters-infrastructure.md#job-queue-adapter-primary-bullmq). |
 | **API / BFF** | Validates auth, writes definitions to Redis, **enqueues** work — usually does **not** run the full engine loop inline (avoids HTTP timeouts). |
 | **Worker process** | **`AgentRuntime`** + shared **`MemoryAdapter` / `RunStore`** on Redis if needed; **on each job**, before running that agent: **read definitions from the store** (**`hydrateAgentDefinitionsFromStore`**, or **`runtime.dispatch`** when **`dynamicDefinitionsStore`** is set on the runtime) → **`Agent.load`** → **`run` / `resume`** — so Redis edits apply without worker redeploy ([§2.2](#22-updates-without-redeploying-workers)). |
 

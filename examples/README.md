@@ -8,7 +8,7 @@ The tutorial index also points here: [Getting started — further reading](../do
 
 Most examples use **`InMemoryMemoryAdapter`**: it is **in-process only** (heap), **not durable** across restarts, and **wrong for multiple workers** — each process has its own empty store.
 
-For production or any shared runtime, swap to **`RedisMemoryAdapter`** (`@opencoreagents/adapters-redis`, TCP `REDIS_URL`) or **`UpstashRedisMemoryAdapter`** (`@opencoreagents/adapters-upstash`, HTTP), and pass that adapter into **`new AgentRuntime({ memoryAdapter: … })`**. Cluster guidance: [`docs/core/19-cluster-deployment.md`](../docs/core/19-cluster-deployment.md) §1.2; adapter inventory: [`docs/core/05-adapters.md`](../docs/core/05-adapters.md).
+For production or any shared runtime, swap to **`RedisMemoryAdapter`** (`@opencoreagents/adapters-redis`, TCP `REDIS_URL`) or **`UpstashRedisMemoryAdapter`** (`@opencoreagents/adapters-upstash`, HTTP), and pass that adapter into **`new AgentRuntime({ memoryAdapter: … })`**. Cluster guidance: [`docs/core/19-cluster-deployment.md`](../docs/core/19-cluster-deployment.md) §1.2; adapter inventory: [`docs/core/05-adapters-contracts.md`](../docs/core/05-adapters-contracts.md), [`docs/core/06-adapters-infrastructure.md`](../docs/core/06-adapters-infrastructure.md).
 
 ---
 

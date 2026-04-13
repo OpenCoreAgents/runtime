@@ -22,10 +22,10 @@ The open-source **runtime** (this engine and sibling packages) lives at [OpenCor
 
 ## Where to read
 
-- Purpose & shape: `docs/core/01-purpose.md`, `docs/core/02-architecture.md`, `docs/core/06-mvp.md`
+- Purpose & shape: `docs/core/01-purpose.md`, `docs/core/02-architecture.md`, `docs/planning/mvp.md`
 - Loop & state: `docs/core/03-execution-model.md`, `docs/core/04-protocol.md`
 - Definitions: `docs/core/07-definition-syntax.md`
-- Adapters: `docs/core/05-adapters.md`
+- Adapters: `docs/core/05-adapters-contracts.md`, `docs/core/06-adapters-infrastructure.md`
 - LLM contract: `docs/core/10-llm-adapter.md`
 - Context & tools in prompt: `docs/core/11-context-builder.md`
 - Skills vs tools: `docs/core/12-skills.md`

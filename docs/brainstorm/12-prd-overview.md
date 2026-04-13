@@ -117,7 +117,7 @@ await agent.resume(runId, { type: "text", content: "approved — escalate to bil
 |-------------------|---------------------|
 | **Upstash Redis** | `MemoryAdapter` for `longTerm` and `working`; store for definitions (agents, tools, skills); run history |
 | **Upstash Vector** | **`UpstashVectorAdapter`** — semantic search / RAG (`vector_*` tools); not a substitute for `MemoryAdapter` |
-| **BullMQ (primary)** | Redis job queues — **first implementation** for async `run`/`resume`, scheduled `wait`, optional MessageBus; workers call the same engine entry points as SDK/REST ([`core/05-adapters.md`](../core/05-adapters.md#job-queue-adapter-primary-bullmq)) |
+| **BullMQ (primary)** | Redis job queues — **first implementation** for async `run`/`resume`, scheduled `wait`, optional MessageBus; workers call the same engine entry points as SDK/REST ([`core/06-adapters-infrastructure.md`](../core/06-adapters-infrastructure.md#job-queue-adapter-primary-bullmq)) |
 | **Upstash QStash (alternative)** | HTTP callback to `POST /runs/:id/resume` when BullMQ workers are not used — same wake semantics, serverless-oriented |
 
 ```typescript
@@ -210,8 +210,8 @@ All routes pass through SecurityLayer before reaching the engine.
 | Doc | Topic |
 |-----|-------|
 | [`core/03-execution-model.md`](../core/03-execution-model.md) | Loop, Run entity, wait/resume |
-| [`core/05-adapters.md`](../core/05-adapters.md) | MemoryAdapter and ToolAdapter contracts |
-| [`core/06-mvp.md`](../core/06-mvp.md) | MVP scope and Upstash integration |
+| [`core/05-adapters-contracts.md`](../core/05-adapters-contracts.md) | MemoryAdapter and ToolAdapter contracts |
+| [`planning/mvp.md`](../planning/mvp.md) | MVP scope and Upstash integration |
 | [`core/07-definition-syntax.md`](../core/07-definition-syntax.md) | Full define/load/run shapes |
 | [`core/08-scope-and-security.md`](../core/08-scope-and-security.md) | SecurityLayer and multi-tenant scopes |
 | [`core/09-communication-multiagent.md`](../core/09-communication-multiagent.md) | MessageBus and request-reply patterns |

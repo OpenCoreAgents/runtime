@@ -2,7 +2,7 @@
 
 CLI and programmatic helpers that generate the **initial directory structure**, configuration files, and starter definitions for a new project or agent. Scaffolding produces files — the **engine** and **adapters** remain unchanged.
 
-Related: [07-definition-syntax.md](./07-definition-syntax.md) (what gets generated), [14-consumers.md](./14-consumers.md) (CLI consumer), [05-adapters.md](./05-adapters.md) (adapter config templates). Monorepo package layout and implementation phases: [`../planning/scaffold.md`](../planning/scaffold.md) (not duplicated here).
+Related: [07-definition-syntax.md](./07-definition-syntax.md) (what gets generated), [14-consumers.md](./14-consumers.md) (CLI consumer), [05-adapters-contracts.md](./05-adapters-contracts.md) (adapter config templates). Monorepo package layout and implementation phases: [`../planning/scaffold.md`](../planning/scaffold.md) (not duplicated here).
 
 ---
 
@@ -157,7 +157,7 @@ export default {
 } satisfies RuntimeConfig;
 ```
 
-Each section maps to an adapter contract in [05-adapters.md](./05-adapters.md). Fields with `process.env` reference the generated `.env.example`.
+Each section maps to an adapter contract in [05-adapters-contracts.md](./05-adapters-contracts.md). Fields with `process.env` reference the generated `.env.example`.
 
 ---
 
@@ -243,7 +243,7 @@ After scaffolding, the CLI prints a checklist:
 | Doc | Connection |
 |-----|------------|
 | [07-definition-syntax.md](./07-definition-syntax.md) | Scaffold generates files that follow `Tool.define`, `Skill.define`, `Agent.define` syntax. Runtime-defined skills may use `SkillDefinitionPersisted` + `Skill.define(..., execute?)` (§9.2b there). |
-| [05-adapters.md](./05-adapters.md) | `config/runtime.ts` maps to adapter contracts; `--adapter` flag selects the preset. |
+| [05-adapters-contracts.md](./05-adapters-contracts.md) | `config/runtime.ts` maps to adapter contracts; `--adapter` flag selects the preset. |
 | [08-scope-and-security.md](./08-scope-and-security.md) | `config/security.ts` bootstraps `SecurityLayer` defaults. |
 | [14-consumers.md](./14-consumers.md) | The CLI `init` and `generate` commands are consumer-level operations. |
 | [15-multi-tenancy.md](./15-multi-tenancy.md) | Multi-tenant scaffolds include `projectId` in generated definitions. |

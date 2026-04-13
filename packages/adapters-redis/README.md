@@ -16,5 +16,5 @@ Use a single **`REDIS_URL`** / `redis://` connection for shared memory, persiste
 
 ## Docs
 
-- [05-adapters.md](../../docs/core/05-adapters.md)
+- [06-adapters-infrastructure.md](../../docs/core/06-adapters-infrastructure.md) (TCP Redis package)
 - [19-cluster-deployment.md](../../docs/core/19-cluster-deployment.md)

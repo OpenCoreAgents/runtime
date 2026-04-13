@@ -1726,7 +1726,7 @@ export default defineWorkspace(["packages/*/vitest.config.ts"]);
 | User-facing scaffold / CLI | `18-scaffold` |
 | Protocol types | `03-execution-model`, `04-protocol`, `07-definition-syntax` |
 | Agent/Tool/Skill definitions | `07-definition-syntax` |
-| Memory adapter + key patterns | `05-adapters`, `15-multi-tenancy` §4.3 |
+| Memory adapter + key patterns | `05-adapters-contracts`, `15-multi-tenancy` §4.3 |
 | LLM adapter | `10-llm-adapter` |
 | Embedding/Vector adapters | `17-rag-pipeline` §1 |
 | Context Builder | `11-context-builder` |
@@ -1738,7 +1738,7 @@ export default defineWorkspace(["packages/*/vitest.config.ts"]);
 | Cluster / RunStore / multi-process | `19-cluster-deployment` |
 | RAG tools | `17-rag-pipeline` §2 |
 | Utils | `16-utils` |
-| MVP scope + order | `06-mvp` |
+| MVP scope + order | `planning/mvp` |
 | Define API + Session | `07-definition-syntax` §9 |
 | Multi-tenancy | `15-multi-tenancy` |
 

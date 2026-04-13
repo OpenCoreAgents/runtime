@@ -2,7 +2,7 @@
 
 Pure functions and helpers used by **tools** and **adapters** internally. Utils never appear in the LLM prompt, never receive `ToolContext`, and never produce side effects on their own. They are the implementation layer beneath tools.
 
-Related: [05-adapters.md](./05-adapters.md) (adapter contracts), [17-rag-pipeline.md](./17-rag-pipeline.md) (RAG tools that consume these utils).
+Related: [05-adapters-contracts.md](./05-adapters-contracts.md) (adapter contracts), [17-rag-pipeline.md](./17-rag-pipeline.md) (RAG tools that consume these utils).
 
 ---
 

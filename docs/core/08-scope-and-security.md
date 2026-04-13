@@ -165,7 +165,7 @@ Detail: [15-multi-tenancy.md §3](./15-multi-tenancy.md).
 - **Local MVP**: fixed `SecurityContext` with `kind: "internal"` and `projectId: "default"` so the loop is not blocked.
 - **Deployment MVP**: real SecurityLayer before exposing REST; keys per project; no mixed Upstash keyspaces.
 
-See also [06-mvp.md](./06-mvp.md) (shared Redis risks) and [07-definition-syntax.md](./07-definition-syntax.md) (`security`, `projectId`, `scope`).
+See also [mvp.md](../planning/mvp.md) (shared Redis risks) and [07-definition-syntax.md](./07-definition-syntax.md) (`security`, `projectId`, `scope`).
 
 ---
 

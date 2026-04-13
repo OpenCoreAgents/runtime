@@ -1,6 +1,6 @@
 # HTTP-configured tools (`@opencoreagents/adapters-http-tool`)
 
-Related: [05-adapters.md](./05-adapters.md) (`ToolAdapter`, `ToolRunner`), [07-definition-syntax.md](./07-definition-syntax.md) (`Tool.define`), [08-scope-and-security.md](./08-scope-and-security.md) (SSRF, outbound calls), [21-dynamic-runtime-rest.md](./21-dynamic-runtime-rest.md) (REST + store + sync).
+Related: [05-adapters-contracts.md](./05-adapters-contracts.md) (`ToolAdapter`, `ToolRunner`), [07-definition-syntax.md](./07-definition-syntax.md) (`Tool.define`), [08-scope-and-security.md](./08-scope-and-security.md) (SSRF, outbound calls), [21-dynamic-runtime-rest.md](./21-dynamic-runtime-rest.md) (REST + store + sync).
 
 The package **`@opencoreagents/adapters-http-tool`** registers tools whose behavior is described by **JSON-serializable config**: URL, method, optional query/body maps, headers, and optional host allowlisting. At runtime it uses a **single generic** `fetch`-based implementation — no per-tool `execute` function in application code.
 

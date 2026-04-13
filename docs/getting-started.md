@@ -281,7 +281,7 @@ The sections below point to documentation in this repository that goes beyond th
 
 | Resource | What you get |
 |----------|----------------|
-| [Documentation index](./README.md) | Hub: **Getting started** (this guide), **[Agent Engine overview](./agent-engine-overview.md)** (full narrative), quick links to **Engine reference** and other docs. |
+| [Documentation index](./README.md) | Hub: **Getting started** (this guide), **[Agent Engine overview](./planning/agent-engine-overview.md)** (full narrative), quick links to **Engine reference** and other docs. |
 | [Repository root README](../README.md) | Monorepo layout, `pnpm` / Turbo commands, how packages relate. |
 | [plan.md](./planning/plan.md) | Roadmap and implementation progress. |
 | [technical-debt.md](./planning/technical-debt.md) | Known gaps (hub; triage [security & production](./planning/technical-debt-security-production.md) before [deferred / examples](./planning/technical-debt-deferred.md)). |
@@ -297,7 +297,7 @@ Highlights that this guide does **not** spell out:
 | Internal components and boundaries | [core/02-architecture.md](./core/02-architecture.md) |
 | Run lifecycle, states, **RunStore**, wait/resume mechanics | [core/03-execution-model.md](./core/03-execution-model.md) |
 | Message envelope, protocol rules, durable **waiting** | [core/04-protocol.md](./core/04-protocol.md) |
-| **Adapters**: memory, tools, RunStore; OpenAI / Anthropic; **Redis** (TCP); Upstash; **BullMQ** queues; **HTTP tools** JSON + **dynamic-definitions**; per-tool timeouts | [core/05-adapters.md](./core/05-adapters.md) |
+| **Adapters**: memory, tools, RunStore; OpenAI / Anthropic; **Redis** (TCP); Upstash; **BullMQ** queues; **HTTP tools** JSON + **dynamic-definitions**; per-tool timeouts | [core/05-adapters-contracts.md](./core/05-adapters-contracts.md), [core/06-adapters-infrastructure.md](./core/06-adapters-infrastructure.md) |
 | **`Tool.define` / `Skill.define` / `Agent.define`**, `defineBatch`, persisted shapes | [core/07-definition-syntax.md](./core/07-definition-syntax.md) |
 | **`scope`**, **`projectId`**, **SecurityLayer**, production checklist | [core/08-scope-and-security.md](./core/08-scope-and-security.md) |
 | **MessageBus**, **`system_send_message`**, multi-agent **wait**/**resume** | [core/09-communication-multiagent.md](./core/09-communication-multiagent.md) |
@@ -313,7 +313,7 @@ Highlights that this guide does **not** spell out:
 | **HTTP tools from JSON** (`adapters-http-tool`) | [core/20-http-tool-adapter.md](./core/20-http-tool-adapter.md) |
 | **Dynamic definitions** store + hydrate (`dynamic-definitions`, Redis REST) | [core/21-dynamic-runtime-rest.md](./core/21-dynamic-runtime-rest.md) |
 
-Additional core docs: purpose and MVP scope ([core/01-purpose.md](./core/01-purpose.md), [core/06-mvp.md](./core/06-mvp.md)), internal **utils** ([core/16-utils.md](./core/16-utils.md)).
+Additional core docs: purpose ([core/01-purpose.md](./core/01-purpose.md)); MVP scope and risks ([planning/mvp.md](./planning/mvp.md)); internal **utils** ([core/16-utils.md](./core/16-utils.md)).
 
 ### Runnable examples
 

@@ -68,7 +68,7 @@ Detail: [`04-protocol.md`](../core/04-protocol.md). JSON shapes and `Step`: [`07
 - **Hooks vs adapters**: hooks observe; adapters are the **authorized** path for effects from a valid `action`.
 - Multi-agent: **MessageBus** does not replace ToolRunner; usually materialized as tool (`system_send_message`) or service in `context`.
 
-Detail: [`05-adapters.md`](../core/05-adapters.md).
+Detail: [`05-adapters-contracts.md`](../core/05-adapters-contracts.md), [`06-adapters-infrastructure.md`](../core/06-adapters-infrastructure.md).
 
 ---
 
@@ -81,7 +81,7 @@ Detail: [`05-adapters.md`](../core/05-adapters.md).
 - **Out** of engine MVP: visual builder, mandatory distributed `Agent.define`, MCP as hard requirement, complex parallel multi-agent.
 - **Upstash** (Redis/Vector) plus **BullMQ** (primary job queue) or **QStash** (alternative) for scheduled/async wakeups — **adapter implementations**; core loop unchanged.
 
-Success criteria, risks, implementation order: [`06-mvp.md`](../core/06-mvp.md).
+Success criteria, risks, implementation order: [`mvp.md`](../planning/mvp.md).
 
 ---
 
@@ -159,8 +159,8 @@ Detail: [`14-consumers.md`](../core/14-consumers.md).
 | `02` | Components and responsibilities |
 | `03` | Run, states, loop, wait/resume |
 | `04` | Messages, envelope, rules |
-| `05` | MemoryAdapter, ToolAdapter |
-| `06` | MVP, risks, Upstash |
+| `05` | Adapter contracts: memory, tools, RunStore |
+| `06` | Adapter infrastructure: BullMQ, Redis, Upstash |
 | `07` | JSON + `Tool/Skill/Agent.define`, `load`, `run` |
 | `08` | Scope, SecurityLayer |
 | `09` | MessageBus, `system_send_message` |

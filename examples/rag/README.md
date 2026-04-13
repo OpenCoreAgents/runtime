@@ -85,7 +85,7 @@ pnpm --filter @opencoreagents/example-rag run start:openai
 ## Production-shaped wiring
 
 - Prefer **`registerRagCatalog(runtime, tenantProjectId, entries)`** (or load the same shape from config/DB) per **`AgentRuntime`** / worker — independent of **`llmAdapter`**.
-- Swap **`llmAdapter`** / embedding / vector adapters as needed; see [docs/core/05-adapters.md](../../docs/core/05-adapters.md).
+- Swap **`llmAdapter`** / embedding / vector adapters as needed; see [docs/core/05-adapters-contracts.md](../../docs/core/05-adapters-contracts.md).
 
 ## Scripts
 

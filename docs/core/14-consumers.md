@@ -1,6 +1,6 @@
 # Engine consumers
 
-Related: [02-architecture.md](./02-architecture.md), [05-adapters.md](./05-adapters.md), [19-cluster-deployment.md](./19-cluster-deployment.md).
+Related: [02-architecture.md](./02-architecture.md), [05-adapters-contracts.md](./05-adapters-contracts.md), [06-adapters-infrastructure.md](./06-adapters-infrastructure.md), [19-cluster-deployment.md](./19-cluster-deployment.md).
 
 Everything that **starts** or **observes** runs shares the same core: **SecurityLayer** (if applicable) → **Agent Engine**. Only **consumer types** are named here; engine contracts live in the rest of `docs/core/`.
 
@@ -36,7 +36,7 @@ HTTP/JSON: list agents, `POST` run/resume, memory, run list/history, inter-agent
 
 External triggers (Stripe, GitHub, messaging): handler validates signature, builds `RunInput`, calls the engine or internal API. Same rule: **one** entry point into the loop. For a **mock** Telegram-style **`Update`** → **`NormalizedInboundMessage`** → **`ConversationGateway`** sample (no calls to `api.telegram.org`), see [**`examples/telegram-example-mocked/`**](../../examples/telegram-example-mocked/).
 
-Often the handler **enqueues** a job — **BullMQ** on Redis is the **primary** supported pattern — and returns quickly; a **worker** then calls **`dispatchEngineJob(runtime, payload)`** from **`@opencoreagents/core`** (often imported via **`@opencoreagents/adapters-bullmq`** re-export) or **`runtime.dispatch(payload)`** with the same payload. If the run may **`wait`** and the **resume** request is handled by **another** instance, include **`runStore`** on **`AgentRuntime`** so the **`Run`** is durable — [19-cluster-deployment.md §3](./19-cluster-deployment.md). Retries, backoff, and dead-letter queues live in the queue layer, not in the engine core. **Upstash QStash** is an **alternative** that POSTs to `resume` without a worker process. Detail: [05-adapters.md](./05-adapters.md#job-queue-adapter-primary-bullmq).
+Often the handler **enqueues** a job — **BullMQ** on Redis is the **primary** supported pattern — and returns quickly; a **worker** then calls **`dispatchEngineJob(runtime, payload)`** from **`@opencoreagents/core`** (often imported via **`@opencoreagents/adapters-bullmq`** re-export) or **`runtime.dispatch(payload)`** with the same payload. If the run may **`wait`** and the **resume** request is handled by **another** instance, include **`runStore`** on **`AgentRuntime`** so the **`Run`** is durable — [19-cluster-deployment.md §3](./19-cluster-deployment.md). Retries, backoff, and dead-letter queues live in the queue layer, not in the engine core. **Upstash QStash** is an **alternative** that POSTs to `resume` without a worker process. Detail: [06-adapters-infrastructure.md](./06-adapters-infrastructure.md#job-queue-adapter-primary-bullmq).
 
 ---
 
@@ -55,7 +55,7 @@ Periodic execution or `wait` with `reason: scheduled`: prefer **BullMQ** delayed
 | REST | Remote clients, dashboards, BFF |
 | MCP | Interop with IDEs and assistants that speak “tools” |
 | Webhooks / cron | Event-driven and time-based input |
-| Job workers (**BullMQ** primary) | Async `run` / `resume`; optional MessageBus — [05-adapters.md](./05-adapters.md#job-queue-adapter-primary-bullmq); **QStash** as alt |
+| Job workers (**BullMQ** primary) | Async `run` / `resume`; optional MessageBus — [06-adapters-infrastructure.md](./06-adapters-infrastructure.md#job-queue-adapter-primary-bullmq); **QStash** as alt |
 
 Deeper implementation of each is **out of scope** for this file.
 

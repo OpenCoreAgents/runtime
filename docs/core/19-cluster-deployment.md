@@ -2,7 +2,7 @@
 
 How the agent runtime behaves when multiple processes (workers, replicas, containers) run in parallel. What is per-process, what must be shared, and what changes in each layer.
 
-Related: [05-adapters.md](./05-adapters.md) (adapters + BullMQ), [09-communication-multiagent.md](./09-communication-multiagent.md) (MessageBus), [15-multi-tenancy.md](./15-multi-tenancy.md) (tenant isolation).
+Related: [05-adapters-contracts.md](./05-adapters-contracts.md), [06-adapters-infrastructure.md](./06-adapters-infrastructure.md) (queues, Redis packages), [09-communication-multiagent.md](./09-communication-multiagent.md) (MessageBus), [15-multi-tenancy.md](./15-multi-tenancy.md) (tenant isolation).
 
 ---
 
@@ -329,8 +329,8 @@ services:
 | Doc | Connection |
 |-----|------------|
 | [02-architecture.md](./02-architecture.md) | Component view — this doc adds the multi-process dimension. |
-| [05-adapters.md](./05-adapters.md) | BullMQ / QStash as job queue; this doc explains cluster deployment and what is actually implemented. |
-| [06-mvp.md](./06-mvp.md) | MVP scope: "distributed store for Agent.define" out of MVP — this doc explains why it's acceptable. |
+| [06-adapters-infrastructure.md](./06-adapters-infrastructure.md) | BullMQ / QStash as job queue; this doc explains cluster deployment and what is actually implemented. |
+| [mvp.md](../planning/mvp.md) | MVP scope: "distributed store for Agent.define" out of MVP — planning doc explains why it's acceptable. |
 | [09-communication-multiagent.md](./09-communication-multiagent.md) | MessageBus in-process vs Redis — this doc formalizes the cluster requirement. |
 | [15-multi-tenancy.md](./15-multi-tenancy.md) | `projectId` isolation applies identically across cluster workers. |
 | [`../planning/scaffold.md`](../planning/scaffold.md) | Implementation phases; RunStore / cluster support in the phase plan. |
