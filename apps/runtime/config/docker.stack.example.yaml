@@ -26,10 +26,20 @@ llm:
   defaultProvider: openai
   openai:
     apiKey: "${OPENAI_API_KEY}"
+    # Non-empty = OpenAI-compatible base; applies to all openai agents including planner sub-agents.
     baseUrl: ""
   anthropic:
     apiKey: "${ANTHROPIC_API_KEY}"
     baseUrl: ""
+
+# Optional — default `planner` agent in Redis on boot + spawn_agent defaults (`enabled: false` to skip seed).
+# planner:
+#   defaultAgent:
+#     enabled: true
+#     id: planner
+#   subAgent:
+#     provider: auto
+#     model: auto
 
 # Worker image must include these paths (or mount volumes). See apps/runtime/docs/configuration.md § OpenClaw.
 openclaw:

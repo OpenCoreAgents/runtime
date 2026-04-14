@@ -12,10 +12,19 @@ export interface RuntimeLlmFileConfig {
   defaultProvider?: LlmDriverKind;
   openai?: {
     apiKey?: string;
+    /**
+     * OpenAI-compatible API base URL (Azure, proxies, etc.). Wired into the worker’s {@link AgentRuntime}
+     * adapter — applies to **every** agent with `llm.provider: "openai"`, including sub-agents created by
+     * `spawn_agent` (definitions only store `provider` + `model`, not the URL).
+     */
     baseUrl?: string;
   };
   anthropic?: {
     apiKey?: string;
+    /**
+     * Anthropic API base override when required. Same idea as {@link RuntimeLlmFileConfig.openai.baseUrl}:
+     * one adapter per worker for all `llm.provider: "anthropic"` runs, planner sub-agents included.
+     */
     baseUrl?: string;
   };
 }
@@ -50,12 +59,71 @@ export interface RuntimeStackFileConfig {
   run?: {
     waitTimeoutMs?: number;
   };
+  /**
+   * When **`redis: true`** (or **`RUNTIME_RUN_EVENTS_REDIS=1`**), the worker publishes JSON per step to Redis Pub/Sub
+   * and the API exposes **`GET /v1/runs/:runId/stream?sessionId=`** (SSE). Chat UI stays outside; this is a wire for notifications.
+   */
+  runEvents?: {
+    redis?: boolean;
+  };
   openclaw?: {
     enabled?: boolean;
     /** Relative paths resolve from the config file’s directory. */
     skillsDirs?: string[];
   };
   llm?: RuntimeLlmFileConfig;
+  /**
+   * Dynamic planner (`spawn_agent` default LLM when the tool omits `llm`).
+   * Omit to infer provider from configured API keys + `llm.defaultProvider`, and use conservative default model ids.
+   * **HTTP endpoint** for LLM calls is **not** set here: it comes from `llm.openai.baseUrl` / `llm.anthropic.baseUrl`
+   * on the worker (see {@link RuntimeLlmFileConfig}).
+   */
+  planner?: {
+    /**
+     * Seed a built-in orchestrator agent in Redis on startup if missing (`DEFAULT_PLANNER_SYSTEM_PROMPT` + planner tools).
+     * Disable with `enabled: false` or env `RUNTIME_PLANNER_DEFAULT_AGENT=0`.
+     */
+    defaultAgent?: {
+      enabled?: boolean;
+      /** Agent id (default `planner`). */
+      id?: string;
+      llm?: {
+        provider?: LlmDriverKind | "auto";
+        model?: string;
+        temperature?: number;
+      };
+    };
+    subAgent?: {
+      /**
+       * `openai` | `anthropic` selects which runtime adapter (and thus which `baseUrl` / API key) is used; omit or **`auto`** → infer from API keys + `llm.defaultProvider`.
+       */
+      provider?: LlmDriverKind | "auto";
+      /**
+       * Model id **as understood by that endpoint**. Omit or **`auto`** → conservative defaults; with a custom
+       * gateway, set an explicit model name your proxy exposes (or `RUNTIME_PLANNER_SUB_AGENT_MODEL`).
+       */
+      model?: string;
+      /** Omit → `0.2`. */
+      temperature?: number;
+    };
+  };
+  /**
+   * Default **`chat`** agent for **`POST /v1/chat`**: created in Redis the **first time** that endpoint is used
+   * (not at boot). Uses **`invoke_planner`** + memory tools; planner completion is pushed to **`/v1/chat/stream`**
+   * when **`runEvents.redis`** is enabled.
+   */
+  chat?: {
+    defaultAgent?: {
+      enabled?: boolean;
+      /** Agent id (default `chat`). */
+      id?: string;
+      llm?: {
+        provider?: LlmDriverKind | "auto";
+        model?: string;
+        temperature?: number;
+      };
+    };
+  };
 }
 
 export interface ResolvedRuntimeStackConfig {
@@ -68,4 +136,32 @@ export interface ResolvedRuntimeStackConfig {
   run: { waitTimeoutMs: number };
   openclaw: { enabled: boolean; skillsDirs: string[] };
   llm: ResolvedLlmStackConfig;
+  planner: {
+    defaultAgent: {
+      enabled: boolean;
+      id: string;
+      llm: {
+        provider?: LlmDriverKind;
+        model?: string;
+        temperature?: number;
+      };
+    };
+    subAgent: {
+      provider?: LlmDriverKind;
+      model?: string;
+      temperature?: number;
+    };
+  };
+  runEvents: { redis: boolean };
+  chat: {
+    defaultAgent: {
+      enabled: boolean;
+      id: string;
+      llm: {
+        provider?: LlmDriverKind;
+        model?: string;
+        temperature?: number;
+      };
+    };
+  };
 }

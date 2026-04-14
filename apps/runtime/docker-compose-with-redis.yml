@@ -5,7 +5,7 @@
 # (2) optional apps/runtime/.env from .env.example — so API keys exist before the first `up` (no restart needed).
 # REST_API_KEY default below lets the API bind for published ports; override in .env for non-local use.
 # OpenClaw: ./skills is mounted at .../config/skills so skillsDirs: [./skills] in docker.stack.yaml resolves correctly.
-# API: http://localhost:3010/health
+# API: http://localhost:3010/health (add ?details=1 for projectId + queue name)
 x-runtime-image: &runtime-build
   context: ../..
   dockerfile: apps/runtime/Dockerfile

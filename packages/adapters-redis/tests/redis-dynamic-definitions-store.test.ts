@@ -113,4 +113,32 @@ describe("RedisDynamicDefinitionsStore", () => {
     });
     expect(out).toEqual({ ok: true });
   });
+
+  it("deleteHttpTool and deleteSkill remove rows", async () => {
+    const store = new RedisDynamicDefinitionsStore(redis, { keyPrefix: "def" });
+    const pid = "proj-delete-test";
+    await store.methods.saveHttpTool(pid, {
+      id: "t1",
+      projectId: pid,
+      description: "x",
+      inputSchema: { type: "object", properties: {} },
+      http: { method: "GET", url: "https://example.com" },
+    });
+    await store.methods.saveSkill(pid, {
+      id: "s1",
+      projectId: pid,
+      tools: [],
+      description: "y",
+    });
+
+    expect(await store.methods.deleteHttpTool(pid, "missing")).toBe(false);
+    expect(await store.methods.deleteSkill(pid, "missing")).toBe(false);
+
+    expect(await store.methods.deleteHttpTool(pid, "t1")).toBe(true);
+    expect(await store.methods.deleteSkill(pid, "s1")).toBe(true);
+
+    const snap = await store.methods.getSnapshot(pid);
+    expect(snap.httpTools).toHaveLength(0);
+    expect(snap.skills).toHaveLength(0);
+  });
 });

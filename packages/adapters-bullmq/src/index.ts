@@ -5,6 +5,7 @@ export {
 export { createEngineQueue, type EngineQueue } from "./queue.js";
 export { dispatchEngineJob } from "./dispatch.js";
 export type {
+  EngineContinueJobPayload,
   EngineJobPayload,
   EngineResumeInput,
   EngineResumeJobPayload,

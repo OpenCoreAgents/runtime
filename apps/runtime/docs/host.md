@@ -124,7 +124,7 @@ pnpm --filter @opencoreagents/runtime start:server
 pnpm --filter @opencoreagents/runtime start:worker
 ```
 
-Then open [http://localhost:3010/health](http://localhost:3010/health) (port follows **`server.port`** in **`local.yaml`** unless overridden). **`/docs`** — use **Authorize** with **`REST_API_KEY`** when that variable is set.
+Then open [http://localhost:3010/health](http://localhost:3010/health) (port follows **`server.port`** in **`local.yaml`** unless overridden); add **`?details=1`** for **`projectId`** and queue in the JSON. **`/docs`** — use **Authorize** with **`REST_API_KEY`** when that variable is set.
 
 ---
 

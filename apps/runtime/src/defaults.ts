@@ -1,4 +1,47 @@
-import type { ResolvedRuntimeStackConfig, RuntimeStackFileConfig } from "./types.js";
+import type { LlmDriverKind, ResolvedRuntimeStackConfig, RuntimeStackFileConfig } from "./types.js";
+
+function isAutoOrEmptyToken(s: string): boolean {
+  return s === "" || s.toLowerCase() === "auto";
+}
+
+/** `auto` / empty → undefined (runtime infers). */
+function normalizePlannerSubAgentModel(v: unknown): string | undefined {
+  if (v == null) return undefined;
+  const s = String(v).trim();
+  if (isAutoOrEmptyToken(s)) return undefined;
+  return s;
+}
+
+function normalizePlannerSubAgentProvider(v: unknown): LlmDriverKind | undefined {
+  if (v == null) return undefined;
+  const s = String(v).trim().toLowerCase();
+  if (isAutoOrEmptyToken(s)) return undefined;
+  if (s === "openai" || s === "anthropic") return s;
+  throw new Error(
+    `Invalid planner provider: "${String(v).trim()}" (expected openai, anthropic, or auto)`,
+  );
+}
+
+function normalizeDefaultPlannerAgentId(v: unknown): string {
+  if (v == null) return "planner";
+  const s = String(v).trim();
+  if (s === "" || isAutoOrEmptyToken(s)) return "planner";
+  return s;
+}
+
+function normalizeDefaultChatAgentId(v: unknown): string {
+  if (v == null) return "chat";
+  const s = String(v).trim();
+  if (s === "" || isAutoOrEmptyToken(s)) return "chat";
+  return s;
+}
+
+function mergeRunEventsRedis(raw: RuntimeStackFileConfig): boolean {
+  const v = process.env.RUNTIME_RUN_EVENTS_REDIS?.trim().toLowerCase();
+  if (v === "1" || v === "true" || v === "yes") return true;
+  if (v === "0" || v === "false" || v === "no") return false;
+  return raw.runEvents?.redis === true;
+}
 
 export const defaultStackConfig: ResolvedRuntimeStackConfig = {
   environment: "local",
@@ -14,6 +57,22 @@ export const defaultStackConfig: ResolvedRuntimeStackConfig = {
     defaultProvider: "openai",
     openai: { apiKey: "", baseUrl: "" },
     anthropic: { apiKey: "", baseUrl: "" },
+  },
+  planner: {
+    defaultAgent: {
+      enabled: true,
+      id: "planner",
+      llm: {},
+    },
+    subAgent: {},
+  },
+  runEvents: { redis: true },
+  chat: {
+    defaultAgent: {
+      enabled: true,
+      id: "chat",
+      llm: {},
+    },
   },
 };
 
@@ -57,6 +116,45 @@ export function mergeWithDefaults(raw: RuntimeStackFileConfig): ResolvedRuntimeS
       anthropic: {
         apiKey: raw.llm?.anthropic?.apiKey ?? defaultStackConfig.llm.anthropic.apiKey,
         baseUrl: raw.llm?.anthropic?.baseUrl ?? defaultStackConfig.llm.anthropic.baseUrl,
+      },
+    },
+    planner: {
+      defaultAgent: {
+        enabled: raw.planner?.defaultAgent?.enabled !== false,
+        id: normalizeDefaultPlannerAgentId(raw.planner?.defaultAgent?.id),
+        llm: {
+          provider: normalizePlannerSubAgentProvider(raw.planner?.defaultAgent?.llm?.provider),
+          model: normalizePlannerSubAgentModel(raw.planner?.defaultAgent?.llm?.model),
+          temperature:
+            typeof raw.planner?.defaultAgent?.llm?.temperature === "number"
+              ? raw.planner.defaultAgent.llm.temperature
+              : undefined,
+        },
+      },
+      subAgent: {
+        provider: normalizePlannerSubAgentProvider(raw.planner?.subAgent?.provider),
+        model: normalizePlannerSubAgentModel(raw.planner?.subAgent?.model),
+        temperature:
+          typeof raw.planner?.subAgent?.temperature === "number"
+            ? raw.planner.subAgent.temperature
+            : undefined,
+      },
+    },
+    runEvents: {
+      redis: mergeRunEventsRedis(raw),
+    },
+    chat: {
+      defaultAgent: {
+        enabled: raw.chat?.defaultAgent?.enabled !== false,
+        id: normalizeDefaultChatAgentId(raw.chat?.defaultAgent?.id),
+        llm: {
+          provider: normalizePlannerSubAgentProvider(raw.chat?.defaultAgent?.llm?.provider),
+          model: normalizePlannerSubAgentModel(raw.chat?.defaultAgent?.llm?.model),
+          temperature:
+            typeof raw.chat?.defaultAgent?.llm?.temperature === "number"
+              ? raw.chat.defaultAgent.llm.temperature
+              : undefined,
+        },
       },
     },
   };

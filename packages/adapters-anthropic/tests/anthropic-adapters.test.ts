@@ -72,9 +72,29 @@ describe("AnthropicLLMAdapter", () => {
     const body = JSON.parse((init?.body as string) ?? "{}");
     expect(body.system).toBe("sys-a\n\nsys-b");
     expect(body.messages).toEqual([
-      { role: "user", content: " " },
+      { role: "user", content: "Continue." },
       { role: "assistant", content: "a1\n\na2" },
       { role: "user", content: "u1" },
+    ]);
+  });
+
+  it("appends a minimal user message when the transcript ends with assistant (no prefill models)", async () => {
+    const adapter = new AnthropicLLMAdapter("sk-ant-test");
+    await adapter.generate({
+      provider: "anthropic",
+      model: "claude-sonnet-4-6",
+      messages: [
+        { role: "user", content: "hi" },
+        { role: "assistant", content: '{"type":"result","content":"done"}' },
+      ],
+      temperature: 0.2,
+    });
+    const [_, init] = vi.mocked(fetch).mock.calls[0]!;
+    const body = JSON.parse((init?.body as string) ?? "{}");
+    expect(body.messages).toEqual([
+      { role: "user", content: "hi" },
+      { role: "assistant", content: '{"type":"result","content":"done"}' },
+      { role: "user", content: "Continue." },
     ]);
   });
 

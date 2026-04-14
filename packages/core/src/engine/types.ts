@@ -51,10 +51,16 @@ export interface EngineDeps {
   resumeMessages?: Array<{ role: "user" | "assistant"; content: string }>;
 }
 
-export interface LLMResponseMeta {
-  agentId: string;
+/** Passed to engine hooks that fire during a run (LLM + steps). */
+export interface EngineHookRunContext {
   runId: string;
+  agentId: string;
+  projectId: string;
+  sessionId?: string;
 }
+
+/** @deprecated Use {@link EngineHookRunContext}; kept as alias for LLM callbacks. */
+export type LLMResponseMeta = EngineHookRunContext;
 
 /** Set after each `generate` + `parseStep` attempt — use for billing / wasted-token metrics. */
 export type LLMParseOutcome =
@@ -63,10 +69,10 @@ export type LLMParseOutcome =
   | "parse_failed_fatal";
 
 export interface EngineHooks {
-  onThought?: (step: Step) => void;
-  onAction?: (step: Step) => void;
-  onObservation?: (observation: unknown) => void;
-  onWait?: (step: Step) => void;
+  onThought?: (step: Step, ctx?: EngineHookRunContext) => void;
+  onAction?: (step: Step, ctx?: EngineHookRunContext) => void;
+  onObservation?: (observation: unknown, ctx?: EngineHookRunContext) => void;
+  onWait?: (step: Step, ctx?: EngineHookRunContext) => void;
   /** Fires immediately after each LLM `generate`, before validation. */
   onLLMResponse?: (response: LLMResponse, meta: LLMResponseMeta) => void;
   /**

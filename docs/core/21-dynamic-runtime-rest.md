@@ -104,7 +104,9 @@ Nothing in the dynamic store should mark itself global — that would break tena
 Routes:
 
 - **`PUT /v1/http-tools/:toolId`** — **`HttpToolConfig`** (optional **`_secrets`** only affects the API process registry; the worker resolves **`{{secret:*}}`** from **`HTTP_TOOL_SECRETS_JSON`** — see that README).
+- **`DELETE /v1/http-tools/:toolId`** — remove row from Redis and drop the tool handler on the API process (**`apps/runtime`** definitions admin).
 - **`PUT /v1/skills/:skillId`** — **`SkillDefinitionPersisted`**.
+- **`DELETE /v1/skills/:skillId`** — remove skill row and registry entry on the API process.
 - **`PUT /v1/agents/:agentId`** — **`AgentDefinitionPersisted`**.
 - **`GET /v1/definitions`** — Redis snapshot for the configured **`PROJECT_ID`**.
 

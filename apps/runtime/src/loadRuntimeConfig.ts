@@ -68,5 +68,8 @@ export function configToProcessEnv(config: ResolvedRuntimeStackConfig): Record<s
     out.OPENCLAW_SKILLS_DIRS = config.openclaw.skillsDirs.join(path.delimiter);
   }
   out.LLM_DEFAULT_PROVIDER = config.llm.defaultProvider;
+  if (config.runEvents.redis) {
+    out.RUNTIME_RUN_EVENTS_REDIS = "1";
+  }
   return out;
 }

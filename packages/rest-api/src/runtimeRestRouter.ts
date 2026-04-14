@@ -23,7 +23,7 @@ import { isBullmqJobWaitTimeoutError } from "./bullmqJobWaitTimeout.js";
 import { mapEngineErrorToHttp } from "./engineErrorHttp.js";
 import { summarizeEngineRun, summarizeRunListEntry } from "./summarizeRun.js";
 
-/** BullMQ enqueue path — same payload shape as **`examples/dynamic-runtime-rest`** (`addRun` / `addResume`). */
+/** BullMQ enqueue path — same payload shape as **`examples/dynamic-runtime-rest`** (`addRun` / `addResume` / `addContinue`). */
 export interface RuntimeRestDispatchOptions {
   engine: EngineQueue;
   /**
@@ -42,7 +42,7 @@ export interface RuntimeRestPluginOptions {
    */
   runtime?: AgentRuntime;
   /**
-   * When set, **`POST …/run`** and **`POST …/resume`** **enqueue** via **`engine.addRun` / `addResume`**
+   * When set, **`POST …/run`**, **`POST …/resume`**, and **`POST …/continue`** **enqueue** via **`engine.addRun` / `addResume` / `addContinue`**
    * (async worker — configure **`AgentRuntime`** + **`dispatch`** on the worker like **`dynamic-runtime-rest`**).
    * Responses default to **202** + **`jobId`** + **`statusUrl`**; use **`?wait=1`** or **`"wait": true`** in the body to block (needs **`queueEvents`**).
    */
@@ -66,11 +66,11 @@ export interface RuntimeRestPluginOptions {
   resolveProjectId?: (req: Request) => string | undefined;
   /**
    * Optional allowlist: intersected with the in-process registry for the effective **`projectId`**
-   * — only defined agents appear on **`GET /agents`** and **`POST …/run`** / **`resume`** return **404** for unknown ids.
+   * — only defined agents appear on **`GET /agents`** and **`POST …/run`** / **`resume`** / **`continue`** return **404** for unknown ids.
    */
   agentIds?: readonly string[];
   /**
-   * Required for **inline** **`POST …/resume`**, **`GET /runs/:runId`**, **`GET /runs/:runId/history`**, and **`GET /agents/:agentId/runs`**.
+   * Required for **inline** **`POST …/resume`** and **`POST …/continue`**, **`GET /runs/:runId`**, **`GET /runs/:runId/history`**, and **`GET /agents/:agentId/runs`**.
    * Omit on the API when only **`dispatch`** handles run/resume (worker owns **`RunStore`**); those routes then return **501**.
    */
   runStore?: RunStore;
@@ -424,7 +424,7 @@ export function createRuntimeRestRouter(options: RuntimeRestPluginOptions): Rout
   if (swaggerPaths) {
     const multiProjectOpenApi = !(fixedProjectId !== undefined && fixedProjectId.trim() !== "");
     const swaggerInfo = runtimeRestSwaggerInfo(swaggerOption);
-    const spec = buildRuntimeRestOpenApiSpec({
+    let spec: Record<string, unknown> = buildRuntimeRestOpenApiSpec({
       hasDispatch: !!dispatch,
       hasMemoryRead: !!runtime,
       hasInterAgentSend: !!runtime,
@@ -435,6 +435,9 @@ export function createRuntimeRestRouter(options: RuntimeRestPluginOptions): Rout
       version: swaggerInfo?.version,
       description: swaggerInfo?.description,
     });
+    if (swaggerOption !== true && typeof swaggerOption === "object" && swaggerOption.extendOpenApi) {
+      spec = swaggerOption.extendOpenApi(spec) ?? spec;
+    }
     const html = runtimeRestSwaggerUiHtml(swaggerPaths.openApiPath, swaggerPaths.uiPath);
     r.get(`/${swaggerPaths.openApiPath}`, (_req, res) => {
       res.type("application/json; charset=utf-8").json(spec);
@@ -868,6 +871,160 @@ export function createRuntimeRestRouter(options: RuntimeRestPluginOptions): Rout
       });
       const agent = await Agent.load(agentId, runtime, { session });
       const run = await agent.resume(body.runId.trim(), resumeInput);
+
+      const payload: Record<string, unknown> = {
+        sessionId: body.sessionId.trim(),
+        runId: run.runId,
+        projectId,
+        status: run.status,
+      };
+      const reply = resultText(run);
+      if (reply !== undefined) payload.reply = reply;
+
+      res.json(payload);
+    } catch (e) {
+      const mapped = mapEngineErrorToHttp(e);
+      if (mapped) {
+        res.status(mapped.status).json(mapped.body);
+        return;
+      }
+      res.status(400).json({ error: errorMessage(e) });
+    }
+  });
+
+  r.post("/agents/:agentId/continue", async (req, res) => {
+    if (!dispatch && !runStore) {
+      res.status(501).json({ error: "runStore is required for inline continue" });
+      return;
+    }
+
+    const projectId = getRuntimeRestProjectId(res);
+    const { agentId } = req.params;
+    if (!isRunnableAgent(projectId, agentId)) {
+      res.status(404).json({ error: "unknown agent" });
+      return;
+    }
+
+    const body = req.body as {
+      runId?: unknown;
+      sessionId?: unknown;
+      message?: unknown;
+    };
+    if (typeof body.runId !== "string" || !body.runId.trim()) {
+      res.status(400).json({ error: "runId (string) required" });
+      return;
+    }
+    if (typeof body.sessionId !== "string" || !body.sessionId.trim()) {
+      res.status(400).json({ error: "sessionId (string) required" });
+      return;
+    }
+    if (typeof body.message !== "string" || !body.message.trim()) {
+      res.status(400).json({ error: "message (string) required" });
+      return;
+    }
+
+    if (dispatch) {
+      const wait = parseWait(req);
+      let jobId = "";
+      try {
+        const job = await dispatch.engine.addContinue({
+          projectId,
+          agentId,
+          sessionId: body.sessionId.trim(),
+          runId: body.runId.trim(),
+          userInput: body.message.trim(),
+        });
+        jobId = job.id ?? "";
+        if (!jobId) {
+          res.status(500).json({ error: "enqueue failed (missing job id)" });
+          return;
+        }
+
+        if (!wait) {
+          const url = statusUrl(req, jobId);
+          res.status(202).json({
+            jobId,
+            sessionId: body.sessionId.trim(),
+            runId: body.runId.trim(),
+            projectId,
+            statusUrl: url,
+            pollUrl: url,
+          });
+          return;
+        }
+
+        if (!dispatch.queueEvents) {
+          res.status(501).json({
+            error: "dispatch.queueEvents is required when using wait=1 or body.wait true",
+          });
+          return;
+        }
+
+        let finishedValue: unknown;
+        try {
+          finishedValue = await job.waitUntilFinished(dispatch.queueEvents, jobWaitMs);
+        } catch (waitErr) {
+          const msg = errorMessage(waitErr);
+          const sid = body.sessionId.trim();
+          if (isBullmqJobWaitTimeoutError(waitErr)) {
+            res.status(504).json({ jobId, sessionId: sid, projectId, error: msg });
+            return;
+          }
+          res.status(502).json({ jobId, sessionId: sid, projectId, error: msg });
+          return;
+        }
+
+        if (isRunLike(finishedValue)) {
+          const s = summarizeEngineRun(finishedValue);
+          res.json({
+            jobId,
+            sessionId: body.sessionId.trim(),
+            projectId,
+            runId: s.runId,
+            status: s.status,
+            ...(s.reply !== undefined ? { reply: s.reply } : {}),
+          });
+          return;
+        }
+
+        const fromJob = job.returnvalue;
+        if (isRunLike(fromJob)) {
+          const s = summarizeEngineRun(fromJob);
+          res.json({
+            jobId,
+            sessionId: body.sessionId.trim(),
+            projectId,
+            runId: s.runId,
+            status: s.status,
+            ...(s.reply !== undefined ? { reply: s.reply } : {}),
+          });
+          return;
+        }
+
+        res.status(500).json({
+          jobId,
+          error: "job finished but return value is missing or not a Run",
+        });
+      } catch (e) {
+        res.status(503).json({ error: errorMessage(e) });
+      }
+      return;
+    }
+
+    if (!runtime) {
+      res.status(501).json({
+        error: "runtime is required for inline continue when dispatch is not set",
+      });
+      return;
+    }
+
+    try {
+      const session = new Session({
+        id: body.sessionId.trim(),
+        projectId,
+      });
+      const agent = await Agent.load(agentId, runtime, { session });
+      const run = await agent.continueRun(body.runId.trim(), body.message.trim());
 
       const payload: Record<string, unknown> = {
         sessionId: body.sessionId.trim(),

@@ -212,6 +212,11 @@ describe("engine", () => {
     expect(run.projectId).toBe("p-tenant");
   });
 
+  it("createRun uses explicitRunId when provided", () => {
+    const run = createRun("a", "s", "u", "p-tenant", "planner-correlated-run-id");
+    expect(run.runId).toBe("planner-correlated-run-id");
+  });
+
   it("buildEngineDeps uses runtime fileReadRoot when session omits it", async () => {
     const mem = new InMemoryMemoryAdapter();
     const llm = new QueueLLM([JSON.stringify({ type: "result", content: "ok" })]);
@@ -493,6 +498,79 @@ describe("engine", () => {
       done.history.some((h) => h.type === "result" && h.content === "resumed"),
     ).toBe(true);
     expect(done.state.resumeInputs).toEqual(["here"]);
+  });
+
+  it("continueRun appends a user turn after completed (same runId)", async () => {
+    const mem = new InMemoryMemoryAdapter();
+    const store = new InMemoryRunStore();
+    const llm = new QueueLLM([
+      JSON.stringify({ type: "result", content: "first answer" }),
+      JSON.stringify({ type: "result", content: "second answer" }),
+    ]);
+    const rt = new AgentRuntime({
+      llmAdapter: llm,
+      memoryAdapter: mem,
+      runStore: store,
+      maxIterations: 10,
+    });
+
+    await Agent.define({
+      id: "a-continue",
+      projectId: "p1",
+      systemPrompt: "Test.",
+      tools: [],
+      llm: { provider: "openai", model: "gpt-4o" },
+    });
+
+    const session = new Session({ id: "s-continue", projectId: "p1" });
+    const agent = await Agent.load("a-continue", rt, { session });
+    const first = await agent.run("hello");
+    expect(first.status).toBe("completed");
+    expect(
+      first.history.some((h) => h.type === "result" && h.content === "first answer"),
+    ).toBe(true);
+
+    const second = await agent.continueRun(first.runId, "follow up");
+    expect(second.status).toBe("completed");
+    expect(second.state.continueInputs).toEqual(["follow up"]);
+    expect(
+      second.history.some((h) => h.type === "result" && h.content === "second answer"),
+    ).toBe(true);
+  });
+
+  it("continueRun keeps follow-up user text when the model uses thought before result", async () => {
+    const mem = new InMemoryMemoryAdapter();
+    const store = new InMemoryRunStore();
+    const llm = new QueueLLM([
+      JSON.stringify({ type: "result", content: "first answer" }),
+      JSON.stringify({ type: "thought", content: "processing follow up" }),
+      JSON.stringify({ type: "result", content: "second answer" }),
+    ]);
+    const rt = new AgentRuntime({
+      llmAdapter: llm,
+      memoryAdapter: mem,
+      runStore: store,
+      maxIterations: 10,
+    });
+
+    await Agent.define({
+      id: "a-continue-multistep",
+      projectId: "p1",
+      systemPrompt: "Test.",
+      tools: [],
+      llm: { provider: "openai", model: "gpt-4o" },
+    });
+
+    const session = new Session({ id: "s-continue-ms", projectId: "p1" });
+    const agent = await Agent.load("a-continue-multistep", rt, { session });
+    const first = await agent.run("hello");
+    expect(first.status).toBe("completed");
+
+    const second = await agent.continueRun(first.runId, "follow up");
+    expect(second.status).toBe("completed");
+    const results = second.history.filter((h) => h.type === "result");
+    expect(results.map((h) => h.content)).toContain("second answer");
+    expect(results.pop()?.content).toBe("second answer");
   });
 
   it("resume rejects when sessionId does not match stored run", async () => {

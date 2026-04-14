@@ -38,6 +38,10 @@ export interface Run {
      * Text from each **`resume`** after a **`wait`** (HTTP or in-process), in order — not duplicated in **`history`**.
      */
     resumeInputs?: string[];
+    /**
+     * Text from each **`continue`** (new user turn on a **`completed`** run), in order — not duplicated in **`history`**.
+     */
+    continueInputs?: string[];
     [key: string]: unknown;
   };
 }

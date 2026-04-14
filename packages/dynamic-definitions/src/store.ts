@@ -17,6 +17,10 @@ export interface DynamicDefinitionsStoreMethods {
   saveHttpTool(projectId: string, config: HttpToolConfig): Promise<void>;
   saveSkill(projectId: string, skill: SkillDefinitionPersisted): Promise<void>;
   saveAgent(projectId: string, agent: AgentDefinitionPersisted): Promise<void>;
+  /** @returns whether a row existed and was removed */
+  deleteHttpTool(projectId: string, toolId: string): Promise<boolean>;
+  /** @returns whether a row existed and was removed */
+  deleteSkill(projectId: string, skillId: string): Promise<boolean>;
   listHttpTools(projectId: string): Promise<HttpToolConfig[]>;
   listSkills(projectId: string): Promise<SkillDefinitionPersisted[]>;
   listAgents(projectId: string): Promise<AgentDefinitionPersisted[]>;
@@ -47,6 +51,18 @@ export class InMemoryDefinitionsBackend implements DynamicDefinitionsStoreMethod
     const m = this.agents.get(projectId) ?? new Map<string, AgentDefinitionPersisted>();
     m.set(agent.id, agent);
     this.agents.set(projectId, m);
+  }
+
+  async deleteHttpTool(projectId: string, toolId: string): Promise<boolean> {
+    const m = this.httpTools.get(projectId);
+    if (!m) return false;
+    return m.delete(toolId);
+  }
+
+  async deleteSkill(projectId: string, skillId: string): Promise<boolean> {
+    const m = this.skills.get(projectId);
+    if (!m) return false;
+    return m.delete(skillId);
   }
 
   async listHttpTools(projectId: string): Promise<HttpToolConfig[]> {

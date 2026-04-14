@@ -3,22 +3,40 @@
  * Workers run separately (`pnpm start:worker`).
  */
 import { createEngineQueue } from "@opencoreagents/adapters-bullmq";
+import {
+  RedisMemoryAdapter,
+  RedisMessageBus,
+  RedisRunStore,
+} from "@opencoreagents/adapters-redis";
+import { AgentRuntime, type EngineRunJobPayload } from "@opencoreagents/core";
 import { syncProjectDefinitionsToRegistry } from "@opencoreagents/dynamic-definitions";
+import type { PlannerEnqueueOptions } from "@opencoreagents/dynamic-planner";
 import {
   createOptionalRuntimeRestApiKeyMiddleware,
   createRuntimeRestRouter,
 } from "@opencoreagents/rest-api";
 import { QueueEvents } from "bullmq";
 import express from "express";
+import { extendOpenApiWithChat } from "./chatOpenApi.js";
+import { extendOpenApiWithDefinitionsAdmin } from "./definitionsAdminOpenApi.js";
 import { createDefinitionsAdminRouter } from "./definitionsAdminRouter.js";
+import { registerRuntimeFetchRunTool } from "./fetchRunTool.js";
+import { registerRuntimeInvokePlannerTool } from "./invokePlannerTool.js";
+import { ensureDefaultPlannerAgent, registerRuntimeDynamicPlanner } from "./runtimePlanner.js";
+import { buildLlmStackFromConfig } from "./llmResolver.js";
 import { loadStackRuntime } from "./stackSettings.js";
 import { runtimePackageVersion } from "./runtimeVersion.js";
 import {
+  RUNTIME_AGENT_ENGINE_DEFAULTS,
   bootstrapOpenClawSkills,
   createDefinitionsRedisStore,
   definitionsSyncOptions,
   openClawAgentRuntimeSlice,
 } from "./runtimeShared.js";
+import { createChatRouter } from "./chatRouter.js";
+import { createChatSessionStreamRouter } from "./chatSessionStreamRouter.js";
+import { createRunEventsStreamRouter } from "./runEventsStreamRouter.js";
+import { isChatEndpointAvailable } from "./runtimeChat.js";
 
 function resolveRestApiKey(): string | undefined {
   return process.env.REST_API_KEY?.trim();
@@ -57,10 +75,52 @@ async function main(): Promise<void> {
   const { redis, store } = createDefinitionsRedisStore(redisUrl, defKeyPrefix);
   const queueRedis = redis.duplicate();
   const eventsRedis = redis.duplicate();
+  const runStoreRedis = redis.duplicate();
+  const runEventsStreamRedis = config.runEvents.redis ? redis.duplicate() : undefined;
+  const apiMemoryRedis = redis.duplicate();
+  const apiMessageBusRedis = redis.duplicate();
+
+  const runStore = new RedisRunStore(runStoreRedis);
+
+  const { llmAdapter, llmAdaptersByProvider } = buildLlmStackFromConfig(config.llm);
+  const agentRuntimeForRest = new AgentRuntime({
+    llmAdapter,
+    llmAdaptersByProvider,
+    memoryAdapter: new RedisMemoryAdapter(apiMemoryRedis),
+    runStore,
+    messageBus: new RedisMessageBus(apiMessageBusRedis),
+    ...RUNTIME_AGENT_ENGINE_DEFAULTS,
+    ...openClawForRuntime,
+  });
 
   const engine = createEngineQueue(engineQueueName, queueRedis);
   const queueEvents = new QueueEvents(engineQueueName, { connection: eventsRedis });
   await queueEvents.waitUntilReady();
+  const enqueueRun = (payload: Omit<EngineRunJobPayload, "kind">, opts?: PlannerEnqueueOptions) =>
+    engine.addRun(payload, opts);
+
+  await registerRuntimeDynamicPlanner({
+    definitionsStore: store,
+    runStore,
+    enqueueRun,
+    config,
+  });
+
+  await registerRuntimeInvokePlannerTool({
+    definitionsStore: store,
+    config,
+    enqueueRun,
+    defaultPlannerAgentId: config.planner.defaultAgent.id,
+  });
+
+  await registerRuntimeFetchRunTool({ runStore });
+
+  const plannerSeed = await ensureDefaultPlannerAgent({ store, projectId, config });
+  if (plannerSeed.created) {
+    console.log(
+      `[opencoreagents-runtime] seeded default planner agent in Redis: id=${plannerSeed.id} (tune via stack planner.defaultAgent / env — id planner is not mutable via PUT /v1/agents)`,
+    );
+  }
 
   const syncOpts = definitionsSyncOptions();
   async function resyncRegistry(): Promise<void> {
@@ -75,14 +135,25 @@ async function main(): Promise<void> {
     resolveApiKey: () => resolveRestApiKey(),
   });
 
-  app.get("/health", (_req, res) => {
-    res.json({
+  app.get("/health", (req, res) => {
+    const base = {
       ok: true,
       service: "opencoreagents-runtime-api",
       version: runtimePackageVersion,
-      projectId,
-      queue: engineQueueName,
-    });
+    };
+    const details =
+      req.query.details === "1" ||
+      req.query.details === "true" ||
+      (typeof req.query.details === "string" && req.query.details.toLowerCase() === "yes");
+    if (details) {
+      res.json({
+        ...base,
+        projectId,
+        queue: engineQueueName,
+      });
+      return;
+    }
+    res.json(base);
   });
 
   app.use(
@@ -95,6 +166,50 @@ async function main(): Promise<void> {
     }),
   );
 
+  if (isChatEndpointAvailable(config)) {
+    app.use(
+      "/v1",
+      restApiKeyAuth,
+      createChatRouter({
+        store,
+        redis,
+        projectId,
+        definitionsKeyPrefix: defKeyPrefix,
+        engine,
+        queueEvents,
+        runStore,
+        jobWaitTimeoutMs: runWaitTimeoutMs,
+        config,
+        onAfterAgentCreated: resyncRegistry,
+      }),
+    );
+  }
+
+  if (runEventsStreamRedis && isChatEndpointAvailable(config)) {
+    app.use(
+      "/v1",
+      restApiKeyAuth,
+      createChatSessionStreamRouter({
+        redis: runEventsStreamRedis,
+        projectId,
+        definitionsKeyPrefix: defKeyPrefix,
+      }),
+    );
+  }
+
+  if (runEventsStreamRedis) {
+    app.use(
+      "/v1",
+      restApiKeyAuth,
+      createRunEventsStreamRouter({
+        redis: runEventsStreamRedis,
+        runStore,
+        projectId,
+        definitionsKeyPrefix: defKeyPrefix,
+      }),
+    );
+  }
+
   app.use(
     createRuntimeRestRouter({
       dispatch: {
@@ -102,6 +217,8 @@ async function main(): Promise<void> {
         queueEvents,
         jobWaitTimeoutMs: runWaitTimeoutMs,
       },
+      runtime: agentRuntimeForRest,
+      runStore,
       projectId,
       resolveApiKey: () => resolveRestApiKey(),
       swagger: {
@@ -109,7 +226,16 @@ async function main(): Promise<void> {
           title: "OpenCore Agents runtime API",
           version: runtimePackageVersion,
           description:
-            "Agent runs and jobs (plan REST), OpenAPI. Agent, skill, and HTTP tool definitions: /v1 (Redis-backed).",
+            "Agent runs and jobs (plan REST), OpenAPI. Definition CRUD: `/v1/definitions` and `PUT /v1/agents|skills|http-tools/...` (Redis-backed). Chat: `/v1/chat` when enabled in stack.",
+        },
+        extendOpenApi: (spec) => {
+          let s = extendOpenApiWithDefinitionsAdmin(spec);
+          if (isChatEndpointAvailable(config)) {
+            s = extendOpenApiWithChat(s, {
+              includePlannerNotifyStream: Boolean(runEventsStreamRedis),
+            });
+          }
+          return s;
         },
       },
     }),
@@ -127,8 +253,14 @@ async function main(): Promise<void> {
     console.log(
       `[opencoreagents-runtime] listening=http://${listenHost}:${port}${bindNote} version=${runtimePackageVersion} projectId=${projectId} queue=${engineQueueName} config=${configFile} ${authMode}${openclawNote}`,
     );
+    const chatNote = isChatEndpointAvailable(config) ? "  POST /v1/chat" : "";
+    const chatSseNote =
+      runEventsStreamRedis && isChatEndpointAvailable(config)
+        ? "  GET /v1/chat/stream?sessionId= (SSE planner notify)"
+        : "";
+    const sseNote = runEventsStreamRedis ? "  GET /v1/runs/:runId/stream?sessionId= (SSE run events)" : "";
     console.log(
-      `[opencoreagents-runtime] routes: GET /health  GET|POST plan REST + /openapi.json + /docs  /v1/definitions …`,
+      `[opencoreagents-runtime] routes: GET /health (?details=1 for projectId+queue)  GET|POST plan REST + /openapi.json + /docs  /v1/definitions …${chatNote}${chatSseNote}${sseNote}`,
     );
     console.log(`[opencoreagents-runtime] start worker: pnpm start:worker (same RUNTIME_CONFIG / stack file)`);
   });
@@ -141,6 +273,10 @@ async function main(): Promise<void> {
     await engine.queue.close();
     await eventsRedis.quit();
     await queueRedis.quit();
+    await runStoreRedis.quit();
+    await runEventsStreamRedis?.quit();
+    await apiMemoryRedis.quit();
+    await apiMessageBusRedis.quit();
     await redis.quit();
   };
   process.on("SIGINT", () => void close().then(() => process.exit(0)));

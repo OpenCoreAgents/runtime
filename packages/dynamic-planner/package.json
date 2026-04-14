@@ -1,0 +1,35 @@
+{
+  "name": "@opencoreagents/dynamic-planner",
+  "version": "0.1.0",
+  "private": false,
+  "license": "Apache-2.0",
+  "type": "module",
+  "description": "Planner orchestration tools (spawn_agent, wait_for_agents, reflect_and_retry, list_available_tools, list_available_models) for dynamic multi-agent runs.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run --config vitest.config.ts",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src/",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@opencoreagents/core": "workspace:*",
+    "@opencoreagents/dynamic-definitions": "workspace:*"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  }
+}

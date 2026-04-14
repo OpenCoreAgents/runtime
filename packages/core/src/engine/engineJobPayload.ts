@@ -9,6 +9,11 @@ export type EngineRunJobPayload = {
   projectId: string;
   agentId: string;
   sessionId: string;
+  /**
+   * When set, the engine uses this id for the new {@link Run} (queue / Planner correlation).
+   * Must be unique across runs your {@link RunStore} will see.
+   */
+  runId?: string;
   /** When set, forwarded to {@link Session} for B2B2C memory (`longTerm` / `vectorMemory` scoping). */
   endUserId?: string;
   /** Forwarded to {@link Session.sessionContext} (e.g. claims, locale, support email). */
@@ -39,4 +44,27 @@ export type EngineResumeJobPayload = {
   resumeInput: EngineResumeInput;
 };
 
-export type EngineJobPayload = EngineRunJobPayload | EngineResumeJobPayload;
+/**
+ * Append a new user turn to an existing **`completed`** run (same **`runId`**, full **`history`** kept).
+ * Not “chat” in the product sense — a deterministic engine primitive for multi-turn continuity.
+ */
+export type EngineContinueJobPayload = {
+  kind: "continue";
+  projectId: string;
+  agentId: string;
+  sessionId: string;
+  endUserId?: string;
+  sessionContext?: Readonly<Record<string, unknown>>;
+  expiresAtMs?: number;
+  fileReadRoot?: string;
+  allowFileReadOutsideRoot?: boolean;
+  allowHttpFileSources?: boolean;
+  httpFileSourceHostsAllowlist?: string[];
+  runId: string;
+  userInput: string;
+};
+
+export type EngineJobPayload =
+  | EngineRunJobPayload
+  | EngineResumeJobPayload
+  | EngineContinueJobPayload;

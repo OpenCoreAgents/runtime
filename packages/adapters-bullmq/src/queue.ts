@@ -1,5 +1,6 @@
 import { Queue, type ConnectionOptions, type JobsOptions } from "bullmq";
 import type {
+  EngineContinueJobPayload,
   EngineJobPayload,
   EngineResumeJobPayload,
   EngineRunJobPayload,
@@ -13,6 +14,10 @@ export type EngineQueue = {
   ) => ReturnType<Queue<EngineJobPayload>["add"]>;
   addResume: (
     payload: Omit<EngineResumeJobPayload, "kind">,
+    opts?: JobsOptions,
+  ) => ReturnType<Queue<EngineJobPayload>["add"]>;
+  addContinue: (
+    payload: Omit<EngineContinueJobPayload, "kind">,
     opts?: JobsOptions,
   ) => ReturnType<Queue<EngineJobPayload>["add"]>;
 };
@@ -29,5 +34,7 @@ export function createEngineQueue(
     queue,
     addRun: (body, opts) => queue.add("run", { kind: "run", ...body }, opts),
     addResume: (body, opts) => queue.add("resume", { kind: "resume", ...body }, opts),
+    addContinue: (body, opts) =>
+      queue.add("continue", { kind: "continue", ...body }, opts),
   };
 }

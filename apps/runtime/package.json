@@ -21,6 +21,7 @@
     "@opencoreagents/adapters-redis": "workspace:*",
     "@opencoreagents/core": "workspace:*",
     "@opencoreagents/dynamic-definitions": "workspace:*",
+    "@opencoreagents/dynamic-planner": "workspace:*",
     "@opencoreagents/rest-api": "workspace:*",
     "@opencoreagents/skill-loader-openclaw": "workspace:*",
     "bullmq": "^5.73.1",

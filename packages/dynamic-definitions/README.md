@@ -4,7 +4,7 @@ REST-friendly **persistence + registry** for **agents**, **skills**, and **JSON 
 
 ## Concepts
 
-- **`DynamicDefinitionsStoreMethods`** — low-level contract: `save*` / `list*` / `getSnapshot`. Exposed as **`store.methods`** on the facade.
+- **`DynamicDefinitionsStoreMethods`** — low-level contract: `save*` / `deleteHttpTool` / `deleteSkill` / `list*` / `getSnapshot`. Exposed as **`store.methods`** on the facade.
 - **`DynamicDefinitionsStore`** — facade: **`store.methods`** + **`store.Agent`**, **`store.Skill`**, **`store.HttpTool`**, **`store.syncProject`** (equivalent to **`bindDefinitions`** applied to **`store.methods`**).
 - **`InMemoryDynamicDefinitionsStore`** — in-memory facade (tests / demos).
 - **Redis:** **`RedisDynamicDefinitionsStore`** from **`@opencoreagents/adapters-redis`** — same facade shape; **`store.methods`** talks to Redis HASHes.

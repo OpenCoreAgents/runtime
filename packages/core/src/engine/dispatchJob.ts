@@ -13,7 +13,7 @@ function throwIfJobExpired(payload: EngineJobPayload): void {
 }
 
 /**
- * Loads the agent and executes **`run`** or **`resume`** for a validated {@link EngineJobPayload}.
+ * Loads the agent and executes **`run`**, **`resume`**, or **`continue`** for a validated {@link EngineJobPayload}.
  * Prefer **`runtime.dispatch(payload)`** when you already hold an {@link AgentRuntime}.
  *
  * **Dynamic definitions:** when **`runtime.config.dynamicDefinitionsStore`** is set, this helper awaits
@@ -63,7 +63,14 @@ export async function dispatchEngineJob(
   });
   const agent = await Agent.load(payload.agentId, runtime, { session });
   if (payload.kind === "run") {
-    return await agent.run(payload.userInput);
+    const rid = payload.runId;
+    return await agent.run(
+      payload.userInput,
+      rid !== undefined && rid !== "" ? { runId: rid } : undefined,
+    );
+  }
+  if (payload.kind === "continue") {
+    return await agent.continueRun(payload.runId, payload.userInput);
   }
   return await agent.resume(payload.runId, payload.resumeInput);
 }

@@ -26,6 +26,39 @@ function lastWaitStepFromRun(run: Run): Extract<Step, { type: "wait" }> | undefi
   return undefined;
 }
 
+type RunBuilderInit =
+  | string
+  | {
+      userInput: string;
+      runId?: string;
+    }
+  | {
+      runId: string;
+      resumeInput: { type: string; content: string };
+    }
+  | {
+      runId: string;
+      continueUserInput: string;
+    };
+
+function isContinueInit(
+  init: RunBuilderInit,
+): init is { runId: string; continueUserInput: string } {
+  return typeof init !== "string" && "continueUserInput" in init;
+}
+
+function isResumeInit(
+  init: RunBuilderInit,
+): init is { runId: string; resumeInput: { type: string; content: string } } {
+  return typeof init !== "string" && "resumeInput" in init;
+}
+
+function isNewRunWithOptionalId(
+  init: RunBuilderInit,
+): init is { userInput: string; runId?: string } {
+  return typeof init !== "string" && "userInput" in init;
+}
+
 export class RunBuilder implements PromiseLike<Run> {
   private readonly hooks: EngineHooks = {};
   private waitContinuation?: (step: Step) => Promise<string | undefined>;
@@ -34,12 +67,7 @@ export class RunBuilder implements PromiseLike<Run> {
     private readonly runtime: AgentRuntime,
     private readonly agent: AgentDefinitionPersisted,
     private readonly session: Session,
-    private readonly init:
-      | string
-      | {
-          runId: string;
-          resumeInput: { type: string; content: string };
-        },
+    private readonly init: RunBuilderInit,
   ) {}
 
   onThought(cb: (step: Step) => void): this {
@@ -106,19 +134,29 @@ export class RunBuilder implements PromiseLike<Run> {
 
   /**
    * After `executeRun`, persist with compare-and-swap when advancing from a **`waiting`** row
-   * (`Agent.resume` or in-process `onWait` after a prior save that left `waiting`).
+   * (`Agent.resume` or in-process `onWait` after a prior save that left `waiting`), or from **`running`**
+   * after **`Agent.continueRun`** (initial CAS already moved **`completed` → `running`**).
    */
   private async persistAfterExecute(
     store: RunStore,
     result: Run,
-    opts: { resumePath: boolean; lastPersistedWasWaiting: boolean },
+    opts: { resumePath: boolean; lastPersistedWasWaiting: boolean; continuePath: boolean },
   ): Promise<void> {
-    const useCas = opts.resumePath || opts.lastPersistedWasWaiting;
-    if (useCas) {
+    const useResumeCas = opts.resumePath || opts.lastPersistedWasWaiting;
+    if (useResumeCas) {
       const ok = await store.saveIfStatus(result, "waiting");
       if (!ok) {
         throw new RunInvalidStateError(
           `Run ${result.runId} is no longer waiting (concurrent resume or stale job)`,
+        );
+      }
+      return;
+    }
+    if (opts.continuePath) {
+      const ok = await store.saveIfStatus(result, "running");
+      if (!ok) {
+        throw new RunInvalidStateError(
+          `Run ${result.runId} is no longer running (concurrent job or stale state)`,
         );
       }
       return;
@@ -137,6 +175,74 @@ export class RunBuilder implements PromiseLike<Run> {
 
     if (typeof this.init === "string") {
       run = createRun(this.agent.id, this.session.id, this.init, this.session.projectId);
+    } else if (isNewRunWithOptionalId(this.init)) {
+      run = createRun(
+        this.agent.id,
+        this.session.id,
+        this.init.userInput,
+        this.session.projectId,
+        this.init.runId,
+      );
+    } else if (isContinueInit(this.init)) {
+      if (!cfg.runStore) {
+        throw new RunInvalidStateError(
+          "AgentRuntime({ runStore }) is required for continueRun()",
+        );
+      }
+      const loaded = await cfg.runStore.load(this.init.runId);
+      if (!loaded) {
+        throw new RunInvalidStateError(`Run not found: ${this.init.runId}`);
+      }
+      if (loaded.agentId !== this.agent.id) {
+        throw new RunInvalidStateError(
+          `Run ${this.init.runId} belongs to a different agent`,
+        );
+      }
+      if (loaded.status !== "completed") {
+        throw new RunInvalidStateError(
+          `Cannot continue run ${this.init.runId}: status is "${loaded.status}", expected "completed"`,
+        );
+      }
+      if (
+        loaded.sessionId != null &&
+        loaded.sessionId !== this.session.id
+      ) {
+        throw new RunInvalidStateError(
+          `Run ${this.init.runId} belongs to a different session`,
+        );
+      }
+      if (
+        loaded.projectId != null &&
+        loaded.projectId !== this.session.projectId
+      ) {
+        throw new RunInvalidStateError(
+          `Run ${this.init.runId} belongs to a different project`,
+        );
+      }
+      if (loaded.projectId == null) {
+        loaded.projectId = this.session.projectId;
+      }
+      const cont = String(this.init.continueUserInput ?? "").trim();
+      if (!cont) {
+        throw new RunInvalidStateError("continueRun: userInput is required");
+      }
+      run = loaded;
+      run.status = "running";
+      run.state.pending = null;
+      run.state.iteration = 0;
+      run.state.parseAttempts = 0;
+      resumeMessages = [
+        {
+          role: "user",
+          content: `[continue:user] ${cont}`,
+        },
+      ];
+      const ok = await cfg.runStore.saveIfStatus(run, "completed");
+      if (!ok) {
+        throw new RunInvalidStateError(
+          `Run ${this.init.runId} is no longer completed (concurrent continue or stale job)`,
+        );
+      }
     } else {
       if (!cfg.runStore) {
         throw new RunInvalidStateError(
@@ -201,13 +307,14 @@ export class RunBuilder implements PromiseLike<Run> {
 
     if (cfg.runStore) {
       await this.persistAfterExecute(cfg.runStore, result, {
-        resumePath: typeof this.init !== "string",
+        resumePath: isResumeInit(this.init),
         lastPersistedWasWaiting,
+        continuePath: isContinueInit(this.init),
       });
       lastPersistedWasWaiting = result.status === "waiting";
     }
 
-    const isFreshRun = typeof this.init === "string";
+    const isFreshRun = typeof this.init === "string" || isNewRunWithOptionalId(this.init);
     while (
       result.status === "waiting" &&
       isFreshRun &&
@@ -237,6 +344,7 @@ export class RunBuilder implements PromiseLike<Run> {
         await this.persistAfterExecute(cfg.runStore, result, {
           resumePath: false,
           lastPersistedWasWaiting,
+          continuePath: false,
         });
         lastPersistedWasWaiting = result.status === "waiting";
       }

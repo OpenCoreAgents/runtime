@@ -50,6 +50,16 @@ class RedisDefinitionsBackend implements DynamicDefinitionsStoreMethods {
     await this.redis.hset(this.agentsHash(projectId), agent.id, JSON.stringify(agent));
   }
 
+  async deleteHttpTool(projectId: string, toolId: string): Promise<boolean> {
+    const n = await this.redis.hdel(this.httpHash(projectId), toolId);
+    return n > 0;
+  }
+
+  async deleteSkill(projectId: string, skillId: string): Promise<boolean> {
+    const n = await this.redis.hdel(this.skillsHash(projectId), skillId);
+    return n > 0;
+  }
+
   async listHttpTools(projectId: string): Promise<HttpToolConfig[]> {
     const raw = await this.redis.hgetall(this.httpHash(projectId));
     return Object.values(raw).map((json) => JSON.parse(json) as HttpToolConfig);

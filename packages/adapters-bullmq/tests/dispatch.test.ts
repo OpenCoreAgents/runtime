@@ -98,6 +98,49 @@ describe("dispatchEngineJob", () => {
     expect(done.status).toBe("completed");
   });
 
+  it("runs Agent.continueRun for kind continue", async () => {
+    const mem = new InMemoryMemoryAdapter();
+    const store = new InMemoryRunStore();
+    const llm = new QueueLLM([
+      JSON.stringify({ type: "result", content: "once" }),
+      JSON.stringify({ type: "result", content: "twice" }),
+    ]);
+    const rt = new AgentRuntime({
+      llmAdapter: llm,
+      memoryAdapter: mem,
+      runStore: store,
+      maxIterations: 10,
+    });
+
+    await Agent.define({
+      id: "a-cont-dispatch",
+      projectId: "p1",
+      systemPrompt: "Test.",
+      tools: [],
+      llm: { provider: "openai", model: "gpt-4o" },
+    });
+
+    const first = await dispatchEngineJob(rt, {
+      kind: "run",
+      projectId: "p1",
+      agentId: "a-cont-dispatch",
+      sessionId: "s-cont-dispatch",
+      userInput: "hi",
+    });
+    expect(first.status).toBe("completed");
+
+    const second = await dispatchEngineJob(rt, {
+      kind: "continue",
+      projectId: "p1",
+      agentId: "a-cont-dispatch",
+      sessionId: "s-cont-dispatch",
+      runId: first.runId,
+      userInput: "again",
+    });
+    expect(second.status).toBe("completed");
+    expect(second.state.continueInputs).toEqual(["again"]);
+  });
+
   it("forwards optional endUserId for B2B2C memory keys (Redis adapter)", async () => {
     const redis = new Redis();
     const mem = new RedisMemoryAdapter(redis);

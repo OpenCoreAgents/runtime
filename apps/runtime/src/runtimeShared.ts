@@ -5,6 +5,10 @@ import { httpToolSecretsFromEnv } from "./workerSecrets.js";
 import type { OpenClawBootstrapResult } from "./openclawBootstrap.js";
 
 export { bootstrapOpenClawSkills } from "./openclawBootstrap.js";
+export {
+  RUNTIME_INVOKE_PLANNER_TOOL_ID,
+  registerRuntimeInvokePlannerTool,
+} from "./invokePlannerTool.js";
 export type { OpenClawBootstrapResult } from "./openclawBootstrap.js";
 
 /**

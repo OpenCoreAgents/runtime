@@ -53,6 +53,7 @@ export type { RagFileSourceEntry } from "./ragCatalogTypes.js";
 
 export type {
   EngineDeps,
+  EngineHookRunContext,
   EngineHooks,
   LLMResponseMeta,
   LLMParseOutcome,

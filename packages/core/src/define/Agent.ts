@@ -6,11 +6,13 @@ import type { AgentRuntime } from "../runtime/AgentRuntime.js";
 
 export interface AgentInstance {
   id: string;
-  run(input: string): RunBuilder;
+  run(input: string, options?: { runId?: string }): RunBuilder;
   resume(
     runId: string,
     input: { type: string; content: string },
   ): RunBuilder;
+  /** New user turn on a **`completed`** run (same **`runId`**). Requires **`runStore`**. */
+  continueRun(runId: string, userInput: string): RunBuilder;
 }
 
 class AgentInstanceImpl implements AgentInstance {
@@ -24,7 +26,13 @@ class AgentInstanceImpl implements AgentInstance {
     this.id = def.id;
   }
 
-  run(input: string): RunBuilder {
+  run(input: string, options?: { runId?: string }): RunBuilder {
+    if (options?.runId !== undefined && options.runId !== "") {
+      return new RunBuilder(this.runtime, this.def, this.session, {
+        userInput: input,
+        runId: options.runId,
+      });
+    }
     return new RunBuilder(this.runtime, this.def, this.session, input);
   }
 
@@ -33,6 +41,13 @@ class AgentInstanceImpl implements AgentInstance {
     input: { type: string; content: string },
   ): RunBuilder {
     return new RunBuilder(this.runtime, this.def, this.session, { runId, resumeInput: input });
+  }
+
+  continueRun(runId: string, userInput: string): RunBuilder {
+    return new RunBuilder(this.runtime, this.def, this.session, {
+      runId,
+      continueUserInput: userInput,
+    });
   }
 }
 

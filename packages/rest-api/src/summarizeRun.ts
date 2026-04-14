@@ -1,6 +1,15 @@
 import type { Run } from "@opencoreagents/core";
 
-/** Narrow full **`Run`** history for job **`returnvalue`** and HTTP responses. */
+/**
+ * Narrow full **`Run`** history for job **`returnvalue`** and HTTP responses.
+ *
+ * **`reply`** is the **`content`** of the **last** protocol step with **`type: "result"`** in
+ * **`run.history`**. Each completed LLM turn that ends with a `result` step appends one such entry;
+ * **`Agent.continueRun`** keeps the same **`runId`** and appends further steps, so the last `result`
+ * is normally the assistant text for the latest user turn. If you need a stable view after a queued
+ * job finishes, prefer loading the run from **`RunStore`** (authoritative after the worker persists)
+ * before calling this helper.
+ */
 export function summarizeEngineRun(run: Run): {
   status: Run["status"];
   runId: string;

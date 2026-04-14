@@ -83,8 +83,29 @@ export class ContextBuilder {
       }
     }
 
+    /**
+     * `executeRun` only passes `resumeMessages` on the **first** `contextBuilder.build` call. If the
+     * model returns `thought` or `action` before `result`, later iterations would drop the new user
+     * turn. `continueInputs` / `resumeInputs` are populated at execute start from the same prefixes —
+     * replay them here on **every** build so multi-step turns still see the latest user text.
+     */
+    for (const text of run.state.continueInputs ?? []) {
+      if (typeof text === "string" && text.trim()) {
+        messages.push({ role: "user", content: text });
+      }
+    }
+    for (const text of run.state.resumeInputs ?? []) {
+      if (typeof text === "string" && text.trim()) {
+        messages.push({ role: "user", content: text });
+      }
+    }
+
     if (resumeMessages?.length) {
-      for (const r of resumeMessages) messages.push(r);
+      for (const r of resumeMessages) {
+        const c = typeof r.content === "string" ? r.content : "";
+        if (/^\[continue:user\]\s/.test(c) || /^\[resume:/.test(c)) continue;
+        messages.push(r);
+      }
     }
 
     if (recoveryMessages?.length) {

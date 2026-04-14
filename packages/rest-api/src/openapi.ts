@@ -4,7 +4,7 @@
 import { RUNTIME_REST_ENGINE_ERROR_CODES } from "./engineErrorHttp.js";
 
 export interface RuntimeRestOpenApiInput {
-  /** **`POST` run/resume** enqueue to BullMQ when true. */
+  /** **`POST` run / resume / continue** enqueue to BullMQ when true. */
   hasDispatch: boolean;
   /** **`GET /agents/{agentId}/memory`** when **`runtime`** is set on the router (default **false**). */
   hasMemoryRead?: boolean;
@@ -566,6 +566,50 @@ export function buildRuntimeRestOpenApiSpec(input: RuntimeRestOpenApiInput): Rec
     },
   };
 
+  paths["/agents/{agentId}/continue"] = {
+    post: {
+      summary: hasDispatch
+        ? "Continue completed run (enqueue or wait)"
+        : "Continue completed run (inline)",
+      description:
+        "Append a new user turn to a **completed** run (same **runId**). Not a chat product — a primitive for multi-turn continuity. Requires **runStore**.",
+      tags: ["Runs"],
+      parameters: [
+        { name: "agentId", in: "path", required: true, schema: { type: "string" } },
+        ...(hasDispatch
+          ? [
+              {
+                name: "wait",
+                in: "query",
+                required: false,
+                schema: { type: "string", enum: ["1", "true"] },
+              },
+            ]
+          : []),
+        ...tenantParams,
+      ],
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": {
+            schema: {
+              type: "object",
+              required: ["runId", "sessionId", "message"],
+              properties: {
+                runId: { type: "string" },
+                sessionId: { type: "string" },
+                message: { type: "string", description: "Next user message for this run" },
+                ...(multiProject ? { projectId: { type: "string" } } : {}),
+                ...(hasDispatch ? { wait: { type: "boolean" } } : {}),
+              },
+            },
+          },
+        },
+      },
+      responses: resumeResponses,
+    },
+  };
+
   if (hasRunStore) {
     paths["/agents/{agentId}/runs"] = {
       get: {
@@ -780,7 +824,7 @@ export function buildRuntimeRestOpenApiSpec(input: RuntimeRestOpenApiInput): Rec
       ...(hasInterAgentSend
         ? [{ name: "Messaging", description: "MessageBus (requires router `runtime`; 501 without `messageBus`)" }]
         : []),
-      { name: "Runs", description: "Run and resume" },
+      { name: "Runs", description: "Run, resume (after wait), and continue (after completed)" },
       ...(hasDispatch ? [{ name: "Jobs", description: "BullMQ job polling" }] : []),
     ],
     paths,
@@ -850,6 +894,11 @@ export interface RuntimeRestSwaggerOptions {
   uiPath?: string;
   /** Overrides OpenAPI `info` */
   info?: { title?: string; version?: string; description?: string };
+  /**
+   * After the runtime spec is built, merge or replace paths/components/tags (e.g. host-mounted
+   * `/v1/...` definition CRUD) so a single Swagger UI documents the full API surface.
+   */
+  extendOpenApi?: (spec: Record<string, unknown>) => Record<string, unknown>;
 }
 
 export function normalizeRuntimeRestSwaggerPaths(

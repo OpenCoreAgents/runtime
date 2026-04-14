@@ -56,6 +56,9 @@ importers:
       '@opencoreagents/dynamic-definitions':
         specifier: workspace:*
         version: link:../../packages/dynamic-definitions
+      '@opencoreagents/dynamic-planner':
+        specifier: workspace:*
+        version: link:../../packages/dynamic-planner
       '@opencoreagents/rest-api':
         specifier: workspace:*
         version: link:../../packages/rest-api
@@ -386,6 +389,15 @@ importers:
       '@opencoreagents/core':
         specifier: workspace:*
         version: link:../core
+
+  packages/dynamic-planner:
+    dependencies:
+      '@opencoreagents/core':
+        specifier: workspace:*
+        version: link:../core
+      '@opencoreagents/dynamic-definitions':
+        specifier: workspace:*
+        version: link:../dynamic-definitions
 
   packages/rag:
     dependencies:

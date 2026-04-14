@@ -6,9 +6,9 @@
 
 | Mode | Options | Behavior |
 |------|---------|----------|
-| **Inline** (default) | **`runtime`** | **`POST` run/resume** call **`Agent.run` / `resume`** in the HTTP process (same as before). With **`runtime.config.messageBus`**, **`POST /agents/:fromAgentId/send`** calls **`MessageBus.send`** (**`system_send_message`** semantics). |
-| **Queue** | **`dispatch: { engine, queueEvents?, jobWaitTimeoutMs? }`** | **`POST` run/resume** call **`engine.addRun` / `addResume`** — same job payload as **`examples/dynamic-runtime-rest`**. Default **202** + **`jobId`** + **`projectId`** + **`statusUrl`**; **`?wait=1`** or **`"wait": true`** blocks until the worker finishes (**needs `queueEvents`**). **`504`** vs **502** on wait uses **`isBullmqJobWaitTimeoutError`** (BullMQ timeout message shape). |
-| **Both** | **`runtime` + `dispatch`** | **`dispatch`** wins for **`POST` run/resume**; **`runtime`** still used if you omit **`dispatch`** (not typical). |
+| **Inline** (default) | **`runtime`** | **`POST` run / resume / continue** call **`Agent.run` / `resume` / `continueRun`** in the HTTP process. With **`runtime.config.messageBus`**, **`POST /agents/:fromAgentId/send`** calls **`MessageBus.send`** (**`system_send_message`** semantics). |
+| **Queue** | **`dispatch: { engine, queueEvents?, jobWaitTimeoutMs? }`** | **`POST` run / resume / continue** call **`engine.addRun` / `addResume` / `addContinue`** — same job payload family as **`examples/dynamic-runtime-rest`**. Default **202** + **`jobId`** + **`projectId`** + **`statusUrl`**; **`?wait=1`** or **`"wait": true`** blocks until the worker finishes (**needs `queueEvents`**). **`504`** vs **502** on wait uses **`isBullmqJobWaitTimeoutError`** (BullMQ timeout message shape). |
+| **Both** | **`runtime` + `dispatch`** | **`dispatch`** wins for **`POST` run / resume / continue**; **`runtime`** still used if you omit **`dispatch`** (not typical). |
 
 Install **`@opencoreagents/adapters-bullmq`** and **`bullmq`** when using **`dispatch`** (optional **peer** dependencies).
 
@@ -21,6 +21,7 @@ Install **`@opencoreagents/adapters-bullmq`** and **`bullmq`** when using **`dis
 | **POST** | `/agents/:fromAgentId/send` | **When `runtime` is set:** body **`toAgentId`**, **`payload`** (required); optional **`type`** (**`event`** \| **`request`** \| **`reply`**), **`correlationId`** (required for **`request`**/**`reply`**), **`sessionId`**, **`endUserId`** (for **`sendMessageTargetPolicy`** only). **501** if **`AgentRuntime`** has no **`messageBus`**. **403** when policy denies the target. Unregistered without **`runtime`**. |
 | **POST** | `/agents/:agentId/run` | Body: `{ "message": string, "sessionId"?: string, "projectId"?: string, "wait"?: boolean }`. **`wait`**: only with **`dispatch`** (+ **`queueEvents`**). Success JSON includes **`projectId`** (effective tenant). |
 | **POST** | `/agents/:agentId/resume` | Body: `{ runId, sessionId, resumeInput, "projectId"?, "wait"? }`. **Inline** mode needs **`runStore`** on **`AgentRuntime`**. **Queue** mode does not need **`runStore`** on the API process (worker must persist runs). Success JSON includes **`projectId`**. |
+| **POST** | `/agents/:agentId/continue` | Body: `{ runId, sessionId, message, "projectId"?, "wait"? }`. Appends a user turn to a **`completed`** run (**same `runId`**). Same **`runStore`** / **`dispatch`** rules as **`resume`**. |
 | **GET** | `/runs/:runId?sessionId=` | Requires **`runStore`**. **`sessionId`** must match the run when stored. If the run has **`projectId`** (set on new runs in **`@opencoreagents/core`**), the effective tenant must match or the handler returns **403**; the JSON body may include **`projectId`**. In **multi-project** mode, send **`X-Project-Id`** or **`?projectId=`** (same resolution as below). |
 | **GET** | `/runs/:runId/history?sessionId=` | Same auth as **`GET /runs/:runId`** — returns **`Run.history`** (**`ProtocolMessage[]`**) plus **`runId`**, **`agentId`**, **`status`**, optional **`sessionId`** / **`projectId`**. |
 | **GET** | `/agents/:agentId/runs` | Requires **`runStore`**. Optional **`?status=`** (**`running` \| `waiting` \| `completed` \| `failed`**), **`?sessionId=`**, **`?limit=`** (default **50**, max **100**). **`RunStore.listByAgent`** — same **`run.projectId`** vs tenant rule as **`GET /runs`** when **`projectId`** is set on rows. |
@@ -186,7 +187,7 @@ Set **`swagger: true`** (or an object) on **`createRuntimeRestRouter`** to add:
 - **`GET …/openapi.json`** — OpenAPI **3.0** document (paths match this router).
 - **`GET …/docs`** — Swagger UI (loads **Swagger UI** from [unpkg](https://unpkg.com/); allow that CDN in **`Content-Security-Policy`** if you use one).
 
-Defaults: **`openapi.json`** + **`docs`**. Customize with **`swagger: { openApiPath, uiPath, info?: { title, version, description } }`**.
+Defaults: **`openapi.json`** + **`docs`**. Customize with **`swagger: { openApiPath, uiPath, info?: { title, version, description }, extendOpenApi?: (spec) => spec }`** — use **`extendOpenApi`** to merge paths (e.g. host-mounted **`/v1/...`** definition CRUD) into the same document for one Swagger UI.
 
 These routes are registered **before** API-key and tenant middleware, so they do not require **`Authorization`** or **`X-Project-Id`**. Put **`app.use`** in front of the router if you need to protect them. Production notes (CSP, public spec): [`docs/planning/technical-debt-security-production.md`](../../docs/planning/technical-debt-security-production.md#1-security-integrity-and-production-readiness) §1 (*OpenAPI / Swagger UI*).
 

@@ -15,7 +15,7 @@ function getVectorNamespace(ctx: ToolContext): string {
 }
 
 function requireAdapter<T>(ctx: ToolContext, key: string): T {
-  const adapter = (ctx as Record<string, unknown>)[key];
+  const adapter = (ctx as unknown as Record<string, unknown>)[key];
   if (!adapter) {
     throw new Error(
       `${key} is required for vector tools. Pass it via AgentRuntime({ embeddingAdapter, vectorAdapter }).`,

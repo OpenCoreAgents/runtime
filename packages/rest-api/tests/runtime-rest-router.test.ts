@@ -951,6 +951,7 @@ describe("createRuntimeRestRouter", () => {
       queue: { getJob },
       addRun,
       addResume: vi.fn(),
+      addContinue: vi.fn(),
     };
 
     const app = express();
@@ -1000,6 +1001,7 @@ describe("createRuntimeRestRouter", () => {
       queue: { getJob: vi.fn() },
       addRun,
       addResume: vi.fn(),
+      addContinue: vi.fn(),
     };
 
     const app = express();
@@ -1046,6 +1048,7 @@ describe("createRuntimeRestRouter", () => {
       queue: { getJob: vi.fn() },
       addRun,
       addResume: vi.fn(),
+      addContinue: vi.fn(),
     };
 
     const app = express();
@@ -1140,5 +1143,47 @@ describe("createRuntimeRestRouter", () => {
     const docs = await request(app).get("/api/api-docs").expect(200);
     expect(docs.text).toContain("spec.json");
     expect(docs.text).toContain("/api-docs");
+  });
+
+  it("swagger: extendOpenApi merges extra paths", async () => {
+    const runtime = new AgentRuntime({
+      llmAdapter: new TwoStepLlm(),
+      memoryAdapter: new InMemoryMemoryAdapter(),
+      maxIterations: 10,
+    });
+    await Agent.define({
+      id: "a",
+      projectId: "p1",
+      systemPrompt: "x",
+      tools: [],
+      llm: { provider: "openai", model: "gpt-4o-mini" },
+    });
+
+    const app = express();
+    app.use(
+      createRuntimeRestRouter({
+        runtime,
+        projectId: "p1",
+        agentIds: ["a"],
+        swagger: {
+          extendOpenApi: (spec) => ({
+            ...spec,
+            paths: {
+              ...(spec.paths as Record<string, unknown>),
+              "/v1/extra": {
+                get: {
+                  summary: "Host extension",
+                  responses: { "200": { description: "ok" } },
+                },
+              },
+            },
+          }),
+        },
+      }),
+    );
+
+    const spec = await request(app).get("/openapi.json").expect(200);
+    expect(spec.body.paths).toHaveProperty("/agents");
+    expect(spec.body.paths).toHaveProperty("/v1/extra");
   });
 });

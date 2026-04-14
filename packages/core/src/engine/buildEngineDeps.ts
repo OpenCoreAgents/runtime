@@ -13,6 +13,37 @@ import {
 } from "../define/effectiveToolAllowlist.js";
 import { mergeAgentDefinitionWithRuntimeDefaultSkills } from "../define/mergeAgentDefaultSkills.js";
 
+function mergeEngineHooks(a?: EngineHooks, b?: EngineHooks): EngineHooks | undefined {
+  if (!a) return b;
+  if (!b) return a;
+  return {
+    onThought: (s, c) => {
+      a.onThought?.(s, c);
+      b.onThought?.(s, c);
+    },
+    onAction: (s, c) => {
+      a.onAction?.(s, c);
+      b.onAction?.(s, c);
+    },
+    onObservation: (o, c) => {
+      a.onObservation?.(o, c);
+      b.onObservation?.(o, c);
+    },
+    onWait: (s, c) => {
+      a.onWait?.(s, c);
+      b.onWait?.(s, c);
+    },
+    onLLMResponse: (r, m) => {
+      a.onLLMResponse?.(r, m);
+      b.onLLMResponse?.(r, m);
+    },
+    onLLMAfterParse: (r, m, o) => {
+      a.onLLMAfterParse?.(r, m, o);
+      b.onLLMAfterParse?.(r, m, o);
+    },
+  };
+}
+
 /** Derives the engine `SecurityContext` from a loaded agent and session (same as `RunBuilder`). */
 export function securityContextForAgent(
   session: Session,
@@ -75,6 +106,6 @@ export function buildEngineDeps(
       toolTimeoutMs: cfg.toolTimeoutMs,
     },
     signal: opts?.signal,
-    hooks: opts?.hooks,
+    hooks: mergeEngineHooks(cfg.defaultEngineHooks, opts?.hooks),
   };
 }

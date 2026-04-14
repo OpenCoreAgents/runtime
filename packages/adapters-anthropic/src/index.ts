@@ -4,6 +4,12 @@ import { rethrowFetchFailure, throwForAnthropicHttpStatus } from "./errors.js";
 const DEFAULT_MAX_TOKENS = 4096;
 const DEFAULT_ANTHROPIC_VERSION = "2023-06-01";
 
+/**
+ * Padding user turns must contain **non-whitespace** text — Anthropic returns **400** otherwise
+ * (`text content blocks must contain non-whitespace text`).
+ */
+const SYNTHETIC_USER_PADDING = "Continue.";
+
 type AnthropicMessage = { role: "user" | "assistant"; content: string };
 
 function splitSystemAndMessages(
@@ -25,10 +31,10 @@ function splitSystemAndMessages(
 /** Anthropic requires the first message to be from the `user` role. */
 function ensureUserFirst(msgs: AnthropicMessage[]): AnthropicMessage[] {
   if (msgs.length === 0) {
-    return [{ role: "user", content: " " }];
+    return [{ role: "user", content: SYNTHETIC_USER_PADDING }];
   }
   if (msgs[0].role === "assistant") {
-    return [{ role: "user", content: " " }, ...msgs];
+    return [{ role: "user", content: SYNTHETIC_USER_PADDING }, ...msgs];
   }
   return msgs;
 }
@@ -45,6 +51,22 @@ function mergeConsecutiveSameRole(msgs: AnthropicMessage[]): AnthropicMessage[] 
     }
   }
   return out;
+}
+
+/**
+ * Several Claude models return **400** if `messages` ends with **`assistant`** (“does not support
+ * assistant message prefill; conversation must end with a user message”). Our engine history often
+ * ends on the last assistant `result` / `thought` before the next LLM call — append a minimal user
+ * turn so the request is valid.
+ */
+function ensureUserLast(msgs: AnthropicMessage[]): AnthropicMessage[] {
+  if (msgs.length === 0) {
+    return [{ role: "user", content: SYNTHETIC_USER_PADDING }];
+  }
+  if (msgs[msgs.length - 1]!.role === "assistant") {
+    return [...msgs, { role: "user", content: SYNTHETIC_USER_PADDING }];
+  }
+  return msgs;
 }
 
 function mapAnthropicStopReason(raw: unknown): string {
@@ -84,7 +106,7 @@ export class AnthropicLLMAdapter implements LLMAdapter {
 
   async generate(request: LLMRequest): Promise<LLMResponse> {
     const { system, rest } = splitSystemAndMessages(request.messages);
-    const anthropicMessages = mergeConsecutiveSameRole(ensureUserFirst(rest));
+    const anthropicMessages = ensureUserLast(mergeConsecutiveSameRole(ensureUserFirst(rest)));
 
     const body: Record<string, unknown> = {
       model: request.model,

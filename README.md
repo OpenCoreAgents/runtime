@@ -21,7 +21,7 @@ To try the **REST API** contract ([**plan-rest**](docs/planning/plan-rest.md)) a
 1. Install [Docker](https://docs.docker.com/get-docker/) (Desktop or Engine + Compose v2). No pnpm required.
 2. Configure YAML: in **`apps/runtime`**, **`cp config/docker.stack.example.yaml config/docker.stack.yaml`** and edit (see **[`apps/runtime/README.md`](apps/runtime/README.md)**).
 3. From the **repository root**: **`docker compose -f apps/runtime/docker-compose-with-redis.yml up --build`**
-4. Open [http://localhost:3010/health](http://localhost:3010/health) and the OpenAPI UI at `/docs` on the same port.
+4. Open [http://localhost:3010/health](http://localhost:3010/health) (optional [?details=1](http://localhost:3010/health?details=1) for `projectId` and queue) and the OpenAPI UI at `/docs` on the same port.
 
 Full guides (Docker, config, security, cloud): **[`apps/runtime/README.md`](apps/runtime/README.md)** and **[`apps/runtime/docs/`](apps/runtime/docs/README.md)**.
 

@@ -93,6 +93,20 @@ export function resolveToolRegistry(_projectId: string): Map<string, ToolAdapter
   return new Map(toolHandlers);
 }
 
+/**
+ * Removes a **project-scoped** tool definition and its handler (e.g. after deleting an HTTP tool row from the store).
+ * Global tools are untouched.
+ */
+export function unregisterProjectTool(projectId: string, toolId: string): void {
+  projectTools.get(projectId)?.delete(toolId);
+  toolHandlers.delete(toolId);
+}
+
+/** Removes a **project-scoped** skill definition from the in-process registry. */
+export function unregisterProjectSkill(projectId: string, skillId: string): void {
+  projectSkills.get(projectId)?.delete(skillId);
+}
+
 export function clearAllRegistriesForTests(): void {
   globalTools.clear();
   projectTools.clear();

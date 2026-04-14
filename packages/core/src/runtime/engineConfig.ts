@@ -5,6 +5,7 @@ import type { VectorAdapter } from "../adapters/vector/VectorAdapter.js";
 import type { RunStore } from "../adapters/run/RunStore.js";
 import type { MessageBus } from "../bus/MessageBus.js";
 import type { SendMessageTargetPolicy } from "../tools/sendMessagePolicy.js";
+import type { EngineHooks } from "../engine/types.js";
 
 export interface EngineConfig {
   /**
@@ -66,6 +67,12 @@ export interface EngineConfig {
    * for HTTP tools during hydration. Omit or return **`{}`** if you do not use templated secrets.
    */
   dynamicDefinitionsSecrets?: () => Record<string, string>;
+  /**
+   * Merged with per-{@link RunBuilder} hooks (both run). Use for cross-cutting observers
+   * (metrics, Redis pub/sub, tracing). Step hooks receive the same optional run context
+   * (`runId`, `agentId`, `projectId`, `sessionId`) the engine attaches during execution.
+   */
+  defaultEngineHooks?: EngineHooks;
 }
 
 export const engineRuntimeDefaults = {

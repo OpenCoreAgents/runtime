@@ -27,13 +27,37 @@ llm:
   defaultProvider: openai
   openai:
     apiKey: "${OPENAI_API_KEY}"
+    # Empty = api.openai.com. Non-empty = OpenAI-compatible base (applies to all openai agents, including planner sub-agents).
     baseUrl: ""
   anthropic:
     apiKey: "${ANTHROPIC_API_KEY}"
     baseUrl: ""
+
+# Optional — planner: seed Redis agent `planner` on API/worker boot if missing; sub-agent defaults for spawn_agent.
+# planner:
+#   defaultAgent:
+#     enabled: true
+#     id: planner
+#     llm:
+#       provider: auto
+#       model: auto
+#       temperature: 0.2
+#   subAgent:
+#     provider: auto
+#     model: auto
+#     temperature: 0.2
 
 # OpenClaw: default in code is ./skills (relative to stack file); for local.yaml under config/, ../skills is apps/runtime/skills.
 openclaw:
   enabled: true
   skillsDirs:
     - ../skills
+
+# Optional — POST /v1/chat (lazy-seeded `chat` agent) + SSE planner notifications for that chat session.
+# chat:
+#   defaultAgent:
+#     enabled: true
+#     id: chat
+#     llm: { provider: auto, model: auto, temperature: 0.2 }
+# runEvents:
+#   redis: true

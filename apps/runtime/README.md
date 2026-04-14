@@ -1,6 +1,27 @@
 # `@opencoreagents/runtime`
 
-This package is a **reference deployment** of the agent stack: **Express** serves the **plan REST** surface ([`plan-rest`](../../docs/planning/plan-rest.md)) through **`@opencoreagents/rest-api`**, a **BullMQ** worker runs **`dispatch`**, and **`/v1`** reads and writes definitions in **Redis**.
+This package is a **reference deployment** of the agent stack: [**plan REST**](../../docs/planning/plan-rest.md) on **Express**, a **BullMQ** worker for engine jobs, and **Redis** for definitions, the queue, and **`RedisRunStore`**.
+
+## Features
+
+- **Plan REST** — Agent runs, jobs, and related HTTP surface via [`@opencoreagents/rest-api`](../../packages/rest-api/README.md); **OpenAPI** at **`/openapi.json`** and **`/docs`** (Swagger **Authorize** with your API key when enabled).
+- **Worker + BullMQ** — Separate **`pnpm start:worker`** process consumes the same queue as the API; **`dispatch`** and run jobs execute out of band.
+- **Definitions in Redis** — **`/v1`** CRUD for agents, skills, HTTP tools, and project definitions ([`dynamic-definitions`](../../packages/dynamic-definitions/README.md)); mutations resync the in-process registry.
+- **Dynamic planner** — Server and worker register **[`@opencoreagents/dynamic-planner`](../../packages/dynamic-planner/README.md)** tools; optional seed of a default orchestrator agent (**`planner`** by default) with **`DEFAULT_PLANNER_SYSTEM_PROMPT`**.
+- **`invoke_planner`** — Tool to **enqueue a background planner run** from any agent that lists it; returns immediately unless the model later **`wait_for_agents`** on that run.
+- **Chat (stack-gated)** — When enabled in config, **`POST /v1/chat`** for conversational entrypoints; **`POST /agents/:agentId/continue`** with the **same `runId`** for follow-up after **`completed`** (see [Runs, continuous run, planner](./docs/chat-runs-and-planner.md)).
+- **SSE streams (optional)** — With **`runEvents.redis: true`** in the stack, **`GET /v1/runs/:runId/stream?sessionId=`** for live run events (same **`sessionId`** as the run); when chat is also on, **`GET /v1/chat/stream?sessionId=`** for planner-invocation notifications.
+- **Multi-provider LLMs** — **OpenAI** and **Anthropic**, optional **`llm.*.baseUrl`** for compatible gateways; **auto default provider/model** when **`spawn_agent`** omits **`llm`** (see **`.env.example`** and [Configuration](./docs/configuration.md)).
+- **OpenClaw skills (optional)** — Load skills from **`openclaw.skillsDirs`** in the stack file when **`openclaw.enabled`** is on.
+- **Declarative stack config** — One **YAML/JSON** file per environment (**`config/docker.stack.yaml`**, **`config/local.yaml`**, …), env substitution, and CLI helpers **`pnpm config:print`** / **`pnpm config:env`** ([CLI](./docs/cli.md)).
+- **Security defaults** — Optional **`REST_API_KEY`** protects plan REST and **`/v1/*`**; without a key, HTTP listens on **loopback** unless you opt into **`OPENCORE_INSECURE_PUBLIC_HTTP`** ([Security](./docs/security.md)). **`GET /health`** with optional **`?details=1`**.
+- **Docker reference stack** — [**`docker-compose-with-redis.yml`**](./docker-compose-with-redis.yml) runs **Redis**, API, and worker; see [Docker](./docs/docker.md).
+
+Both **server** and **worker** register **[`@opencoreagents/dynamic-planner`](../../packages/dynamic-planner/README.md)** tools and share **`RedisRunStore`** (same Redis server). On startup they **seed a default orchestrator agent** (`id` **`planner`** by default) in Redis **if it does not exist yet**, using **`DEFAULT_PLANNER_SYSTEM_PROMPT`** and the planner tool ids. Disable with **`planner.defaultAgent.enabled: false`** in the stack or **`RUNTIME_PLANNER_DEFAULT_AGENT=0`**. The default **`planner`** and **`chat`** agent ids are **not** overridable via **`PUT /v1/agents/...`** — change LLM and behavior via stack **`planner.defaultAgent`** / **`chat.defaultAgent`** (and related env vars). Other agent ids can still be upserted through **`PUT /v1/agents/:agentId`**.
+
+When **`spawn_agent`** omits an **`llm`**, the runtime **auto-selects** a **default provider** from configured API keys and **`llm.defaultProvider`**, and a **conservative default model** (`gpt-4o-mini` / `claude-sonnet-4-6`). **`llm.*.baseUrl`** (custom OpenAI-compatible or Anthropic endpoint) is **shared** by all agents with that **`provider`** — sub-agents do not store the URL, only **`provider` + `model`**. Use **`planner.subAgent.model`** or **`RUNTIME_PLANNER_SUB_AGENT_MODEL`** when your gateway exposes different model names. Set **`planner.subAgent`** to **`auto`** / omit for automatic provider + default model (see **`.env.example`**).
+
+The runtime also registers **`invoke_planner`**: enqueue a **background** planner run from any agent that lists it in **`tools`**. That call **returns immediately**; the **caller’s run only blocks** if the model then uses **`wait_for_agents`** on the planner’s `runId`. For a conversational front agent that should stay responsive, prefer **fire-and-forget** `invoke_planner` (and optional client polling on **`GET /runs/:runId`**) rather than **`wait_for_agents`** on that agent. For **another user message on the same logical thread** after a run **`completed`**, use **`POST /agents/:agentId/continue`** (**same `runId`**, body **`message`**) — not “chat” in core, but a **continuous run** primitive. **`sessionId`** groups sessions for memory/APIs; see **[Runs, continuous run, planner](./docs/chat-runs-and-planner.md)**.
 
 ## Run with Docker (step by step)
 
@@ -101,7 +122,7 @@ If you use [pnpm](https://pnpm.io/installation), you can run **`pnpm docker:up`*
 
 ### 5. Check that it works
 
-- [http://localhost:3010/health](http://localhost:3010/health)
+- [http://localhost:3010/health](http://localhost:3010/health) — add [`?details=1`](http://localhost:3010/health?details=1) to include `projectId` and queue in the JSON
 - [http://localhost:3010/docs](http://localhost:3010/docs) (OpenAPI UI — use **Authorize** with your **`REST_API_KEY`** for protected routes)
 
 Redis is also on **`localhost:6379`** from your machine if you want to connect with a client.
@@ -131,5 +152,6 @@ If you **change `.env`** later, run **`docker compose … up -d --force-recreate
 | [Host](./docs/host.md) | Processes on your machine without API/worker images |
 | [Cloud](./docs/cloud.md) | Replicas, managed Redis, shared env |
 | [Security](./docs/security.md) | Secrets, `REST_API_KEY`, hardening |
+| [Runs, continue, planner](./docs/chat-runs-and-planner.md) | **`POST …/continue`**, non-blocking `invoke_planner` (chat UI stays outside) |
 
 Full index: **[`docs/README.md`](./docs/README.md)**.

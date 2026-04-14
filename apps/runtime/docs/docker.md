@@ -18,7 +18,7 @@ docker compose -f apps/runtime/docker-compose-with-redis.yml up --build
 
 *Optional:* with pnpm, from **`apps/runtime`**: **`pnpm docker:up`** / **`pnpm docker:down`**.
 
-Then: [http://localhost:3010/health](http://localhost:3010/health) · [http://localhost:3010/docs](http://localhost:3010/docs) (use **Authorize** with **`REST_API_KEY`** where required).
+Then: [http://localhost:3010/health](http://localhost:3010/health) ([`?details=1`](http://localhost:3010/health?details=1) for **`projectId`** + queue) · [http://localhost:3010/docs](http://localhost:3010/docs) (use **Authorize** with **`REST_API_KEY`** where required).
 
 After changing **`.env`**, recreate containers: **`docker compose … up -d --force-recreate`**.
 

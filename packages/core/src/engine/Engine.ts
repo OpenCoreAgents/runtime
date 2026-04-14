@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import type { EngineDeps, EngineHooks } from "./types.js";
+import type { EngineDeps, EngineHookRunContext, EngineHooks } from "./types.js";
 import type { Run } from "../protocol/types.js";
 import type { Step } from "../protocol/types.js";
 import type { ToolContext } from "../adapters/tool/ToolAdapter.js";
@@ -81,6 +81,15 @@ function toolContext(deps: EngineDeps, run: Run): ToolContext {
   return ctx;
 }
 
+function hookRunCtx(deps: EngineDeps, run: Run): EngineHookRunContext {
+  return {
+    runId: run.runId,
+    agentId: deps.agent.id,
+    projectId: run.projectId ?? deps.session.projectId,
+    sessionId: run.sessionId ?? deps.session.id,
+  };
+}
+
 /**
  * Creates a new {@link Run} for {@link executeRun}. Prefer {@link Agent.run} / {@link RunBuilder};
  * with {@link buildEngineDeps} for the static part of {@link EngineDeps} when wiring queue workers or tests.
@@ -90,9 +99,14 @@ export function createRun(
   sessionId: string | undefined,
   userInput: string,
   projectId?: string,
+  /** When set, used instead of a random id (e.g. Planner sub-agent correlation). */
+  explicitRunId?: string,
 ): Run {
   const run: Run = {
-    runId: randomUUID(),
+    runId:
+      typeof explicitRunId === "string" && explicitRunId.trim() !== ""
+        ? explicitRunId.trim()
+        : randomUUID(),
     agentId,
     sessionId,
     status: "running",
@@ -116,6 +130,7 @@ export function createRun(
  * `startedAtMs` and optional `resumeMessages`. Adapters come from {@link AgentRuntime}.
  */
 const RESUME_USER_PREFIX = /^\[resume:[^\]]+\]\s*([\s\S]*)$/;
+const CONTINUE_USER_PREFIX = /^\[continue:user\]\s*([\s\S]*)$/;
 
 function appendResumeInputsFromMessages(
   run: Run,
@@ -132,9 +147,25 @@ function appendResumeInputsFromMessages(
   run.state.resumeInputs = list;
 }
 
+function appendContinueInputsFromMessages(
+  run: Run,
+  msgs: Array<{ role: string; content: string }> | undefined,
+): void {
+  if (!msgs?.length) return;
+  const raw = msgs[0]?.content;
+  if (typeof raw !== "string") return;
+  const m = CONTINUE_USER_PREFIX.exec(raw);
+  if (!m) return;
+  const text = m[1]?.trimEnd() ?? "";
+  const list = run.state.continueInputs ?? [];
+  list.push(text);
+  run.state.continueInputs = list;
+}
+
 export async function executeRun(run: Run, deps: EngineDeps): Promise<Run> {
   run.status = "running";
   appendResumeInputsFromMessages(run, deps.resumeMessages);
+  appendContinueInputsFromMessages(run, deps.resumeMessages);
   const { limits } = deps;
   let firstBuild = true;
 
@@ -181,11 +212,8 @@ export async function executeRun(run: Run, deps: EngineDeps): Promise<Run> {
     });
 
     const hooks = deps.hooks as EngineHooks | undefined;
-    const llmMeta = {
-      agentId: deps.agent.id,
-      runId: run.runId,
-    };
-    hooks?.onLLMResponse?.(llmResponseRaw, llmMeta);
+    const meta = hookRunCtx(deps, run);
+    hooks?.onLLMResponse?.(llmResponseRaw, meta);
 
     const llmResponse = normalizeLlmStepContent(llmResponseRaw);
 
@@ -193,12 +221,12 @@ export async function executeRun(run: Run, deps: EngineDeps): Promise<Run> {
     try {
       step = parseStep(llmResponse.content);
       run.state.parseAttempts = 0;
-      hooks?.onLLMAfterParse?.(llmResponse, llmMeta, "parsed");
+      hooks?.onLLMAfterParse?.(llmResponse, meta, "parsed");
     } catch {
       const pa = (run.state.parseAttempts ?? 0) + 1;
       run.state.parseAttempts = pa;
       if (pa <= limits.maxParseRecovery) {
-        hooks?.onLLMAfterParse?.(llmResponse, llmMeta, "parse_failed_recoverable");
+        hooks?.onLLMAfterParse?.(llmResponse, meta, "parse_failed_recoverable");
         run.state.parseRecovery = [
           {
             role: "assistant",
@@ -212,7 +240,7 @@ export async function executeRun(run: Run, deps: EngineDeps): Promise<Run> {
         ];
         continue;
       }
-      hooks?.onLLMAfterParse?.(llmResponse, llmMeta, "parse_failed_fatal");
+      hooks?.onLLMAfterParse?.(llmResponse, meta, "parse_failed_fatal");
       run.status = "failed";
       throw new StepSchemaError("Exceeded parse recovery attempts");
     }
@@ -220,12 +248,12 @@ export async function executeRun(run: Run, deps: EngineDeps): Promise<Run> {
     switch (step.type) {
       case "thought": {
         appendThought(run, step.content);
-        hooks?.onThought?.(step);
+        hooks?.onThought?.(step, meta);
         break;
       }
       case "action": {
         appendAction(run, step);
-        hooks?.onAction?.(step);
+        hooks?.onAction?.(step, meta);
         let obs: unknown;
         try {
           obs = await deps.toolRunner.execute(
@@ -237,14 +265,14 @@ export async function executeRun(run: Run, deps: EngineDeps): Promise<Run> {
           obs = observationForToolFailure(e);
         }
         appendObservation(run, obs);
-        hooks?.onObservation?.(obs);
+        hooks?.onObservation?.(obs, meta);
         break;
       }
       case "wait": {
         appendWait(run, step);
         run.status = "waiting";
         run.state.pending = { reason: step.reason, details: step.details };
-        hooks?.onWait?.(step);
+        hooks?.onWait?.(step, meta);
         return run;
       }
       case "result": {

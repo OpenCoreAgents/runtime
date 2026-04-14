@@ -39,7 +39,7 @@ For Docker Compose in this repo: **`cp config/docker.stack.example.yaml config/d
 
 | Script | Source | Role |
 |--------|--------|------|
-| `pnpm start:server` | `src/server.ts` | HTTP: `/health`, plan REST, `/v1` → Redis. Same **`createDefinitionsRedisStore`**, OpenClaw bootstrap, and **`definitionsSyncOptions`** as worker (`src/runtimeShared.ts`). |
+| `pnpm start:server` | `src/server.ts` | HTTP: **`GET /health`** (minimal JSON; **`?details=1`** adds **`projectId`** + queue), plan REST, **`/v1` → Redis** definitions admin (**`GET/PUT/DELETE`** on **`/v1/http-tools`**, **`/v1/skills`**, **`PUT`** on **`/v1/agents`**). Same **`createDefinitionsRedisStore`**, OpenClaw bootstrap, and **`definitionsSyncOptions`** as worker (`src/runtimeShared.ts`). |
 | `pnpm start:worker` | `src/worker.ts` | BullMQ consumer; optional **OpenClaw** disk skills → **`defaultSkillIdsGlobal`**; **`loadStackRuntime`** + **`buildLlmStackFromConfig`**. |
 | `pnpm config:*` | `src/cli.ts` | Print config or emit env lines. |
 

@@ -23,6 +23,8 @@ export {
   registerToolDefinition,
   registerToolHandler,
   resolveToolRegistry,
+  unregisterProjectSkill,
+  unregisterProjectTool,
 } from "./define/registry.js";
 
 export type * from "./types.js";
@@ -33,6 +35,7 @@ export { normalizeLlmStepContent } from "./engine/normalizeLlmStepContent.js";
 export { buildEngineDeps, securityContextForAgent } from "./engine/buildEngineDeps.js";
 export { dispatchEngineJob } from "./engine/dispatchJob.js";
 export type {
+  EngineContinueJobPayload,
   EngineJobPayload,
   EngineResumeInput,
   EngineResumeJobPayload,

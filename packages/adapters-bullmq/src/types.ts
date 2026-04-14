@@ -3,6 +3,7 @@
  * without adding a separate core import in app code.
  */
 export type {
+  EngineContinueJobPayload,
   EngineJobPayload,
   EngineResumeInput,
   EngineResumeJobPayload,

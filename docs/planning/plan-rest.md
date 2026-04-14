@@ -4,13 +4,15 @@
 
 Sources: [`brainstorm/07-multi-agent-rest-sessions.md`](../brainstorm/07-multi-agent-rest-sessions.md) §REST, [`core/14-consumers.md`](../core/14-consumers.md) §REST API, gap register [`technical-debt.md`](./technical-debt.md) (hub): [`technical-debt-platform-core-ci.md`](./technical-debt-platform-core-ci.md) §1, [`technical-debt-deferred.md`](./technical-debt-deferred.md) §3 (docs), [`technical-debt-security-production.md`](./technical-debt-security-production.md) §1 (security).
 
+**Chat vs runs:** the engine does **not** implement “chat” as a product surface. Each **`POST …/run`** starts **one** engine run; **`POST …/continue`** adds a user turn to a **`completed`** run (**same `runId`**, full **`history`** for the LLM). Reusing **`sessionId`** groups sessions for memory/APIs but does **not** merge different **`runId`**s into one prompt. Planner **`invoke_planner`** and non-blocking patterns: [`apps/runtime/docs/chat-runs-and-planner.md`](../../apps/runtime/docs/chat-runs-and-planner.md).
+
 ---
 
 ## What this document is (and is not)
 
 | Concept | Meaning |
 |---------|---------|
-| **This file** | **Roadmap** (phases, gaps) **plus** the **URL contract** that [`@opencoreagents/rest-api`](../../packages/rest-api/) implements for **`GET /agents`**, **`GET /agents/:agentId/memory`** and **`POST /agents/:fromAgentId/send`** (with **`runtime`**; send needs **`runtime.config.messageBus`**), **`POST /agents/:agentId/run`**, **`POST /agents/:agentId/resume`**, **`GET /runs/:runId`**, **`GET /runs/:runId/history`**, **`GET /agents/:agentId/runs`** (with **`runStore`**), optional **`GET /jobs/:jobId`**. |
+| **This file** | **Roadmap** (phases, gaps) **plus** the **URL contract** that [`@opencoreagents/rest-api`](../../packages/rest-api/) implements for **`GET /agents`**, **`GET /agents/:agentId/memory`** and **`POST /agents/:fromAgentId/send`** (with **`runtime`**; send needs **`runtime.config.messageBus`**), **`POST /agents/:agentId/run`**, **`POST /agents/:agentId/resume`**, **`POST /agents/:agentId/continue`**, **`GET /runs/:runId`**, **`GET /runs/:runId/history`**, **`GET /agents/:agentId/runs`** (with **`runStore`**), optional **`GET /jobs/:jobId`**. |
 | **Not included** | There is **no** single “product REST server” binary in the repo (no `rest serve` CLI, no rate limits inside `core`). Auth, tenancy policy, and extra routes stay in **your** app or examples. |
 | **What you build** | **`AgentRuntime`** + **`Agent.load` / `run` / `resume`** (or **`dispatch` / `dispatchEngineJob`** on workers). HTTP is optional glue — [`19-cluster-deployment.md`](../core/19-cluster-deployment.md). |
 
@@ -108,6 +110,7 @@ Long-term product surface (from brainstorm **`07`**). **`rest-api`** covers only
 | **GET** | `/agents` | List agent ids for tenant | ✓ |
 | **POST** | `/agents/:id/run` | User message → run (job or inline) | ✓ (`message` body; no **`endUserId`**/**`expiresAtMs`** in HTTP — use queue payload) |
 | **POST** | `/agents/:id/resume` | Resume **`wait`** | ✓ |
+| **POST** | `/agents/:id/continue` | New user turn on **`completed`** run (**same `runId`**) | ✓ (`message` body) |
 | **GET** | `/runs/:runId` | Run snapshot | ✓ ( **`sessionId`** query; **`run.projectId`** vs tenant when set — debt §1) |
 | **GET** | `/runs/:runId/history` | Full **`Run.history`** | ✓ (same **`sessionId`** / tenant rules) |
 | **GET** | `/agents/:id/memory` | Scoped memory read | ✓ (**`MemoryAdapter.query`**; needs router **`runtime`**) |

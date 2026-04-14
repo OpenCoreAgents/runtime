@@ -30,7 +30,8 @@ function envTrim(key: string): string | undefined {
  * Derive listen port, Redis URL, queue name, etc. **Primary source:** merged `config` from
  * {@link loadRuntimeConfig}. **Overrides:** when these env vars are set and non-empty, they replace
  * the YAML value: `PORT`, `PROJECT_ID`, `REDIS_URL`, `DEF_KEY_PREFIX`, `ENGINE_QUEUE_NAME`,
- * `RUN_WAIT_TIMEOUT_MS` (or legacy `RUN_SYNC_TIMEOUT_MS`).
+ * `RUN_WAIT_TIMEOUT_MS` (or legacy `RUN_SYNC_TIMEOUT_MS`). Run-event SSE uses stack **`runEvents.redis`**
+ * or **`RUNTIME_RUN_EVENTS_REDIS`** (merged in **`defaults.ts`** **`mergeWithDefaults`**).
  */
 export function resolveStackWireSettings(config: ResolvedRuntimeStackConfig): StackWireSettings {
   const port = parsePortEnv() ?? config.server.port;
