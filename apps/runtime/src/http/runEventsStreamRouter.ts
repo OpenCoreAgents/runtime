@@ -1,7 +1,7 @@
 import type { RunStore } from "@opencoreagents/core";
 import type Redis from "ioredis";
 import express, { type Request, type Response, type Router } from "express";
-import { runEventsRedisChannel } from "./runEventRedis.js";
+import { runEventsRedisChannel } from "../redis/runEventRedis.js";
 
 /**
  * SSE fan-out for Redis run events (`createRedisRunEventHooks` in **`runEventRedis.ts`**). Same session / project

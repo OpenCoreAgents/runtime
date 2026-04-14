@@ -9,11 +9,11 @@ import {
 import type { QueueEvents } from "bullmq";
 import type Redis from "ioredis";
 import express, { type Request, type Response, type Router } from "express";
-import type { ResolvedRuntimeStackConfig } from "./types.js";
+import type { ResolvedRuntimeStackConfig } from "../config/types.js";
 import {
   ensureDefaultChatAgentOnFirstChat,
   isChatEndpointAvailable,
-} from "./runtimeChat.js";
+} from "../runtime/runtimeChat.js";
 import { chatBindingRedisKey } from "./chatSessionStreamRouter.js";
 
 function errorMessage(e: unknown): string {

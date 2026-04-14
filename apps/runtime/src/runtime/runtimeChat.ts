@@ -1,6 +1,6 @@
 import type { DynamicDefinitionsStore } from "@opencoreagents/dynamic-definitions";
 import type { AgentDefinitionPersisted } from "@opencoreagents/core";
-import type { LlmDriverKind, ResolvedRuntimeStackConfig } from "./types.js";
+import type { LlmDriverKind, ResolvedRuntimeStackConfig } from "../config/types.js";
 import { resolvePlannerSubAgentProvider } from "./runtimePlanner.js";
 import { RUNTIME_FETCH_RUN_TOOL_ID } from "./fetchRunTool.js";
 import { RUNTIME_INVOKE_PLANNER_TOOL_ID } from "./invokePlannerTool.js";

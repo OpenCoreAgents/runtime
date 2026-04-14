@@ -60,6 +60,7 @@ The **API** exposes **`GET /v1/runs/:runId/stream?sessionId=`** (Server-Sent Eve
 
 ## See also
 
+- [`../tests/chatRouter.doc-behavior.test.ts`](../tests/chatRouter.doc-behavior.test.ts) — Vitest coverage for **`POST /v1/chat`** binding, **`addRun`** / **`addContinue`**, and **409** cases (aligned with this page).
 - [`../../../docs/planning/plan-rest.md`](../../../docs/planning/plan-rest.md) — Plan REST contract.
 - [`../../../docs/core/15-multi-tenancy.md`](../../../docs/core/15-multi-tenancy.md) — Session and memory.
 - [`../../../packages/dynamic-planner/README.md`](../../../packages/dynamic-planner/README.md) — Planner tools.

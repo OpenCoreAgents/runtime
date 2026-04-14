@@ -16,20 +16,20 @@ import {
   type EngineRunJobPayload,
 } from "@opencoreagents/core";
 import type { PlannerEnqueueOptions } from "@opencoreagents/dynamic-planner";
-import { buildLlmStackFromConfig } from "./llmResolver.js";
-import { redactRedisUrlForLog } from "./redactForLog.js";
-import { registerRuntimeFetchRunTool } from "./fetchRunTool.js";
-import { registerRuntimeInvokePlannerTool } from "./invokePlannerTool.js";
-import { ensureDefaultPlannerAgent, registerRuntimeDynamicPlanner } from "./runtimePlanner.js";
-import { runtimePackageVersion } from "./runtimeVersion.js";
-import { loadStackRuntime } from "./stackSettings.js";
+import { loadStackRuntime } from "./config/stackSettings.js";
+import { buildLlmStackFromConfig } from "./runtime/llmResolver.js";
+import { registerRuntimeFetchRunTool } from "./runtime/fetchRunTool.js";
+import { registerRuntimeInvokePlannerTool } from "./runtime/invokePlannerTool.js";
+import { ensureDefaultPlannerAgent, registerRuntimeDynamicPlanner } from "./runtime/runtimePlanner.js";
+import { runtimePackageVersion } from "./runtime/runtimeVersion.js";
 import {
   RUNTIME_AGENT_ENGINE_DEFAULTS,
   bootstrapOpenClawSkills,
   createDefinitionsRedisStore,
   definitionsSyncOptions,
   openClawAgentRuntimeSlice,
-} from "./runtimeShared.js";
+} from "./runtime/runtimeShared.js";
+import { redactRedisUrlForLog } from "./util/redactForLog.js";
 import type { Job } from "bullmq";
 import {
   createRedisRunEventHooks,
@@ -37,7 +37,7 @@ import {
   publishRedisChatSessionNotify,
   publishRedisRunDispatchDone,
   publishRedisRunDispatchError,
-} from "./runEventRedis.js";
+} from "./redis/runEventRedis.js";
 
 function hookCtxFromJobPayload(p: EngineJobPayload): EngineHookRunContext | null {
   if (p.kind === "run") {

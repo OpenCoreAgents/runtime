@@ -1,7 +1,7 @@
 import type Redis from "ioredis";
 import { RedisDynamicDefinitionsStore } from "@opencoreagents/adapters-redis";
-import { createRedis } from "./redisClient.js";
-import { httpToolSecretsFromEnv } from "./workerSecrets.js";
+import { httpToolSecretsFromEnv } from "../config/workerSecrets.js";
+import { createRedis } from "../redis/redisClient.js";
 import type { OpenClawBootstrapResult } from "./openclawBootstrap.js";
 
 export { bootstrapOpenClawSkills } from "./openclawBootstrap.js";

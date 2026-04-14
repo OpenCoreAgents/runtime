@@ -11,6 +11,7 @@
     "config:env": "tsx src/cli.ts env",
     "docker:up": "docker compose -f docker-compose-with-redis.yml up --build",
     "docker:down": "docker compose -f docker-compose-with-redis.yml down",
+    "test": "vitest run --config vitest.config.ts",
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
@@ -32,7 +33,10 @@
   "devDependencies": {
     "@types/express": "^5.0.0",
     "@types/js-yaml": "^4.0.9",
+    "@types/supertest": "^6.0.2",
+    "supertest": "^7.0.0",
     "tsx": "^4.19.3",
-    "typescript": "^5.7.3"
+    "typescript": "^5.7.3",
+    "vitest": "^3.2.4"
   }
 }

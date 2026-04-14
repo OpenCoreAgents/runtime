@@ -4,7 +4,7 @@ This package is a **reference deployment** of the agent stack: [**plan REST**](.
 
 ## Features
 
-- **Plan REST** — Agent runs, jobs, and related HTTP surface via [`@opencoreagents/rest-api`](../../packages/rest-api/README.md); **OpenAPI** at **`/openapi.json`** and **`/docs`** (Swagger **Authorize** with your API key when enabled).
+- **API REST** — Agent runs, jobs, and related HTTP surface via [`@opencoreagents/rest-api`](../../packages/rest-api/README.md); **OpenAPI** at **`/openapi.json`** and **`/docs`** (Swagger **Authorize** with your API key when enabled).
 - **Worker + BullMQ** — Separate **`pnpm start:worker`** process consumes the same queue as the API; **`dispatch`** and run jobs execute out of band.
 - **Definitions in Redis** — **`/v1`** CRUD for agents, skills, HTTP tools, and project definitions ([`dynamic-definitions`](../../packages/dynamic-definitions/README.md)); mutations resync the in-process registry.
 - **Dynamic planner** — Server and worker register **[`@opencoreagents/dynamic-planner`](../../packages/dynamic-planner/README.md)** tools; optional seed of a default orchestrator agent (**`planner`** by default) with **`DEFAULT_PLANNER_SYSTEM_PROMPT`**.

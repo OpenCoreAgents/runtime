@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { configToProcessEnv, loadRuntimeConfig } from "./loadRuntimeConfig.js";
+import { configToProcessEnv, loadRuntimeConfig } from "./config/loadRuntimeConfig.js";
 
 const [, , cmd, ...rest] = process.argv;
 const configArg = rest.find((a) => !a.startsWith("-"));

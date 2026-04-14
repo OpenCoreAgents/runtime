@@ -1,6 +1,6 @@
 import type Redis from "ioredis";
 import express, { type Request, type Response, type Router } from "express";
-import { chatNotifyRedisChannel } from "./runEventRedis.js";
+import { chatNotifyRedisChannel } from "../redis/runEventRedis.js";
 
 export function chatBindingRedisKey(
   definitionsKeyPrefix: string,

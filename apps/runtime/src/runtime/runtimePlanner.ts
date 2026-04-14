@@ -5,7 +5,7 @@ import {
   type PlannerEnqueueRun,
 } from "@opencoreagents/dynamic-planner";
 import type { AgentDefinitionPersisted, RunStore } from "@opencoreagents/core";
-import type { LlmDriverKind, ResolvedLlmStackConfig, ResolvedRuntimeStackConfig } from "./types.js";
+import type { LlmDriverKind, ResolvedLlmStackConfig, ResolvedRuntimeStackConfig } from "../config/types.js";
 
 /**
  * When `spawn_agent` does not pass `llm`, these ids are used. Kept **conservative** so they work on

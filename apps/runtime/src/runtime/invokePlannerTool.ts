@@ -3,7 +3,7 @@ import type { DynamicDefinitionsStore } from "@opencoreagents/dynamic-definition
 import { Tool, type EngineRunJobPayload } from "@opencoreagents/core";
 import type { PlannerEnqueueOptions, PlannerEnqueueRun } from "@opencoreagents/dynamic-planner";
 import { ensurePlannerAgentExistsForInvoke } from "./runtimePlanner.js";
-import type { ResolvedRuntimeStackConfig } from "./types.js";
+import type { ResolvedRuntimeStackConfig } from "../config/types.js";
 
 function asRecord(input: unknown): Record<string, unknown> {
   return input != null && typeof input === "object" && !Array.isArray(input)

@@ -1,7 +1,7 @@
 import { AnthropicLLMAdapter } from "@opencoreagents/adapters-anthropic";
 import { OpenAILLMAdapter } from "@opencoreagents/adapters-openai";
 import type { LLMAdapter } from "@opencoreagents/core";
-import type { ResolvedLlmStackConfig } from "./types.js";
+import type { ResolvedLlmStackConfig } from "../config/types.js";
 
 /**
  * Build {@link AgentRuntime} LLM wiring from merged stack config (YAML / JSON).

@@ -17,26 +17,26 @@ import {
 } from "@opencoreagents/rest-api";
 import { QueueEvents } from "bullmq";
 import express from "express";
-import { extendOpenApiWithChat } from "./chatOpenApi.js";
-import { extendOpenApiWithDefinitionsAdmin } from "./definitionsAdminOpenApi.js";
-import { createDefinitionsAdminRouter } from "./definitionsAdminRouter.js";
-import { registerRuntimeFetchRunTool } from "./fetchRunTool.js";
-import { registerRuntimeInvokePlannerTool } from "./invokePlannerTool.js";
-import { ensureDefaultPlannerAgent, registerRuntimeDynamicPlanner } from "./runtimePlanner.js";
-import { buildLlmStackFromConfig } from "./llmResolver.js";
-import { loadStackRuntime } from "./stackSettings.js";
-import { runtimePackageVersion } from "./runtimeVersion.js";
+import { loadStackRuntime } from "./config/stackSettings.js";
+import { extendOpenApiWithChat } from "./http/chatOpenApi.js";
+import { extendOpenApiWithDefinitionsAdmin } from "./http/definitionsAdminOpenApi.js";
+import { createDefinitionsAdminRouter } from "./http/definitionsAdminRouter.js";
+import { createChatRouter } from "./http/chatRouter.js";
+import { createChatSessionStreamRouter } from "./http/chatSessionStreamRouter.js";
+import { createRunEventsStreamRouter } from "./http/runEventsStreamRouter.js";
+import { buildLlmStackFromConfig } from "./runtime/llmResolver.js";
+import { registerRuntimeFetchRunTool } from "./runtime/fetchRunTool.js";
+import { registerRuntimeInvokePlannerTool } from "./runtime/invokePlannerTool.js";
+import { ensureDefaultPlannerAgent, registerRuntimeDynamicPlanner } from "./runtime/runtimePlanner.js";
+import { runtimePackageVersion } from "./runtime/runtimeVersion.js";
 import {
   RUNTIME_AGENT_ENGINE_DEFAULTS,
   bootstrapOpenClawSkills,
   createDefinitionsRedisStore,
   definitionsSyncOptions,
   openClawAgentRuntimeSlice,
-} from "./runtimeShared.js";
-import { createChatRouter } from "./chatRouter.js";
-import { createChatSessionStreamRouter } from "./chatSessionStreamRouter.js";
-import { createRunEventsStreamRouter } from "./runEventsStreamRouter.js";
-import { isChatEndpointAvailable } from "./runtimeChat.js";
+} from "./runtime/runtimeShared.js";
+import { isChatEndpointAvailable } from "./runtime/runtimeChat.js";
 
 function resolveRestApiKey(): string | undefined {
   return process.env.REST_API_KEY?.trim();
