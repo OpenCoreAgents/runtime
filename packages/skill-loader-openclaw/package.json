@@ -1,9 +1,10 @@
 {
-  "name": "@opencoreagents/cli",
+  "name": "@opencoreagents/skill-loader-openclaw",
   "version": "0.1.0",
   "private": false,
   "license": "Apache-2.0",
   "type": "module",
+  "description": "Load OpenClaw / AgentSkills-compatible SKILL.md packs into @opencoreagents/core Skill.define",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
@@ -16,20 +17,21 @@
   "files": [
     "dist"
   ],
-  "bin": {
-    "runtime": "./dist/bin.js"
-  },
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
-    "test": "vitest run",
+    "test": "vitest run --config vitest.config.ts",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src/",
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@opencoreagents/scaffold": "workspace:*",
-    "@opencoreagents/skill-loader-openclaw": "workspace:*"
+    "@opencoreagents/core": "workspace:*",
+    "fflate": "^0.8.2",
+    "js-yaml": "^4.1.0"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.9"
   },
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"

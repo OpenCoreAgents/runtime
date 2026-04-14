@@ -17,6 +17,7 @@ export {
 } from "./define/effectiveToolAllowlist.js";
 export {
   getAgentDefinition,
+  getSkillDefinition,
   getToolDefinition,
   listAgentIdsForProject,
   registerToolDefinition,

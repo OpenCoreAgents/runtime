@@ -1,5 +1,10 @@
 import path from "node:path";
+import readline from "node:readline/promises";
 import { scaffold } from "@opencoreagents/scaffold";
+import {
+  installClawhubSkill,
+  ClawhubInstallError,
+} from "@opencoreagents/skill-loader-openclaw";
 import type {
   InitProjectOptions,
   ScaffoldAdapterPreset,
@@ -15,12 +20,14 @@ Usage:
   runtime generate agent <id> [options]
   runtime generate tool <id> [options]
   runtime generate skill <id> [options]
+  runtime skills install <slug> [options]
 
 Commands:
   init              Create a new project directory with template files.
   generate agent    Add an agent definition (and optional test) under ./agents.
   generate tool     Add a tool definition + handler stub under ./tools.
   generate skill    Add a skill definition under ./skills.
+  skills install    Download a ClawHub skill (SKILL.md bundle) into ./skills — no OpenClaw app required.
 
 Init options:
   --template <default|minimal|multi-agent>   (default: default)
@@ -43,6 +50,14 @@ Generate agent:
 
 Generate skill:
   --tools <a,b>     Comma-separated tool ids (default: [])
+
+Skills install options:
+  --cwd <dir>       Project root (default: current working directory)
+  --skills-dir <d>  Folder under cwd for skill folders (default: skills)
+  --registry <url>  ClawHub API origin (default: https://clawhub.ai or CLAWHUB_REGISTRY)
+  --version <ver>   Semver to install (default: latest from registry)
+  --force           Overwrite existing folder; also allows “suspicious” skills without prompting
+  --token <t>       Bearer token (optional; or CLAWHUB_TOKEN for private skills)
 `);
 }
 
@@ -225,6 +240,97 @@ async function runGenerateTool(
   return 0;
 }
 
+async function runSkillsInstall(
+  cwd: string,
+  positionals: string[],
+  flags: RawFlags,
+): Promise<number> {
+  const slug = positionals[0]?.trim();
+  if (!slug) {
+    console.error(
+      "skills install: missing <slug>. Example: runtime skills install summarize",
+    );
+    return 1;
+  }
+  const root = resolveProjectRoot(cwd, flags);
+  if (!root.ok) {
+    console.error(root.message);
+    return 1;
+  }
+
+  const skillsDirRel =
+    typeof flags["skills-dir"] === "string" && flags["skills-dir"].trim()
+      ? flags["skills-dir"].trim()
+      : "skills";
+  const skillsDir = path.resolve(root.path, skillsDirRel);
+
+  const registry =
+    typeof flags.registry === "string" && flags.registry.trim()
+      ? flags.registry.trim()
+      : undefined;
+  const version =
+    typeof flags.version === "string" && flags.version.trim()
+      ? flags.version.trim()
+      : undefined;
+  const force = flags.force === true;
+  const token =
+    typeof flags.token === "string" && flags.token.trim()
+      ? flags.token.trim()
+      : undefined;
+
+  const tryInstall = (allowSuspicious: boolean) =>
+    installClawhubSkill({
+      slug,
+      skillsDir,
+      registry,
+      version,
+      force,
+      token,
+      allowSuspicious: allowSuspicious || force,
+    });
+
+  try {
+    const r = await tryInstall(false);
+    console.log(`OK: ${r.slug}@${r.version} -> ${r.installedPath}`);
+    return 0;
+  } catch (e) {
+    if (
+      e instanceof ClawhubInstallError &&
+      e.code === "SUSPICIOUS_REQUIRES_FORCE" &&
+      process.stdin.isTTY &&
+      process.stdout.isTTY &&
+      !force
+    ) {
+      const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+      try {
+        const ans = (
+          await rl.question(
+            "This skill is flagged suspicious on ClawHub. Install anyway? [y/N] ",
+          )
+        )
+          .trim()
+          .toLowerCase();
+        if (ans !== "y" && ans !== "yes") {
+          console.error("Installation cancelled.");
+          return 1;
+        }
+      } finally {
+        rl.close();
+      }
+      try {
+        const r = await tryInstall(true);
+        console.log(`OK: ${r.slug}@${r.version} -> ${r.installedPath}`);
+        return 0;
+      } catch (e2) {
+        console.error(e2 instanceof Error ? e2.message : e2);
+        return 1;
+      }
+    }
+    console.error(e instanceof Error ? e.message : e);
+    return 1;
+  }
+}
+
 async function runGenerateSkill(
   cwd: string,
   positionals: string[],
@@ -266,6 +372,10 @@ export async function runCli(argv: string[]): Promise<number> {
 
   if (positionals[0] === "init") {
     return runInit(cwd, positionals.slice(1), flags);
+  }
+
+  if (positionals[0] === "skills" && positionals[1] === "install") {
+    return runSkillsInstall(cwd, positionals.slice(2), flags);
   }
 
   if (positionals[0] === "generate") {

@@ -1,0 +1,19 @@
+{
+  "name": "@opencoreagents/example-load-openclaw-skills",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Load OpenClaw / AgentSkills-style SKILL.md packs via @opencoreagents/skill-loader-openclaw (mock LLM + exec tool; no API keys).",
+  "scripts": {
+    "start": "tsx src/main.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@opencoreagents/core": "workspace:*",
+    "@opencoreagents/skill-loader-openclaw": "workspace:*"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.3",
+    "typescript": "^5.7.3"
+  }
+}

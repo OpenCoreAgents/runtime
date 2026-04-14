@@ -1,6 +1,6 @@
 # Examples
 
-**Ten** runnable sample programs under **`examples/*`**, each a **`pnpm` workspace** package (see root [`pnpm-workspace.yaml`](../pnpm-workspace.yaml)). From the repository root: `pnpm install`, build the workspace packages each example depends on, then `pnpm --filter <package> start` (or the script named in that example’s subsection) or `cd examples/<dir> && pnpm …`.
+**Eleven** runnable sample programs under **`examples/*`**, each a **`pnpm` workspace** package (see root [`pnpm-workspace.yaml`](../pnpm-workspace.yaml)). From the repository root: `pnpm install`, build the workspace packages each example depends on, then `pnpm --filter <package> start` (or the script named in that example’s subsection) or `cd examples/<dir> && pnpm …`.
 
 The tutorial index also points here: [Getting started — further reading](../docs/getting-started.md). **Plan-shaped** HTTP routes (`createRuntimeRestRouter`): [`plan-rest.md`](../docs/planning/plan-rest.md) and [`packages/rest-api/README.md`](../packages/rest-api/README.md).
 
@@ -17,6 +17,7 @@ For production or any shared runtime, swap to **`RedisMemoryAdapter`** (`@openco
 | If you want to… | Start here |
 |-----------------|------------|
 | See the **smallest** **`Agent.run()`** loop with a **mock LLM**, no network or keys | [`minimal-run/`](./minimal-run/) |
+| Load **OpenClaw / AgentSkills** **`SKILL.md`** packs with **`@opencoreagents/skill-loader-openclaw`**, **`exec`**, scripted **`node`** demo (no API keys) | [`load-openclaw-skills/`](./load-openclaw-skills/) |
 | Use **OpenAI** with **tools + skills** and **`Tool.define`** in a real provider setup | [`openai-tools-skill/`](./openai-tools-skill/) (needs **`OPENAI_API_KEY`**) |
 | Learn **`wait`** and **continue in the same process** via **`RunBuilder.onWait`** (e.g. CLI) | [`console-wait/`](./console-wait/) |
 | Learn **RAG only**: **catalog**, **`system_ingest_rag_source`**, **`system_vector_search`**, demo embeddings | [`rag/`](./rag/) |
@@ -41,6 +42,7 @@ For production or any shared runtime, swap to **`RedisMemoryAdapter`** (`@openco
 | Package | Directory | Summary |
 |---------|-----------|---------|
 | `@opencoreagents/example-minimal-run` | [`minimal-run/`](./minimal-run/) | **`Agent.run()`** end-to-end with a **deterministic mock LLM** and **`InMemoryMemoryAdapter`**. No network, no API keys. |
+| `@opencoreagents/example-load-openclaw-skills` | [`load-openclaw-skills/`](./load-openclaw-skills/) | **`loadOpenClawSkills`** + **`registerOpenClawExecTool`**; sample **`skills/*/SKILL.md`** (one gated skip); mock LLM runs **`exec`** (`node -p 42`). No API keys. |
 | `@opencoreagents/example-openai-tools-skill` | [`openai-tools-skill/`](./openai-tools-skill/) | **`OpenAILLMAdapter`** (engine maps native `tool_calls` when `content` is empty), custom **`Tool.define`** (`roll_dice`), **`Skill.define`**, **`Agent.define`**. Requires **`OPENAI_API_KEY`**. |
 | `@opencoreagents/example-console-wait` | [`console-wait/`](./console-wait/) | Interactive **terminal**: mock LLM emits **`wait`**, **`RunBuilder.onWait`** reads stdin (`readline`), then continues in-process. No API keys. |
 | `@opencoreagents/example-rag` | [`rag/`](./rag/) | **`registerRagCatalog(runtime, …)`** (per project) + **`system_ingest_rag_source`** / **`system_vector_search`**; in-memory vector + hash embeddings (no API keys); optional OpenAI script. |
@@ -60,6 +62,16 @@ For production or any shared runtime, swap to **`RedisMemoryAdapter`** (`@openco
 | **Build first** | `pnpm turbo run build --filter=@opencoreagents/core` |
 | **Run** | `pnpm --filter @opencoreagents/example-minimal-run start` |
 | **Docs** | [minimal-run/README.md](./minimal-run/README.md) |
+
+### `load-openclaw-skills` — `@opencoreagents/example-load-openclaw-skills`
+
+| | |
+|--|--|
+| **Workspace deps** | `@opencoreagents/core`, `@opencoreagents/skill-loader-openclaw` |
+| **Scripts** | `pnpm start` → `tsx src/main.ts`; `pnpm typecheck` |
+| **Build first** | `pnpm turbo run build --filter=@opencoreagents/core --filter=@opencoreagents/skill-loader-openclaw` |
+| **Run** | `pnpm --filter @opencoreagents/example-load-openclaw-skills start` |
+| **Docs** | [load-openclaw-skills/README.md](./load-openclaw-skills/README.md) |
 
 ### `openai-tools-skill` — `@opencoreagents/example-openai-tools-skill`
 

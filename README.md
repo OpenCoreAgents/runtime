@@ -58,7 +58,7 @@ There is also an optional path where **prompts and tool configs live in Redis** 
 
 Stateful **engine**: protocol loop, pluggable adapters (LLM, memory, vector, queues), RAG and multi-agent helpers, CLI/scaffold.
 
-Fifteen **`@opencoreagents/*`** packages in **`packages/`** (see [Packages](#packages) below). Registry releases, when used, are **maintainer-only**: [GitHub Packages](#github-packages).
+Sixteen **`@opencoreagents/*`** packages in **`packages/`** (see [Packages](#packages) below). Registry releases, when used, are **maintainer-only**: [GitHub Packages](#github-packages).
 
 ---
 
@@ -259,15 +259,22 @@ Your **HTTP control plane** (Express or any framework) typically **writes defini
 |---------|------|
 | [`@opencoreagents/code-skills`](packages/code-skills/README.md) | **`SKILL.md`** skill trees under `packages/code-skills/skills/<id>/` (after `pnpm build --filter=@opencoreagents/code-skills`, or `dist/skills/<id>/` when published) — workspace map, engine, REST/workers, RAG. **Not** runtime `Skill.define`; see [Coding assistant skill packs](#coding-assistant-skill-packs). |
 
+### OpenClaw-compatible skills (runtime)
+
+| Package | Role |
+|---------|------|
+| [`@opencoreagents/skill-loader-openclaw`](packages/skill-loader-openclaw/) | **OpenClaw / AgentSkills**-style **`SKILL.md`** on disk: **`loadOpenClawSkills`**, load-time gates, optional **`registerOpenClawExecTool`**, ClawHub HTTP install. **Runnable demo:** [`examples/load-openclaw-skills`](examples/load-openclaw-skills/) ([`README.md`](examples/load-openclaw-skills/README.md), [`add-skills.md`](examples/load-openclaw-skills/add-skills.md)). |
+
 ---
 
 ## Examples
 
-**Index (all 10 samples, scripts, backlog):** [`examples/README.md`](examples/README.md).
+**Index (all 11 samples, scripts, backlog):** [`examples/README.md`](examples/README.md).
 
 ### Core loop and tools
 
 - **Runnable minimal run:** [`examples/minimal-run`](examples/minimal-run/) — mock LLM, no keys.
+- **OpenClaw / AgentSkills `SKILL.md` packs + `exec`:** [`examples/load-openclaw-skills`](examples/load-openclaw-skills/) — **`@opencoreagents/skill-loader-openclaw`** (`loadOpenClawSkills`, `registerOpenClawExecTool`); mock LLM, no API keys.
 - **OpenAI + tool + skill:** [`examples/openai-tools-skill`](examples/openai-tools-skill/) — requires `OPENAI_API_KEY`.
 - **Console `wait` + stdin:** [`examples/console-wait`](examples/console-wait/).
 
