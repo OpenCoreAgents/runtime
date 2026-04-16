@@ -3,61 +3,220 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Runtime · Playground</title>
+    <title>Runtime · Try your agents</title>
     <style>
       :root {
-        --bg: #f4f2ef;
-        --surface: #fff;
-        --text: #1a1a1a;
-        --muted: #5c5c5c;
-        --border: #e0dcd6;
+        --bg: #f1f0ec;
+        --surface: #fdfcfa;
+        --text: #1c1917;
+        --muted: #57534e;
+        --border: #e4e2dd;
         --accent: #2563eb;
         --accent-hover: #1d4ed8;
-        --radius: 10px;
+        --radius: 12px;
+        --radius-sm: 8px;
+        --shadow: 0 1px 2px rgba(28, 25, 23, 0.05);
+        --shadow-float: 0 4px 20px rgba(28, 25, 23, 0.06);
         --font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
         --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
       }
       @media (prefers-color-scheme: dark) {
         :root {
-          --bg: #141414;
-          --surface: #1e1e1e;
-          --text: #f0f0f0;
-          --muted: #9a9a9a;
-          --border: #333;
+          --bg: #111111;
+          --surface: #1a1a1a;
+          --text: #fafaf9;
+          --muted: #a8a29e;
+          --border: #2d2d2d;
           --accent: #3b82f6;
           --accent-hover: #60a5fa;
+          --shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+          --shadow-float: 0 4px 24px rgba(0, 0, 0, 0.35);
         }
       }
       * {
         box-sizing: border-box;
       }
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          transition-duration: 0.01ms !important;
+        }
+      }
       body {
         margin: 0;
         min-height: 100vh;
         font-family: var(--font);
-        font-size: 15px;
-        line-height: 1.5;
+        font-size: 16px;
+        line-height: 1.55;
         color: var(--text);
         background: var(--bg);
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
       }
-      .wrap {
+      .app-shell {
+        display: flex;
+        align-items: stretch;
+        min-height: 100vh;
+      }
+      .history-sidebar {
+        width: 16.25rem;
+        flex-shrink: 0;
+        border-right: 1px solid var(--border);
+        background: var(--surface);
+      }
+      .sidebar-inner {
+        position: sticky;
+        top: 0;
+        max-height: 100vh;
+        overflow-y: auto;
+        padding: 1rem 0.75rem 2rem;
+      }
+      .sidebar-heading {
+        font-size: 0.78rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin: 0 0 1rem;
+      }
+      .sidebar-section {
+        margin-bottom: 1.35rem;
+      }
+      .sidebar-sub {
+        font-size: 0.72rem;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin: 0 0 0.45rem;
+      }
+      .sidebar-list {
+        list-style: none;
+        margin: 0 0 0.45rem;
+        padding: 0;
+      }
+      .sidebar-empty {
+        font-size: 0.8rem;
+        color: var(--muted);
+        padding: 0.35rem 0.25rem;
+        margin: 0;
+      }
+      .sidebar-li {
+        display: flex;
+        align-items: stretch;
+        gap: 0.25rem;
+        margin-bottom: 0.35rem;
+      }
+      .sidebar-item {
+        flex: 1;
+        min-width: 0;
+        text-align: left;
+        padding: 0.45rem 0.55rem;
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--border);
+        background: var(--bg);
+        color: var(--text);
+        cursor: pointer;
+        font: inherit;
+        font-weight: 500;
+        font-size: 0.82rem;
+        line-height: 1.3;
+        transition: border-color 0.12s ease, box-shadow 0.12s ease;
+      }
+      .sidebar-item:hover {
+        border-color: var(--muted);
+      }
+      .sidebar-item.is-active {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.2);
+      }
+      @media (prefers-color-scheme: dark) {
+        .sidebar-item.is-active {
+          box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.28);
+        }
+      }
+      .sidebar-item-title {
+        display: block;
+        font-weight: 600;
+        font-size: 0.82rem;
+        word-break: break-word;
+      }
+      .sidebar-item-meta {
+        display: block;
+        font-size: 0.68rem;
+        font-weight: 400;
+        color: var(--muted);
+        margin-top: 0.15rem;
+      }
+      .sidebar-del {
+        width: 2.1rem;
+        flex-shrink: 0;
+        padding: 0;
+        min-height: 2.35rem;
+        border-radius: var(--radius-sm);
+        border: 1px solid transparent;
+        background: transparent;
+        color: var(--muted);
+        font-size: 1.15rem;
+        line-height: 1;
+        cursor: pointer;
+        font-family: inherit;
+      }
+      .sidebar-del:hover {
+        color: #b91c1c;
+        border-color: var(--border);
+        background: var(--bg);
+      }
+      @media (prefers-color-scheme: dark) {
+        .sidebar-del:hover {
+          color: #f87171;
+        }
+      }
+      .sidebar-mini-btn {
+        width: 100%;
+        font-size: 0.78rem;
+        min-height: 2.35rem;
+        margin-top: 0.1rem;
+      }
+      .wrap.main-area {
+        flex: 1;
+        min-width: 0;
         max-width: 52rem;
         margin: 0 auto;
-        padding: 1.75rem 1.25rem 3rem;
+        padding: clamp(1.25rem, 3vw, 2rem) clamp(1rem, 3vw, 1.5rem) clamp(2.5rem, 5vw, 3.5rem);
+      }
+      @media (max-width: 800px) {
+        .app-shell {
+          flex-direction: column;
+        }
+        .history-sidebar {
+          width: 100%;
+          border-right: none;
+          border-bottom: 1px solid var(--border);
+        }
+        .sidebar-inner {
+          position: relative;
+          max-height: 42vh;
+        }
       }
       header {
-        margin-bottom: 1.5rem;
+        margin-bottom: 1.75rem;
+        max-width: 36rem;
       }
       header h1 {
-        font-size: 1.25rem;
-        font-weight: 600;
-        letter-spacing: -0.02em;
-        margin: 0 0 0.35rem;
+        font-size: 1.45rem;
+        font-weight: 650;
+        letter-spacing: -0.03em;
+        line-height: 1.2;
+        margin: 0 0 0.5rem;
+        color: var(--text);
       }
       header p {
         margin: 0;
         color: var(--muted);
-        font-size: 0.9rem;
+        font-size: 0.95rem;
+        line-height: 1.5;
       }
       header a {
         color: var(--accent);
@@ -70,18 +229,17 @@
         background: var(--surface);
         border: 1px solid var(--border);
         border-radius: var(--radius);
-        padding: 1.25rem;
+        padding: 1.35rem 1.4rem;
         margin-bottom: 1rem;
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+        box-shadow: var(--shadow);
       }
       label {
         display: block;
-        font-size: 0.75rem;
+        font-size: 0.8125rem;
         font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.04em;
+        letter-spacing: 0.01em;
         color: var(--muted);
-        margin-bottom: 0.35rem;
+        margin-bottom: 0.4rem;
       }
       input[type="text"],
       input[type="password"],
@@ -89,24 +247,48 @@
       textarea {
         width: 100%;
         font: inherit;
-        padding: 0.55rem 0.65rem;
+        padding: 0.65rem 0.75rem;
         border: 1px solid var(--border);
-        border-radius: 6px;
+        border-radius: var(--radius-sm);
         background: var(--surface);
         color: var(--text);
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+      }
+      input[type="text"]:hover,
+      input[type="password"]:hover,
+      select:hover,
+      textarea:hover {
+        border-color: var(--muted);
+      }
+      input[type="text"]:focus,
+      input[type="password"]:focus,
+      select:focus,
+      textarea:focus {
+        outline: none;
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18);
+      }
+      @media (prefers-color-scheme: dark) {
+        input[type="text"]:focus,
+        input[type="password"]:focus,
+        select:focus,
+        textarea:focus {
+          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.22);
+        }
       }
       textarea {
         min-height: 7rem;
         resize: vertical;
         font-family: var(--mono);
-        font-size: 0.85rem;
+        font-size: 0.875rem;
+        line-height: 1.5;
       }
       .row {
         display: flex;
         flex-wrap: wrap;
-        gap: 0.5rem;
+        gap: 0.65rem;
         align-items: center;
-        margin-bottom: 1rem;
+        margin-bottom: 1.05rem;
       }
       .row:last-child {
         margin-bottom: 0;
@@ -117,44 +299,60 @@
       }
       button {
         font: inherit;
-        font-weight: 500;
-        padding: 0.5rem 1rem;
-        border-radius: 6px;
+        font-weight: 600;
+        min-height: 2.75rem;
+        padding: 0.55rem 1.15rem;
+        border-radius: var(--radius-sm);
         border: none;
         cursor: pointer;
         background: var(--accent);
         color: #fff;
+        transition: background 0.15s ease, transform 0.1s ease;
       }
       button:hover:not(:disabled) {
         background: var(--accent-hover);
+      }
+      button:active:not(:disabled) {
+        transform: scale(0.98);
       }
       button:disabled {
         opacity: 0.45;
         cursor: not-allowed;
       }
       button.secondary {
-        background: transparent;
+        background: var(--surface);
         color: var(--accent);
         border: 1px solid var(--border);
+        font-weight: 600;
       }
       button.secondary:hover:not(:disabled) {
         background: var(--bg);
+        border-color: var(--muted);
+      }
+      button:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
       }
       .check {
         display: flex;
-        align-items: center;
-        gap: 0.4rem;
+        align-items: flex-start;
+        gap: 0.55rem;
         font-size: 0.9rem;
         color: var(--text);
+        line-height: 1.45;
       }
       .check input {
         width: auto;
+        margin-top: 0.2rem;
+        flex-shrink: 0;
       }
       #status {
-        font-size: 0.85rem;
+        font-size: 0.9rem;
         color: var(--muted);
-        min-height: 1.25rem;
-        margin-bottom: 0.5rem;
+        min-height: 1.35rem;
+        margin-bottom: 0.65rem;
+        padding: 0.35rem 0;
+        line-height: 1.45;
       }
       #status.err {
         color: #b91c1c;
@@ -177,12 +375,13 @@
         word-break: break-word;
       }
       .reply {
-        margin-top: 0.75rem;
-        padding: 0.85rem 1rem;
+        margin-top: 0.85rem;
+        padding: 1rem 1.1rem;
         border-left: 3px solid var(--accent);
         background: var(--bg);
-        border-radius: 0 6px 6px 0;
+        border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
         font-size: 0.95rem;
+        line-height: 1.5;
       }
       .reply strong {
         font-size: 0.7rem;
@@ -193,35 +392,46 @@
         margin-bottom: 0.35rem;
       }
       .tabs-wrap {
-        margin-bottom: 1rem;
+        margin-bottom: 1.15rem;
       }
       .tablist {
         display: flex;
         flex-wrap: wrap;
-        gap: 0.25rem;
-        padding: 0.2rem;
-        background: var(--surface);
+        gap: 0.35rem;
+        padding: 0.4rem;
+        background: var(--bg);
         border: 1px solid var(--border);
-        border-radius: var(--radius);
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+        border-radius: 999px;
+        box-shadow: var(--shadow);
       }
       .tablist button {
         flex: 1;
-        min-width: 5.5rem;
+        min-width: 5rem;
+        min-height: 2.65rem;
+        padding: 0.45rem 0.75rem;
+        border-radius: 999px;
         background: transparent;
         color: var(--muted);
         border: 1px solid transparent;
-        font-weight: 500;
+        font-weight: 600;
+        font-size: 0.9rem;
+        transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
       }
       .tablist button:hover:not(:disabled) {
-        background: var(--bg);
+        background: var(--surface);
         color: var(--text);
       }
       .tablist button[aria-selected="true"] {
-        background: var(--bg);
-        color: var(--accent);
+        background: var(--surface);
+        color: var(--text);
         border-color: var(--border);
-        box-shadow: none;
+        box-shadow: var(--shadow-float);
+      }
+      .tablist button:focus-visible {
+        outline-offset: 3px;
+      }
+      .tablist button:active {
+        transform: none;
       }
       .tab-panel[hidden] {
         display: none !important;
@@ -230,21 +440,20 @@
         margin-bottom: 0;
       }
       .global-options {
-        margin-bottom: 1rem;
-        padding: 0.65rem 1rem;
+        margin-bottom: 1.15rem;
+        padding: 0.85rem 1.15rem;
         background: var(--surface);
         border: 1px solid var(--border);
         border-radius: var(--radius);
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+        box-shadow: var(--shadow);
       }
       .global-options .row {
         margin-bottom: 0;
       }
       .panel-heading {
-        font-size: 0.75rem;
+        font-size: 0.8125rem;
         font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.04em;
+        letter-spacing: 0.02em;
         color: var(--muted);
         margin: 0 0 0.5rem;
       }
@@ -253,16 +462,18 @@
         font-size: 0.85em;
       }
       .chat-card .chat-title {
-        font-size: 1.05rem;
-        font-weight: 600;
-        margin: 0 0 0.25rem;
+        font-size: 1.2rem;
+        font-weight: 650;
+        margin: 0 0 0.35rem;
         letter-spacing: -0.02em;
+        line-height: 1.25;
       }
       .chat-card .chat-sub {
-        margin: 0 0 1rem;
-        font-size: 0.8rem;
+        margin: 0 0 1.1rem;
+        font-size: 0.9rem;
         color: var(--muted);
-        line-height: 1.4;
+        line-height: 1.5;
+        max-width: 40rem;
       }
       .chat-toolbar {
         margin-bottom: 0.75rem;
@@ -275,11 +486,11 @@
         font-size: 0.78rem;
       }
       .chat-thread {
-        min-height: 14rem;
-        max-height: min(50vh, 26rem);
+        min-height: 16rem;
+        max-height: min(52vh, 30rem);
         overflow-y: auto;
-        padding: 0.85rem;
-        margin-bottom: 0.75rem;
+        padding: 1rem 1.05rem;
+        margin-bottom: 0.85rem;
         background: var(--bg);
         border: 1px solid var(--border);
         border-radius: var(--radius);
@@ -287,7 +498,10 @@
       }
       .chat-msg {
         display: flex;
-        margin-bottom: 0.65rem;
+        margin-bottom: 0.85rem;
+      }
+      .chat-msg:last-child {
+        margin-bottom: 0;
       }
       .chat-msg-user {
         justify-content: flex-end;
@@ -299,24 +513,26 @@
         justify-content: center;
       }
       .chat-bubble {
-        max-width: 88%;
-        padding: 0.55rem 0.8rem;
-        border-radius: 14px;
+        max-width: min(88%, 34rem);
+        padding: 0.65rem 0.95rem;
+        border-radius: 16px;
         font-size: 0.95rem;
-        line-height: 1.45;
+        line-height: 1.5;
         white-space: pre-wrap;
         word-break: break-word;
       }
       .chat-msg-user .chat-bubble {
         background: var(--accent);
         color: #fff;
-        border-bottom-right-radius: 5px;
+        border-bottom-right-radius: 6px;
+        box-shadow: 0 1px 3px rgba(37, 99, 235, 0.25);
       }
       .chat-msg-assistant .chat-bubble {
         background: var(--surface);
         color: var(--text);
         border: 1px solid var(--border);
-        border-bottom-left-radius: 5px;
+        border-bottom-left-radius: 6px;
+        box-shadow: var(--shadow);
       }
       .chat-msg-system .chat-bubble {
         background: transparent;
@@ -334,18 +550,21 @@
       }
       .chat-composer {
         display: flex;
-        gap: 0.5rem;
+        gap: 0.65rem;
         align-items: flex-end;
+        padding-top: 0.15rem;
       }
       .chat-composer textarea {
         flex: 1;
-        min-height: 2.85rem;
+        min-height: 3.25rem;
         max-height: 10rem;
         margin-bottom: 0;
       }
       .chat-composer button {
         flex-shrink: 0;
-        align-self: flex-end;
+        align-self: stretch;
+        min-height: 3.25rem;
+        min-width: 5.5rem;
       }
       .chat-run-meta {
         margin: 0.65rem 0 0;
@@ -416,25 +635,162 @@
         margin-top: 0.35rem;
       }
       .pill-row button {
-        padding: 0.25rem 0.5rem;
+        padding: 0.3rem 0.55rem;
         font-size: 0.78rem;
+        min-height: 2.15rem;
+        font-weight: 600;
+      }
+      .help-text {
+        margin: 0 0 0.65rem;
+        font-size: 0.9rem;
+        color: var(--muted);
+        line-height: 1.55;
+        max-width: 42rem;
+      }
+      .help-text code {
+        font-size: 0.82em;
+      }
+      kbd {
+        font-family: var(--mono);
+        font-size: 0.78em;
+        padding: 0.12rem 0.35rem;
+        border-radius: 4px;
+        border: 1px solid var(--border);
+        background: var(--bg);
+        color: var(--text);
+      }
+      details.advanced-panel {
+        margin-top: 1rem;
+        padding: 0.65rem 0.85rem;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+      }
+      details.advanced-panel > summary {
+        cursor: pointer;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--muted);
+        list-style-position: outside;
+      }
+      details.advanced-panel > summary:hover {
+        color: var(--text);
+      }
+      details.advanced-panel[open] > summary {
+        margin-bottom: 0.65rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid var(--border);
+      }
+      details.raw-json-details {
+        margin-top: 0.85rem;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        background: var(--bg);
+        overflow: hidden;
+      }
+      details.raw-json-details > summary {
+        cursor: pointer;
+        padding: 0.55rem 0.85rem;
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--muted);
+        background: var(--surface);
+        user-select: none;
+      }
+      details.raw-json-details > summary:hover {
+        color: var(--text);
+      }
+      details.raw-json-details pre {
+        margin: 0;
+        border: 0;
+        border-radius: 0;
+        border-top: 1px solid var(--border);
+        max-height: min(45vh, 22rem);
+        overflow: auto;
+      }
+      .card.card-footer {
+        margin-top: 1.5rem;
+        padding: 1.25rem 1.35rem 1.4rem;
+      }
+      .card-footer {
+        margin-top: 0;
+      }
+      .card-footer .reply {
+        margin-top: 0;
+      }
+      .json-toolbar-row {
+        display: none;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.35rem 0.85rem;
+        background: var(--surface);
+        border-top: 1px solid var(--border);
+      }
+      html.dev-mode .json-toolbar-row {
+        display: flex;
+      }
+      .json-toolbar-row button {
+        font-size: 0.78rem;
+        padding: 0.3rem 0.6rem;
+        min-height: 2.15rem;
+      }
+      html.dev-mode details.raw-json-details {
+        border-color: var(--accent);
+      }
+      html.dev-mode details.raw-json-details pre {
+        max-height: min(55vh, 32rem);
+      }
+      .chat-bubble-ts {
+        display: block;
+        font-size: 0.65rem;
+        opacity: 0.75;
+        margin-bottom: 0.28rem;
+        font-family: var(--mono);
+        letter-spacing: 0.02em;
+      }
+      .chat-bubble-body {
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+      .settings-dev-block {
+        margin-top: 1.25rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--border);
       }
     </style>
   </head>
   <body>
-    <div class="wrap">
+    <div class="app-shell">
+      <aside class="history-sidebar" aria-label="Saved conversations on this device">
+        <div class="sidebar-inner">
+          <h2 class="sidebar-heading">Conversations</h2>
+          <div id="sidebarConversationsRoot">
+            <div class="sidebar-section">
+              <h3 class="sidebar-sub">Chat</h3>
+              <ul id="sidebarChatList" class="sidebar-list"></ul>
+              <button type="button" class="secondary sidebar-mini-btn" id="sidebarNewChat">New chat</button>
+            </div>
+            <div class="sidebar-section">
+              <h3 class="sidebar-sub">Run agent</h3>
+              <ul id="sidebarAgentList" class="sidebar-list"></ul>
+              <button type="button" class="secondary sidebar-mini-btn" id="sidebarNewRun">New run session</button>
+            </div>
+          </div>
+        </div>
+      </aside>
+      <div class="wrap main-area">
       <header>
-        <h1>OpenCore Agents · Runtime playground</h1>
+        <h1>OpenCore Agents · Runtime</h1>
         <p>
-          Same API as <a href="/docs" target="_blank" rel="noopener">/docs</a> — try runs,
-          <code>continue</code>, and <code>/v1/chat</code> without <code>curl</code>.
+          Run an agent or chat in the browser. Need the HTTP details?
+          <a href="/docs" target="_blank" rel="noopener">Open API docs</a>.
         </p>
       </header>
 
       <div class="tabs-wrap">
-        <div class="tablist" role="tablist" aria-label="Playground sections">
+        <div class="tablist" role="tablist" aria-label="Main sections">
           <button type="button" role="tab" id="tab-agents" aria-selected="true" aria-controls="panel-agents" tabindex="0">
-            Agents
+            Run agent
           </button>
           <button
             type="button"
@@ -443,12 +799,12 @@
             aria-selected="false"
             aria-controls="panel-chat"
             tabindex="-1"
-            title="Conversation view (POST /v1/chat)"
+            title="Chat with the default assistant"
           >
             Chat
           </button>
           <button type="button" role="tab" id="tab-inspect" aria-selected="false" aria-controls="panel-inspect" tabindex="-1">
-            Inspect
+            Sessions &amp; runs
           </button>
           <button type="button" role="tab" id="tab-settings" aria-selected="false" aria-controls="panel-settings" tabindex="-1">
             Settings
@@ -460,76 +816,105 @@
         <div class="row">
           <label class="check">
             <input type="checkbox" id="wait" />
-            Wait for job to finish (<code>wait</code>) — applies to agent runs and chat
+            Wait until the reply is ready (simplest for trying the UI). Turn off if you prefer a quick response with a job ID and background processing.
           </label>
         </div>
       </div>
 
       <div id="panel-agents" class="tab-panel" role="tabpanel" aria-labelledby="tab-agents">
         <div class="card">
+          <p class="help-text">
+            Pick an agent, keep the same conversation ID for follow-ups, then send your prompt. Use <strong>Continue</strong> after a run when the agent is waiting for your next message on the same run.
+          </p>
           <div class="row">
             <div class="grow">
               <label for="agentId">Agent</label>
               <select id="agentId"></select>
             </div>
-            <button type="button" class="secondary" id="reloadAgents">Load agents</button>
+            <button type="button" class="secondary" id="reloadAgents">Refresh list</button>
           </div>
           <div class="row">
             <div class="grow">
-              <label for="sessionId">sessionId</label>
-              <input type="text" id="sessionId" autocomplete="off" />
+              <label for="sessionId">Conversation ID</label>
+              <input type="text" id="sessionId" autocomplete="off" spellcheck="false" />
             </div>
-            <button type="button" class="secondary" id="newSession">New session</button>
+            <button type="button" class="secondary" id="newSession">New conversation</button>
           </div>
+          <p class="help-text" style="margin-top: -0.35rem; margin-bottom: 0.75rem">
+            The server uses this ID to tie messages together. “New conversation” generates a fresh ID.
+          </p>
           <div class="row">
-            <label for="message">Message</label>
-          </div>
-          <textarea id="message" placeholder="Message to send to the agent…"></textarea>
-          <div class="row" style="margin-top: 1rem">
-            <button type="button" id="sendRun">Send run</button>
-            <button type="button" class="secondary" id="sendContinue" title="Requires a run in completed state">
-              Continue (same runId)
+            <div class="grow">
+              <label for="agentSavedSessions">Saved run sessions (this device)</label>
+              <select id="agentSavedSessions"></select>
+            </div>
+            <button type="button" class="secondary" id="deleteAgentSession" title="Remove this session from the saved list">
+              Remove
             </button>
           </div>
-          <div class="row" style="margin-top: 1rem">
-            <button type="button" class="secondary" id="fetchRun">Refresh run (GET /runs/…)</button>
-            <button type="button" class="secondary" id="fetchRunTimeline">Run timeline (?timeline=1)</button>
-            <button type="button" class="secondary" id="listAgentRuns">List runs (this agent + session)</button>
+          <div class="row">
+            <label for="message">Your message</label>
           </div>
+          <textarea id="message" placeholder="What should the agent do?"></textarea>
+          <div class="row" style="margin-top: 1rem">
+            <button type="button" id="sendRun">Send</button>
+            <button type="button" class="secondary" id="sendContinue" title="Send the next message on the same run">
+              Continue
+            </button>
+          </div>
+          <details class="advanced-panel">
+            <summary>Advanced: refresh run, timeline, list runs</summary>
+            <div class="row" style="margin-top: 0.35rem">
+              <button type="button" class="secondary" id="fetchRun">Refresh latest reply</button>
+              <button type="button" class="secondary" id="fetchRunTimeline">Open timeline in Sessions &amp; runs</button>
+              <button type="button" class="secondary" id="listAgentRuns">List runs for this agent</button>
+            </div>
+          </details>
           <p style="margin: 0.75rem 0 0; font-size: 0.8rem; color: var(--muted)">
-            <strong>Current runId:</strong> <span id="runIdLabel">—</span>
+            <strong>Last run ID:</strong> <span id="runIdLabel">—</span>
           </p>
         </div>
       </div>
 
       <div id="panel-chat" class="tab-panel" role="tabpanel" aria-labelledby="tab-chat" hidden>
         <div class="card chat-card">
-          <p class="chat-title">Conversation</p>
+          <p class="chat-title">Chat</p>
           <p class="chat-sub">
-            Messages are sent to <code>POST /v1/chat</code> (default stack chat agent). The server keeps the thread for
-            this session ID. <strong>New conversation</strong> starts a new session. Enable chat in the stack and run the
-            worker. <kbd>Enter</kbd> sends, <kbd>Shift</kbd>+<kbd>Enter</kbd> newline.
+            Messages stay in one thread as long as you keep the same conversation ID. Use <strong>New conversation</strong> to start over.
+            Saved chats keep a copy of the thread on <strong>this device</strong> (localStorage). Make sure chat is enabled in your stack and the worker is running.
           </p>
+          <div class="row">
+            <div class="grow">
+              <label for="chatSavedSessions">Saved chats (this device)</label>
+              <select id="chatSavedSessions"></select>
+            </div>
+            <button type="button" class="secondary" id="deleteChatSession" title="Remove this chat from the saved list">
+              Remove
+            </button>
+          </div>
           <div class="row chat-toolbar">
-            <button type="button" class="secondary" id="newChatSession" title="New session UUID — new thread">
+            <button type="button" class="secondary" id="newChatSession" title="Start a new thread with a new ID">
               New conversation
             </button>
-            <button type="button" class="secondary" id="fetchChatRun" title="GET /runs/:runId for this thread">
-              Refresh from run
+            <button type="button" class="secondary" id="fetchChatRun" title="Load the latest stored reply for this thread">
+              Refresh reply
             </button>
-            <button type="button" class="secondary" id="fetchChatRunTimeline" title="GET /runs/:runId?timeline=1">
-              Load run timeline
+            <button type="button" class="secondary" id="fetchChatRunTimeline" title="Inspect full timeline for developers">
+              View timeline
             </button>
-            <button type="button" class="secondary" id="loadChatSessionRuns" title="GET /sessions/:id/status?light=1">
-              Session runs
+            <button type="button" class="secondary" id="loadChatSessionRuns" title="See all runs for this conversation">
+              All runs in session
             </button>
           </div>
           <div class="row">
             <div class="grow">
-              <label for="chatSessionId">Session ID (thread key)</label>
+              <label for="chatSessionId">Conversation ID</label>
               <input type="text" id="chatSessionId" class="chat-session-input" autocomplete="off" spellcheck="false" />
             </div>
           </div>
+          <p class="help-text" style="margin-top: -0.35rem">
+            <kbd>Enter</kbd> sends · <kbd>Shift</kbd>+<kbd>Enter</kbd> new line
+          </p>
           <div
             id="chatThread"
             class="chat-thread"
@@ -541,55 +926,49 @@
             <textarea id="chatMessage" rows="2" placeholder="Type a message…"></textarea>
             <button type="button" id="sendChat">Send</button>
           </div>
-          <p class="chat-run-meta"><span id="chatRunIdLabel">—</span></p>
+          <p class="chat-run-meta"><span id="chatRunIdLabel">Last run: —</span></p>
         </div>
       </div>
 
       <div id="panel-inspect" class="tab-panel" role="tabpanel" aria-labelledby="tab-inspect" hidden>
         <div class="card">
-          <p class="chat-title">Session &amp; run inspector</p>
+          <p class="chat-title">Sessions &amp; runs</p>
           <p class="chat-sub">
-            <code>GET /sessions/:sessionId/status</code> lists persisted runs for the session (all agents in this project).
-            <code>GET /runs/:runId?sessionId=&amp;timeline=1</code> returns merged history (resume text after each
-            <code>wait</code>) plus <code>continueInputs</code> / <code>resumeInputs</code> when present.
+            Look up everything stored for a conversation, or drill into one run with full step-by-step history. Useful for debugging or resuming long tasks.
           </p>
-          <p class="panel-heading">Session</p>
+          <p class="panel-heading">By conversation</p>
           <div class="row">
             <div class="grow">
-              <label for="inspectSessionId">sessionId</label>
+              <label for="inspectSessionId">Conversation ID</label>
               <input type="text" id="inspectSessionId" class="chat-session-input" autocomplete="off" spellcheck="false" />
             </div>
-            <button type="button" class="secondary" id="inspectUseChatSession">Use chat session</button>
+            <button type="button" class="secondary" id="inspectUseChatSession">Copy from Chat tab</button>
           </div>
           <div class="row">
             <label class="check">
               <input type="checkbox" id="inspectSessionFull" />
-              Include full <code>history</code> per run (larger — omits <code>?light=1</code>)
+              Load full history for every run (slower, more data). Leave off for a compact summary.
             </label>
           </div>
-          <p style="margin: 0 0 0.5rem; font-size: 0.78rem; color: var(--muted)">
-            Default (unchecked): <code>GET /sessions/…/status?light=1</code> — counts and fields only. Checked: merged timeline
-            <code>history</code> for every run in the session.
-          </p>
           <div class="row">
-            <button type="button" id="inspectLoadSession">Load session runs</button>
+            <button type="button" id="inspectLoadSession">Load runs</button>
           </div>
           <div id="inspectSessionOut" class="inspect-table-wrap" hidden></div>
 
           <p class="panel-heading" style="margin-top: 1.25rem">Single run</p>
           <div class="row">
             <div class="grow">
-              <label for="inspectRunId">runId</label>
+              <label for="inspectRunId">Run ID</label>
               <input type="text" id="inspectRunId" class="chat-session-input" autocomplete="off" spellcheck="false" />
             </div>
             <div class="grow">
-              <label for="inspectRunSessionId">sessionId (for GET /runs)</label>
+              <label for="inspectRunSessionId">Conversation ID (same as when the run started)</label>
               <input type="text" id="inspectRunSessionId" class="chat-session-input" autocomplete="off" spellcheck="false" />
             </div>
           </div>
           <div class="row">
             <button type="button" id="inspectLoadRun">Load run with timeline</button>
-            <button type="button" class="secondary" id="inspectUseChatRun">Use chat runId + session</button>
+            <button type="button" class="secondary" id="inspectUseChatRun">Fill from last chat run</button>
           </div>
           <div id="inspectRunOut"></div>
         </div>
@@ -599,36 +978,59 @@
         <div class="card">
           <div class="row">
             <div class="grow">
-              <label for="apiKey">REST API key (optional)</label>
-              <input type="password" id="apiKey" placeholder="If the server uses REST_API_KEY…" autocomplete="off" />
+              <label for="apiKey">API key (optional)</label>
+              <input type="password" id="apiKey" placeholder="Only if your server requires a bearer token" autocomplete="off" />
             </div>
           </div>
           <div class="row">
-            <button type="button" class="secondary" id="saveKey">Save in this browser</button>
-            <button type="button" class="secondary" id="clearKey">Clear</button>
+            <button type="button" class="secondary" id="saveKey">Remember for this tab</button>
+            <button type="button" class="secondary" id="clearKey">Forget key</button>
           </div>
           <p style="margin: 0; font-size: 0.8rem; color: var(--muted)">
-            Stored in <code>sessionStorage</code> for this tab only. Same key is used for Agents and Chat.
+            Saved only in this browser tab. Used for Run agent and Chat.
           </p>
+          <div class="settings-dev-block">
+            <div class="row">
+              <label class="check">
+                <input type="checkbox" id="devMode" />
+                Developer mode
+              </label>
+            </div>
+            <p class="help-text" style="margin-top: 0.35rem; margin-bottom: 0">
+              When on: the raw JSON panel stays open, you can copy it with one click, and chat bubbles (except system
+              lines) show a local timestamp. The preference is stored for this browser tab in
+              <code>sessionStorage</code>.
+            </p>
+          </div>
         </div>
       </div>
 
-      <div class="card">
+      <div class="card card-footer">
         <div id="status"></div>
         <div id="replyBox" class="reply" hidden>
-          <strong>Latest reply (result)</strong>
+          <strong>Latest reply</strong>
           <div id="replyText"></div>
         </div>
-        <pre id="output">{ }</pre>
+        <details id="rawJsonDetails" class="raw-json-details">
+          <summary>Raw API response (for debugging)</summary>
+          <div class="json-toolbar-row">
+            <button type="button" class="secondary" id="copyOutputJson">Copy JSON</button>
+          </div>
+          <pre id="output">{ }</pre>
+        </details>
+      </div>
       </div>
     </div>
 
     <script>
       (function () {
         const KEY_STORAGE = "opencore-runtime-ui-api-key";
+        const DEV_STORAGE = "opencore-runtime-ui-dev-mode";
 
         const el = {
           apiKey: document.getElementById("apiKey"),
+          devMode: document.getElementById("devMode"),
+          copyOutputJson: document.getElementById("copyOutputJson"),
           agentId: document.getElementById("agentId"),
           sessionId: document.getElementById("sessionId"),
           message: document.getElementById("message"),
@@ -642,18 +1044,372 @@
           chatThread: document.getElementById("chatThread"),
           replyBox: document.getElementById("replyBox"),
           replyText: document.getElementById("replyText"),
+          rawJsonDetails: document.getElementById("rawJsonDetails"),
           inspectSessionId: document.getElementById("inspectSessionId"),
           inspectSessionFull: document.getElementById("inspectSessionFull"),
           inspectSessionOut: document.getElementById("inspectSessionOut"),
           inspectRunId: document.getElementById("inspectRunId"),
           inspectRunSessionId: document.getElementById("inspectRunSessionId"),
           inspectRunOut: document.getElementById("inspectRunOut"),
+          chatSavedSessions: document.getElementById("chatSavedSessions"),
+          agentSavedSessions: document.getElementById("agentSavedSessions"),
+          sidebarConversationsRoot: document.getElementById("sidebarConversationsRoot"),
+          sidebarChatList: document.getElementById("sidebarChatList"),
+          sidebarAgentList: document.getElementById("sidebarAgentList"),
         };
 
         let lastRunId = "";
         let lastAgentId = "";
         let lastChatRunId = "";
         let chatPendingNode = null;
+
+        const CHAT_SESSIONS_KEY = "opencore-runtime-ui-chat-sessions-v1";
+        const AGENT_SESSIONS_KEY = "opencore-runtime-ui-agent-sessions-v1";
+        const MAX_STORED_CHATS = 50;
+        const MAX_STORED_AGENT_SESSIONS = 50;
+        const MAX_MSGS_PER_CHAT = 400;
+
+        function defaultChatStore() {
+          return { version: 1, sessions: [], activeSessionId: null };
+        }
+
+        function readChatStore() {
+          try {
+            const raw = localStorage.getItem(CHAT_SESSIONS_KEY);
+            if (!raw) return defaultChatStore();
+            const o = JSON.parse(raw);
+            if (!o || o.version !== 1 || !Array.isArray(o.sessions)) return defaultChatStore();
+            o.sessions = o.sessions.filter(function (s) {
+              return s && typeof s.id === "string" && s.id.length > 0;
+            });
+            return o;
+          } catch (_) {
+            return defaultChatStore();
+          }
+        }
+
+        function trimChatStoreSessions(store) {
+          while (store.sessions.length > MAX_STORED_CHATS) {
+            const last = store.sessions[store.sessions.length - 1];
+            if (last && store.activeSessionId === last.id) {
+              store.activeSessionId = store.sessions[0] ? store.sessions[0].id : null;
+            }
+            store.sessions.pop();
+          }
+        }
+
+        function writeChatStore(store) {
+          try {
+            trimChatStoreSessions(store);
+            localStorage.setItem(CHAT_SESSIONS_KEY, JSON.stringify(store));
+          } catch (_) {
+            setStatus("Could not save chat history locally (storage may be full).", true);
+          }
+        }
+
+        function findChatSession(store, sessionId) {
+          for (let i = 0; i < store.sessions.length; i++) {
+            if (store.sessions[i].id === sessionId) return store.sessions[i];
+          }
+          return null;
+        }
+
+        function touchChatSessionToFront(store, sessionId) {
+          const i = store.sessions.findIndex(function (s) {
+            return s.id === sessionId;
+          });
+          if (i < 1) return;
+          const s = store.sessions.splice(i, 1)[0];
+          store.sessions.unshift(s);
+        }
+
+        function renderChatSessionPicker() {
+          const sel = el.chatSavedSessions;
+          if (!sel) {
+            renderConversationSidebar();
+            return;
+          }
+          const store = readChatStore();
+          sel.textContent = "";
+          const o0 = document.createElement("option");
+          o0.value = "";
+          o0.textContent = "— Saved chats —";
+          sel.appendChild(o0);
+          store.sessions.forEach(function (s) {
+            const o = document.createElement("option");
+            o.value = s.id;
+            o.textContent = truncateText((s.title || "Chat") + " · " + s.id.slice(0, 8) + "…", 88);
+            if (store.activeSessionId === s.id) o.selected = true;
+            sel.appendChild(o);
+          });
+          renderConversationSidebar();
+        }
+
+        function persistChatMessage(sessionId, role, text) {
+          if (!sessionId || text == null) return;
+          const t = String(text);
+          if (role === "system" && (t.indexOf("Type a message below") >= 0 || t.indexOf("New conversation —") >= 0)) {
+            return;
+          }
+          const store = readChatStore();
+          let s = findChatSession(store, sessionId);
+          if (!s) {
+            s = {
+              id: sessionId,
+              title: "Chat · " + new Date().toLocaleString(),
+              updatedAt: new Date().toISOString(),
+              lastRunId: "",
+              messages: [],
+            };
+            store.sessions.unshift(s);
+          }
+          s.messages.push({ role: role, text: t, ts: new Date().toISOString() });
+          if (s.messages.length > MAX_MSGS_PER_CHAT) {
+            s.messages = s.messages.slice(s.messages.length - MAX_MSGS_PER_CHAT);
+          }
+          if (role === "user") {
+            let userCount = 0;
+            for (let j = 0; j < s.messages.length; j++) {
+              if (s.messages[j].role === "user") userCount++;
+            }
+            if (userCount === 1 && (!s.title || String(s.title).indexOf("Chat ·") === 0 || String(s.title).indexOf("New chat ·") === 0)) {
+              s.title = truncateText(t, 44);
+            }
+          }
+          s.updatedAt = new Date().toISOString();
+          touchChatSessionToFront(store, sessionId);
+          store.activeSessionId = sessionId;
+          writeChatStore(store);
+          renderChatSessionPicker();
+        }
+
+        function rebuildChatThreadFromStoredMessages(messages) {
+          el.chatThread.innerHTML = "";
+          if (!messages || !messages.length) {
+            initChatThreadWelcome();
+            return;
+          }
+          for (let i = 0; i < messages.length; i++) {
+            const m = messages[i];
+            if (!m || !m.role) continue;
+            appendChatBubble(m.role, m.text != null ? m.text : "");
+          }
+          scrollChatToBottom();
+        }
+
+        function applyChatSessionById(sessionId) {
+          const store = readChatStore();
+          const s = findChatSession(store, sessionId);
+          if (!s) return;
+          store.activeSessionId = sessionId;
+          writeChatStore(store);
+          el.chatSessionId.value = s.id;
+          lastChatRunId = s.lastRunId || "";
+          el.chatRunIdLabel.textContent = lastChatRunId ? "Last run: " + lastChatRunId : "Last run: —";
+          rebuildChatThreadFromStoredMessages(s.messages);
+          renderChatSessionPicker();
+          setStatus("Loaded saved chat.");
+        }
+
+        function defaultAgentStore() {
+          return { version: 1, sessions: [], activeSessionId: null };
+        }
+
+        function readAgentStore() {
+          try {
+            const raw = localStorage.getItem(AGENT_SESSIONS_KEY);
+            if (!raw) return defaultAgentStore();
+            const o = JSON.parse(raw);
+            if (!o || o.version !== 1 || !Array.isArray(o.sessions)) return defaultAgentStore();
+            o.sessions = o.sessions.filter(function (s) {
+              return s && typeof s.id === "string" && s.id.length > 0;
+            });
+            return o;
+          } catch (_) {
+            return defaultAgentStore();
+          }
+        }
+
+        function writeAgentStore(store) {
+          while (store.sessions.length > MAX_STORED_AGENT_SESSIONS) {
+            const last = store.sessions[store.sessions.length - 1];
+            if (last && store.activeSessionId === last.id) {
+              store.activeSessionId = store.sessions[0] ? store.sessions[0].id : null;
+            }
+            store.sessions.pop();
+          }
+          try {
+            localStorage.setItem(AGENT_SESSIONS_KEY, JSON.stringify(store));
+          } catch (_) {
+            setStatus("Could not save run sessions locally.", true);
+          }
+        }
+
+        function findAgentSession(store, sessionId) {
+          for (let i = 0; i < store.sessions.length; i++) {
+            if (store.sessions[i].id === sessionId) return store.sessions[i];
+          }
+          return null;
+        }
+
+        function touchAgentSessionToFront(store, sessionId) {
+          const i = store.sessions.findIndex(function (s) {
+            return s.id === sessionId;
+          });
+          if (i < 1) return;
+          const s = store.sessions.splice(i, 1)[0];
+          store.sessions.unshift(s);
+        }
+
+        function renderAgentSessionPicker() {
+          const sel = el.agentSavedSessions;
+          if (!sel) {
+            renderConversationSidebar();
+            return;
+          }
+          const store = readAgentStore();
+          sel.textContent = "";
+          const o0 = document.createElement("option");
+          o0.value = "";
+          o0.textContent = "— Saved run sessions —";
+          sel.appendChild(o0);
+          store.sessions.forEach(function (s) {
+            const o = document.createElement("option");
+            o.value = s.id;
+            o.textContent = truncateText((s.title || "Run") + " · " + s.id.slice(0, 8) + "…", 88);
+            if (store.activeSessionId === s.id) o.selected = true;
+            sel.appendChild(o);
+          });
+          renderConversationSidebar();
+        }
+
+        function formatSidebarTime(iso) {
+          if (!iso) return "";
+          try {
+            const d = new Date(iso);
+            if (Number.isNaN(d.getTime())) return "";
+            return d.toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+          } catch (_) {
+            return "";
+          }
+        }
+
+        function renderConversationSidebar() {
+          const chatUl = el.sidebarChatList;
+          const agentUl = el.sidebarAgentList;
+          if (!chatUl || !agentUl) return;
+          const cStore = readChatStore();
+          const aStore = readAgentStore();
+          const activeChat = cStore.activeSessionId;
+          const activeAgent = aStore.activeSessionId;
+
+          chatUl.textContent = "";
+          if (!cStore.sessions.length) {
+            const empty = document.createElement("li");
+            empty.className = "sidebar-empty";
+            empty.textContent = "No saved chats on this device yet.";
+            chatUl.appendChild(empty);
+          } else {
+            cStore.sessions.forEach(function (s) {
+              const li = document.createElement("li");
+              li.className = "sidebar-li";
+              const main = document.createElement("button");
+              main.type = "button";
+              main.className = "sidebar-item";
+              main.dataset.scope = "chat";
+              main.dataset.id = s.id;
+              if (activeChat === s.id) main.classList.add("is-active");
+              const title = document.createElement("span");
+              title.className = "sidebar-item-title";
+              title.textContent = truncateText(s.title || "Chat", 56);
+              const meta = document.createElement("span");
+              meta.className = "sidebar-item-meta";
+              const msgCount = s.messages && s.messages.length ? s.messages.length : 0;
+              meta.textContent =
+                msgCount +
+                " msg" +
+                (msgCount === 1 ? "" : "s") +
+                " · " +
+                (formatSidebarTime(s.updatedAt) || "—");
+              main.appendChild(title);
+              main.appendChild(meta);
+              const del = document.createElement("button");
+              del.type = "button";
+              del.className = "sidebar-del";
+              del.textContent = "×";
+              del.setAttribute("aria-label", "Delete saved chat");
+              del.dataset.action = "delete";
+              del.dataset.scope = "chat";
+              del.dataset.id = s.id;
+              li.appendChild(main);
+              li.appendChild(del);
+              chatUl.appendChild(li);
+            });
+          }
+
+          agentUl.textContent = "";
+          if (!aStore.sessions.length) {
+            const empty = document.createElement("li");
+            empty.className = "sidebar-empty";
+            empty.textContent = "No saved run sessions on this device yet.";
+            agentUl.appendChild(empty);
+          } else {
+            aStore.sessions.forEach(function (s) {
+              const li = document.createElement("li");
+              li.className = "sidebar-li";
+              const main = document.createElement("button");
+              main.type = "button";
+              main.className = "sidebar-item";
+              main.dataset.scope = "agent";
+              main.dataset.id = s.id;
+              if (activeAgent === s.id) main.classList.add("is-active");
+              const title = document.createElement("span");
+              title.className = "sidebar-item-title";
+              title.textContent = truncateText(s.title || "Run", 56);
+              const meta = document.createElement("span");
+              meta.className = "sidebar-item-meta";
+              const agentLabel = s.agentId ? truncateText(String(s.agentId), 28) : "—";
+              const runLabel = s.lastRunId ? truncateText(String(s.lastRunId), 22) : "—";
+              meta.textContent =
+                "Agent: " + agentLabel + " · Run: " + runLabel + " · " + (formatSidebarTime(s.updatedAt) || "—");
+              main.appendChild(title);
+              main.appendChild(meta);
+              const del = document.createElement("button");
+              del.type = "button";
+              del.className = "sidebar-del";
+              del.textContent = "×";
+              del.setAttribute("aria-label", "Delete saved run session");
+              del.dataset.action = "delete";
+              del.dataset.scope = "agent";
+              del.dataset.id = s.id;
+              li.appendChild(main);
+              li.appendChild(del);
+              agentUl.appendChild(li);
+            });
+          }
+        }
+
+        function applyAgentSessionById(sessionId) {
+          const store = readAgentStore();
+          const s = findAgentSession(store, sessionId);
+          if (!s) return;
+          store.activeSessionId = sessionId;
+          writeAgentStore(store);
+          el.sessionId.value = s.id;
+          lastRunId = s.lastRunId || "";
+          el.runIdLabel.textContent = lastRunId || "—";
+          if (s.agentId && el.agentId) {
+            const opts = el.agentId.querySelectorAll("option");
+            for (let i = 0; i < opts.length; i++) {
+              if (opts[i].value === s.agentId) {
+                el.agentId.value = s.agentId;
+                break;
+              }
+            }
+          }
+          renderAgentSessionPicker();
+          setStatus("Loaded saved run session.");
+        }
 
         const tabs = {
           agents: document.getElementById("tab-agents"),
@@ -681,6 +1437,7 @@
             sessionStorage.setItem("opencore-runtime-ui-tab", name);
           } catch (_) {}
           if (name === "chat") scrollChatToBottom();
+          renderConversationSidebar();
         }
 
         tabs.agents.addEventListener("click", () => selectTab("agents"));
@@ -720,14 +1477,56 @@
           el.status.classList.toggle("err", Boolean(isErr));
         }
 
+        function isDevMode() {
+          return Boolean(el.devMode && el.devMode.checked);
+        }
+
+        function applyDeveloperMode() {
+          const on = isDevMode();
+          document.documentElement.classList.toggle("dev-mode", on);
+          try {
+            if (on) sessionStorage.setItem(DEV_STORAGE, "1");
+            else sessionStorage.removeItem(DEV_STORAGE);
+          } catch (_) {}
+          if (on && el.rawJsonDetails) {
+            el.rawJsonDetails.open = true;
+          }
+        }
+
         function showJson(obj) {
           el.output.textContent = JSON.stringify(obj, null, 2);
+          if (!el.rawJsonDetails) return;
+          if (isDevMode()) {
+            el.rawJsonDetails.open = true;
+            return;
+          }
+          var errLike = false;
+          if (obj && typeof obj === "object") {
+            if (typeof obj.error === "string" && obj.error) errLike = true;
+            if (typeof obj.code === "string" && obj.code) errLike = true;
+            if (obj._raw != null) errLike = true;
+            if (obj.state === "failed") errLike = true;
+          }
+          el.rawJsonDetails.open = Boolean(errLike);
         }
 
         function setRunId(id, agentId) {
           lastRunId = id || "";
           if (agentId) lastAgentId = agentId;
           el.runIdLabel.textContent = lastRunId || "—";
+          const sid = el.sessionId.value.trim();
+          if (!sid) return;
+          const store = readAgentStore();
+          const s = findAgentSession(store, sid);
+          if (s) {
+            s.lastRunId = lastRunId;
+            if (agentId) s.agentId = agentId;
+            s.updatedAt = new Date().toISOString();
+            touchAgentSessionToFront(store, sid);
+            store.activeSessionId = sid;
+            writeAgentStore(store);
+            renderAgentSessionPicker();
+          }
         }
 
         function showReply(text) {
@@ -750,7 +1549,24 @@
           wrap.className = "chat-msg chat-msg-" + role;
           const bub = document.createElement("div");
           bub.className = "chat-bubble";
-          bub.textContent = body;
+          if (isDevMode() && role !== "system") {
+            const ts = document.createElement("time");
+            ts.className = "chat-bubble-ts";
+            const now = new Date();
+            ts.dateTime = now.toISOString();
+            ts.textContent = now.toLocaleTimeString(undefined, {
+              hour: "2-digit",
+              minute: "2-digit",
+              second: "2-digit",
+            });
+            const bodyEl = document.createElement("div");
+            bodyEl.className = "chat-bubble-body";
+            bodyEl.textContent = body;
+            bub.appendChild(ts);
+            bub.appendChild(bodyEl);
+          } else {
+            bub.textContent = body;
+          }
           wrap.appendChild(bub);
           el.chatThread.appendChild(wrap);
           scrollChatToBottom();
@@ -780,7 +1596,7 @@
           el.chatThread.innerHTML = "";
           appendChatBubble(
             "system",
-            "Write a message below. Your lines appear on the right; the assistant on the left (same API as POST /v1/chat).",
+            "Type a message below. Yours appear on the right; the assistant on the left.",
           );
         }
 
@@ -794,7 +1610,7 @@
         }
 
         async function reloadAgents() {
-          setStatus("Loading agents…");
+          setStatus("Loading agent list…");
           try {
             const res = await fetch("/agents", { headers: headers(false) });
             const data = await parseJson(res);
@@ -816,7 +1632,7 @@
               o.value = "";
               o.textContent = "(none)";
               el.agentId.appendChild(o);
-              setStatus("No agents in the registry.");
+              setStatus("No agents are registered on this server.");
             } else {
               for (const id of ids) {
                 const o = document.createElement("option");
@@ -824,7 +1640,10 @@
                 o.textContent = id;
                 el.agentId.appendChild(o);
               }
-              setStatus(ids.length + " agent(s).");
+              setStatus(ids.length + " agent" + (ids.length === 1 ? "" : "s") + " available.");
+            }
+            if (lastAgentId && ids.indexOf(lastAgentId) >= 0) {
+              el.agentId.value = lastAgentId;
             }
             showJson(data);
           } catch (e) {
@@ -833,22 +1652,61 @@
         }
 
         function newSession() {
-          el.sessionId.value = crypto.randomUUID();
-          setStatus("New sessionId generated.");
+          const id = crypto.randomUUID();
+          el.sessionId.value = id;
+          lastRunId = "";
+          el.runIdLabel.textContent = "—";
+          const agentId = el.agentId.value || "";
+          const store = readAgentStore();
+          const s = {
+            id: id,
+            title: "Run · " + new Date().toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" }),
+            updatedAt: new Date().toISOString(),
+            lastRunId: "",
+            agentId: agentId,
+          };
+          store.sessions.unshift(s);
+          store.activeSessionId = id;
+          writeAgentStore(store);
+          renderAgentSessionPicker();
+          setStatus("New conversation ID ready (saved on this device).");
         }
 
         function newChatSession() {
-          el.chatSessionId.value = crypto.randomUUID();
+          const id = crypto.randomUUID();
+          el.chatSessionId.value = id;
           lastChatRunId = "";
-          el.chatRunIdLabel.textContent = "runId: —";
+          el.chatRunIdLabel.textContent = "Last run: —";
+          const store = readChatStore();
+          const s = {
+            id: id,
+            title: "New chat · " + new Date().toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" }),
+            updatedAt: new Date().toISOString(),
+            lastRunId: "",
+            messages: [],
+          };
+          store.sessions.unshift(s);
+          store.activeSessionId = id;
+          writeChatStore(store);
           el.chatThread.innerHTML = "";
-          appendChatBubble("system", "New conversation — a new session ID was generated.");
-          setStatus("New conversation started.");
+          appendChatBubble("system", "New conversation — a new ID was created for this thread.");
+          renderChatSessionPicker();
+          setStatus("New conversation started (saved on this device).");
         }
 
         function setChatRunId(id) {
           lastChatRunId = id || "";
-          el.chatRunIdLabel.textContent = lastChatRunId ? "runId: " + lastChatRunId : "runId: —";
+          el.chatRunIdLabel.textContent = lastChatRunId ? "Last run: " + lastChatRunId : "Last run: —";
+          const sid = el.chatSessionId.value.trim();
+          if (!sid) return;
+          const store = readChatStore();
+          const s = findChatSession(store, sid);
+          if (s) {
+            s.lastRunId = lastChatRunId;
+            s.updatedAt = new Date().toISOString();
+            writeChatStore(store);
+            renderChatSessionPicker();
+          }
         }
 
         async function pollJob(jobId) {
@@ -876,16 +1734,40 @@
           const sessionId = el.sessionId.value.trim();
           const message = el.message.value.trim();
           if (!agentId) {
-            setStatus("Choose an agent.", true);
+            setStatus("Select an agent from the list (try Refresh list).", true);
             return;
           }
           if (!sessionId) {
-            setStatus("sessionId is required.", true);
+            setStatus("Add a conversation ID (or click New conversation).", true);
             return;
           }
           if (!message) {
-            setStatus("Enter a message.", true);
+            setStatus("Write a message to send.", true);
             return;
+          }
+
+          let agStore = readAgentStore();
+          if (!findAgentSession(agStore, sessionId)) {
+            agStore.sessions.unshift({
+              id: sessionId,
+              title: "Run · " + new Date().toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" }),
+              updatedAt: new Date().toISOString(),
+              lastRunId: "",
+              agentId: agentId,
+            });
+            agStore.activeSessionId = sessionId;
+            writeAgentStore(agStore);
+            renderAgentSessionPicker();
+          } else {
+            const ex = findAgentSession(agStore, sessionId);
+            if (ex) {
+              ex.agentId = agentId;
+              ex.updatedAt = new Date().toISOString();
+              touchAgentSessionToFront(agStore, sessionId);
+              agStore.activeSessionId = sessionId;
+              writeAgentStore(agStore);
+              renderAgentSessionPicker();
+            }
           }
 
           setStatus("Sending…");
@@ -913,6 +1795,7 @@
                 showReply(job.run.reply);
                 setStatus("Done (" + job.state + ").");
                 showJson(job);
+                maybeRenameAgentSessionFromMessage(sessionId, message);
               } else if (job) {
                 setStatus("Job " + job.state + (job.failedReason ? ": " + job.failedReason : ""), job.state === "failed");
                 showJson(job);
@@ -929,25 +1812,43 @@
               setRunId(data.runId, agentId);
               showReply(data.reply);
             }
+            maybeRenameAgentSessionFromMessage(sessionId, message);
             setStatus("OK (" + res.status + ").");
           } catch (e) {
             setStatus(String(e.message || e), true);
           }
         }
 
+        function maybeRenameAgentSessionFromMessage(sessionId, message) {
+          const msg = String(message || "").trim();
+          if (!sessionId || !msg) return;
+          const agSt = readAgentStore();
+          const rec = findAgentSession(agSt, sessionId);
+          if (!rec) return;
+          const t = String(rec.title || "");
+          if (t.indexOf("Run ·") === 0) {
+            rec.title = truncateText(msg, 44);
+          }
+          rec.updatedAt = new Date().toISOString();
+          touchAgentSessionToFront(agSt, sessionId);
+          writeAgentStore(agSt);
+          renderAgentSessionPicker();
+        }
+
         async function sendChat() {
           const sessionId = el.chatSessionId.value.trim();
           const message = el.chatMessage.value.trim();
           if (!sessionId) {
-            setStatus("Chat sessionId is required.", true);
+            setStatus("Conversation ID is missing.", true);
             return;
           }
           if (!message) {
-            setStatus("Enter a chat message.", true);
+            setStatus("Write a message to send.", true);
             return;
           }
 
           appendChatBubble("user", message);
+          persistChatMessage(sessionId, "user", message);
           el.chatMessage.value = "";
           setStatus("Sending…");
           showReply("");
@@ -983,6 +1884,7 @@
                     ? String(job.run.reply)
                     : "(empty reply)";
                 appendChatBubble("assistant", replyText);
+                persistChatMessage(sessionId, "assistant", replyText);
                 showReply(job.run.reply);
                 setStatus("Done (" + job.state + ").");
                 showJson(job);
@@ -992,10 +1894,13 @@
                   job.state +
                   (job.failedReason ? ": " + job.failedReason : "");
                 appendChatBubble("system", errLine);
+                persistChatMessage(sessionId, "system", errLine);
                 setStatus(errLine, job.state === "failed");
                 showJson(job);
               } else {
-                appendChatBubble("system", "Timed out waiting for the assistant job.");
+                const timeoutLine = "Timed out waiting for the assistant job.";
+                appendChatBubble("system", timeoutLine);
+                persistChatMessage(sessionId, "system", timeoutLine);
                 setStatus("Timed out waiting for the job.", true);
               }
               return;
@@ -1012,7 +1917,9 @@
                 (typeof data.error === "string" && data.error) ||
                 (typeof data.code === "string" && data.code) ||
                 JSON.stringify(data);
-              appendChatBubble("system", res.status + " — " + errText + hint);
+              const errLine = res.status + " — " + errText + hint;
+              appendChatBubble("system", errLine);
+              persistChatMessage(sessionId, "system", errLine);
               setStatus(res.status + " " + errText + hint, true);
               return;
             }
@@ -1020,16 +1927,21 @@
             if (data.reply !== undefined) {
               const replyText =
                 typeof data.reply === "string" ? data.reply : JSON.stringify(data.reply);
-              appendChatBubble("assistant", replyText || "(empty reply)");
+              const out = replyText || "(empty reply)";
+              appendChatBubble("assistant", out);
+              persistChatMessage(sessionId, "assistant", out);
               showReply(data.reply);
             } else {
-              appendChatBubble("system", "OK, but no reply field in the response.");
+              const noReply = "OK, but no reply field in the response.";
+              appendChatBubble("system", noReply);
+              persistChatMessage(sessionId, "system", noReply);
             }
             setStatus("Sent (" + res.status + ").");
           } catch (e) {
             removeChatPending();
             const msg = String(e.message || e);
             appendChatBubble("system", msg);
+            persistChatMessage(sessionId, "system", msg);
             setStatus(msg, true);
           }
         }
@@ -1180,7 +2092,7 @@
           table.className = "inspect";
           var thead = document.createElement("thead");
           var hr = document.createElement("tr");
-          ["runId", "engine session", "agent", "status", "steps", "reply"].forEach(function (h) {
+          ["Run ID", "Session", "Agent", "Status", "Steps", "Reply preview"].forEach(function (h) {
             var th = document.createElement("th");
             th.textContent = h;
             hr.appendChild(th);
@@ -1200,7 +2112,7 @@
             btn.type = "button";
             btn.className = "secondary";
             btn.style.marginTop = "0.25rem";
-            btn.textContent = "Inspect";
+            btn.textContent = "Open";
             btn.addEventListener("click", function () {
               el.inspectRunId.value = String(r.runId || "");
               var rs = r.sessionId != null && String(r.sessionId).trim() ? String(r.sessionId).trim() : "";
@@ -1250,10 +2162,10 @@
         async function inspectLoadSession() {
           const sid = el.inspectSessionId.value.trim();
           if (!sid) {
-            setStatus("inspect sessionId required", true);
+            setStatus("Enter a conversation ID first.", true);
             return;
           }
-          setStatus("GET /sessions/…/status…");
+          setStatus("Loading session…");
           var light = !el.inspectSessionFull.checked;
           var q = light ? "?light=1" : "";
           try {
@@ -1268,7 +2180,7 @@
               return;
             }
             renderSessionRunsTable(el.inspectSessionOut, data);
-            setStatus("Session runs loaded (" + data.runs.length + ").");
+            setStatus("Loaded " + data.runs.length + " run(s) for this conversation.");
           } catch (e) {
             setStatus(String(e.message || e), true);
             el.inspectSessionOut.hidden = true;
@@ -1279,10 +2191,10 @@
           const runId = el.inspectRunId.value.trim();
           const sid = el.inspectRunSessionId.value.trim();
           if (!runId || !sid) {
-            setStatus("inspect runId + sessionId required", true);
+            setStatus("Enter both run ID and conversation ID.", true);
             return;
           }
-          setStatus("GET /runs/…?timeline=1");
+          setStatus("Loading run…");
           try {
             const snap = await fetchRunSnapshot(runId, sid, true);
             showJson(snap.data);
@@ -1292,7 +2204,7 @@
               return;
             }
             renderRunInspector(el.inspectRunOut, snap.data);
-            setStatus("Run loaded (timeline).");
+            setStatus("Run loaded.");
           } catch (e) {
             setStatus(String(e.message || e), true);
           }
@@ -1302,7 +2214,7 @@
           const sessionId = el.chatSessionId.value.trim();
           const runId = lastChatRunId;
           if (!runId || !sessionId) {
-            setStatus("Send a message first (need runId + sessionId).", true);
+            setStatus("Send a message first so there is a run to load.", true);
             return;
           }
           setStatus("Loading run…");
@@ -1314,20 +2226,26 @@
             const data = await parseJson(res);
             showJson(data);
             if (!res.ok) {
-              appendChatBubble("system", "Refresh failed: " + res.status);
+              const line = "Refresh failed: " + res.status;
+              appendChatBubble("system", line);
+              persistChatMessage(sessionId, "system", line);
               setStatus(res.status + "", true);
               return;
             }
             const st = data.status || "?";
-            appendChatBubble("system", "Refreshed run — status: " + st);
+            const lineSt = "Refreshed run — status: " + st;
+            appendChatBubble("system", lineSt);
+            persistChatMessage(sessionId, "system", lineSt);
             if (typeof data.reply === "string" && data.reply.length) {
               appendChatBubble("assistant", data.reply);
+              persistChatMessage(sessionId, "assistant", data.reply);
               showReply(data.reply);
             }
             setStatus("Run status: " + st);
           } catch (e) {
             const msg = String(e.message || e);
             appendChatBubble("system", msg);
+            persistChatMessage(el.chatSessionId.value.trim(), "system", msg);
             setStatus(msg, true);
           }
         }
@@ -1336,7 +2254,7 @@
           const sessionId = el.chatSessionId.value.trim();
           const runId = lastChatRunId;
           if (!runId || !sessionId) {
-            setStatus("Send a message first (need runId + sessionId).", true);
+            setStatus("Send a message first so there is a run to inspect.", true);
             return;
           }
           el.inspectRunId.value = runId;
@@ -1348,7 +2266,7 @@
         async function loadChatSessionRuns() {
           const sessionId = el.chatSessionId.value.trim();
           if (!sessionId) {
-            setStatus("Chat sessionId required.", true);
+            setStatus("Conversation ID is missing.", true);
             return;
           }
           el.inspectSessionId.value = sessionId;
@@ -1364,12 +2282,37 @@
           const runId = lastRunId;
 
           if (!agentId || !sessionId || !message) {
-            setStatus("Agent, sessionId, and message are required.", true);
+            setStatus("Agent, conversation ID, and message are all required.", true);
             return;
           }
           if (!runId) {
-            setStatus("No runId: run an agent first (Continue uses the last runId from this page).", true);
+            setStatus("Send a normal run first — Continue reuses the last run from this tab.", true);
             return;
+          }
+
+          let agStoreCont = readAgentStore();
+          if (!findAgentSession(agStoreCont, sessionId)) {
+            agStoreCont.sessions.unshift({
+              id: sessionId,
+              title: "Run · " + new Date().toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" }),
+              updatedAt: new Date().toISOString(),
+              lastRunId: runId,
+              agentId: agentId,
+            });
+            agStoreCont.activeSessionId = sessionId;
+            writeAgentStore(agStoreCont);
+            renderAgentSessionPicker();
+          } else {
+            const ex2 = findAgentSession(agStoreCont, sessionId);
+            if (ex2) {
+              ex2.agentId = agentId;
+              ex2.lastRunId = runId;
+              ex2.updatedAt = new Date().toISOString();
+              touchAgentSessionToFront(agStoreCont, sessionId);
+              agStoreCont.activeSessionId = sessionId;
+              writeAgentStore(agStoreCont);
+              renderAgentSessionPicker();
+            }
           }
 
           setStatus("Continuing…");
@@ -1423,10 +2366,10 @@
           const sessionId = el.sessionId.value.trim();
           const runId = lastRunId;
           if (!runId || !sessionId) {
-            setStatus("Need runId (from a run) and sessionId.", true);
+            setStatus("Run a prompt first, or paste run and conversation IDs.", true);
             return;
           }
-          setStatus("GET /runs/…");
+          setStatus("Refreshing run…");
           try {
             const res = await fetch(
               "/runs/" + encodeURIComponent(runId) + "?sessionId=" + encodeURIComponent(sessionId),
@@ -1449,7 +2392,7 @@
           const sessionId = el.sessionId.value.trim();
           const runId = lastRunId;
           if (!runId || !sessionId) {
-            setStatus("Need runId and sessionId (Agents tab).", true);
+            setStatus("Run a prompt on this tab first, or open Sessions & runs and enter IDs.", true);
             return;
           }
           el.inspectRunId.value = runId;
@@ -1462,10 +2405,10 @@
           const agentId = el.agentId.value;
           const sessionId = el.sessionId.value.trim();
           if (!agentId || !sessionId) {
-            setStatus("Agent and sessionId required.", true);
+            setStatus("Select an agent and enter a conversation ID.", true);
             return;
           }
-          setStatus("GET /agents/…/runs…");
+          setStatus("Loading run list…");
           try {
             const res = await fetch(
               "/agents/" +
@@ -1481,7 +2424,8 @@
               setStatus(res.status + " " + (data.error || ""), true);
               return;
             }
-            setStatus("Listed runs for " + agentId + " (" + (data.runs && data.runs.length) + ").");
+            var n = data.runs && data.runs.length;
+            setStatus(n != null ? n + " run(s) for this agent in this conversation." : "Run list loaded.");
           } catch (e) {
             setStatus(String(e.message || e), true);
           }
@@ -1514,13 +2458,153 @@
         document.getElementById("inspectLoadRun").onclick = inspectLoadRun;
         document.getElementById("inspectUseChatSession").onclick = function () {
           el.inspectSessionId.value = el.chatSessionId.value.trim();
-          setStatus("Inspect session set from chat.");
+          setStatus("Conversation ID copied from Chat.");
         };
         document.getElementById("inspectUseChatRun").onclick = function () {
           el.inspectRunId.value = lastChatRunId;
           el.inspectRunSessionId.value = el.chatSessionId.value.trim();
-          setStatus("Inspect run fields set from chat.");
+          setStatus("Run and conversation filled from Chat.");
         };
+
+        function deleteSavedChatSessionWithId(id) {
+          const sid = String(id || "").trim();
+          if (!sid) return;
+          if (!window.confirm("Remove this chat from this device?")) return;
+          const store = readChatStore();
+          store.sessions = store.sessions.filter(function (s) {
+            return s.id !== sid;
+          });
+          if (store.activeSessionId === sid) store.activeSessionId = null;
+          writeChatStore(store);
+          if (store.sessions.length) {
+            applyChatSessionById(store.sessions[0].id);
+          } else {
+            newChatSession();
+          }
+          setStatus("Saved chat removed from this device.");
+        }
+
+        function deleteSavedChatSession() {
+          deleteSavedChatSessionWithId(el.chatSessionId.value.trim());
+        }
+
+        function deleteSavedAgentSessionWithId(id) {
+          const sid = String(id || "").trim();
+          if (!sid) return;
+          if (!window.confirm("Remove this run session from this device?")) return;
+          const store = readAgentStore();
+          store.sessions = store.sessions.filter(function (s) {
+            return s.id !== sid;
+          });
+          if (store.activeSessionId === sid) store.activeSessionId = null;
+          writeAgentStore(store);
+          if (store.sessions.length) {
+            applyAgentSessionById(store.sessions[0].id);
+          } else {
+            newSession();
+          }
+          setStatus("Saved run session removed from this device.");
+        }
+
+        function deleteSavedAgentSession() {
+          deleteSavedAgentSessionWithId(el.sessionId.value.trim());
+        }
+
+        if (el.chatSavedSessions) {
+          el.chatSavedSessions.addEventListener("change", function () {
+            const v = el.chatSavedSessions.value;
+            if (!v) return;
+            applyChatSessionById(v);
+          });
+        }
+        if (el.agentSavedSessions) {
+          el.agentSavedSessions.addEventListener("change", function () {
+            const v = el.agentSavedSessions.value;
+            if (!v) return;
+            applyAgentSessionById(v);
+          });
+        }
+        document.getElementById("deleteChatSession").addEventListener("click", deleteSavedChatSession);
+        document.getElementById("deleteAgentSession").addEventListener("click", deleteSavedAgentSession);
+
+        if (el.sidebarConversationsRoot) {
+          el.sidebarConversationsRoot.addEventListener("click", function (ev) {
+            const delBtn = ev.target.closest(".sidebar-del");
+            if (delBtn && delBtn.dataset.id) {
+              ev.preventDefault();
+              ev.stopPropagation();
+              const scope = delBtn.dataset.scope;
+              if (scope === "chat") deleteSavedChatSessionWithId(delBtn.dataset.id);
+              else if (scope === "agent") deleteSavedAgentSessionWithId(delBtn.dataset.id);
+              return;
+            }
+            const row = ev.target.closest("button.sidebar-item");
+            if (!row || !row.dataset.id) return;
+            const scope = row.dataset.scope;
+            const id = row.dataset.id;
+            if (scope === "chat") {
+              applyChatSessionById(id);
+              selectTab("chat");
+            } else if (scope === "agent") {
+              applyAgentSessionById(id);
+              selectTab("agents");
+            }
+          });
+        }
+        const sidebarNewChatBtn = document.getElementById("sidebarNewChat");
+        if (sidebarNewChatBtn) {
+          sidebarNewChatBtn.addEventListener("click", function () {
+            newChatSession();
+            selectTab("chat");
+          });
+        }
+        const sidebarNewRunBtn = document.getElementById("sidebarNewRun");
+        if (sidebarNewRunBtn) {
+          sidebarNewRunBtn.addEventListener("click", function () {
+            newSession();
+            selectTab("agents");
+          });
+        }
+
+        if (el.devMode) {
+          el.devMode.addEventListener("change", function () {
+            applyDeveloperMode();
+            setStatus(isDevMode() ? "Developer mode on." : "Developer mode off.");
+            if (!isDevMode() && el.rawJsonDetails) {
+              try {
+                const raw = (el.output.textContent || "").trim();
+                showJson(raw ? JSON.parse(raw) : {});
+              } catch (_) {
+                el.rawJsonDetails.open = false;
+              }
+            }
+          });
+        }
+
+        if (el.copyOutputJson) {
+          el.copyOutputJson.addEventListener("click", async function (ev) {
+            ev.preventDefault();
+            ev.stopPropagation();
+            const t = el.output.textContent || "";
+            try {
+              await navigator.clipboard.writeText(t);
+              setStatus("JSON copied to clipboard.");
+            } catch (_) {
+              try {
+                const range = document.createRange();
+                range.selectNodeContents(el.output);
+                const sel = window.getSelection();
+                sel.removeAllRanges();
+                sel.addRange(range);
+                document.execCommand("copy");
+                sel.removeAllRanges();
+                setStatus("JSON copied (fallback selection).");
+              } catch (e2) {
+                setStatus("Could not copy.", true);
+              }
+            }
+          });
+        }
 
         el.chatMessage.addEventListener("keydown", function (ev) {
           if (ev.key === "Enter" && !ev.shiftKey) {
@@ -1529,19 +2613,48 @@
           }
         });
 
-        (function init() {
+        (async function init() {
           const saved = sessionStorage.getItem(KEY_STORAGE);
           if (saved) el.apiKey.value = saved;
+          try {
+            if (sessionStorage.getItem(DEV_STORAGE) === "1" && el.devMode) {
+              el.devMode.checked = true;
+            }
+          } catch (_) {}
+          applyDeveloperMode();
           try {
             const t = sessionStorage.getItem("opencore-runtime-ui-tab");
             if (t === "chat" || t === "inspect" || t === "settings") selectTab(t);
           } catch (_) {}
-          newSession();
-          el.chatSessionId.value = crypto.randomUUID();
-          lastChatRunId = "";
-          el.chatRunIdLabel.textContent = "runId: —";
-          initChatThreadWelcome();
-          reloadAgents();
+          await reloadAgents();
+          try {
+            const ast = readAgentStore();
+            if (ast.sessions.length) {
+              const pickA =
+                (ast.activeSessionId && findAgentSession(ast, ast.activeSessionId) && ast.activeSessionId) ||
+                ast.sessions[0].id;
+              applyAgentSessionById(pickA);
+            } else {
+              newSession();
+            }
+            renderAgentSessionPicker();
+          } catch (_) {
+            newSession();
+          }
+          try {
+            const cst = readChatStore();
+            if (cst.sessions.length) {
+              const pickC =
+                (cst.activeSessionId && findChatSession(cst, cst.activeSessionId) && cst.activeSessionId) ||
+                cst.sessions[0].id;
+              applyChatSessionById(pickC);
+            } else {
+              newChatSession();
+            }
+            renderChatSessionPicker();
+          } catch (_) {
+            newChatSession();
+          }
         })();
       })();
     </script>
