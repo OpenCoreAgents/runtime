@@ -14,7 +14,12 @@ describe("default chat agent tools", () => {
   });
 
   it("adds artifact tool only when artifacts are enabled", () => {
-    expect(chatAgentToolIds(defaultStackConfig)).not.toContain("system_write_artifact");
+    expect(
+      chatAgentToolIds({
+        ...defaultStackConfig,
+        artifacts: { ...defaultStackConfig.artifacts, enabled: false },
+      }),
+    ).not.toContain("system_write_artifact");
     expect(
       chatAgentToolIds({
         ...defaultStackConfig,
