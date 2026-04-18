@@ -47,7 +47,7 @@ describe("registerRuntimeArtifactTool", () => {
     }
   });
 
-  it("writes json artifacts inside the configured root", async () => {
+  it("writes json artifacts inside the configured root scoped by projectId and sessionId", async () => {
     await registerRuntimeArtifactTool({
       enabled: true,
       rootDir,
@@ -64,6 +64,7 @@ describe("registerRuntimeArtifactTool", () => {
     )) as {
       success: boolean;
       projectId: string;
+      sessionId: string;
       path: string;
       scopedPath: string;
       absolutePath: string;
@@ -72,12 +73,13 @@ describe("registerRuntimeArtifactTool", () => {
 
     expect(out.success).toBe(true);
     expect(out.projectId).toBe("p1");
+    expect(out.sessionId).toBe("s1");
     expect(out.path).toBe("plans/birthday.json");
-    expect(out.scopedPath).toBe("p1/plans/birthday.json");
-    expect(out.publicUrl).toBe("/artifacts/p1/plans/birthday.json");
+    expect(out.scopedPath).toBe("p1/s1/plans/birthday.json");
+    expect(out.publicUrl).toBe("/artifacts/p1/s1/plans/birthday.json");
     const body = await fs.readFile(out.absolutePath, "utf8");
     expect(body).toContain('"ok": true');
-    expect(out.absolutePath).toContain(path.join("p1", "plans", "birthday.json"));
+    expect(out.absolutePath).toContain(path.join("p1", "s1", "plans", "birthday.json"));
   });
 
   it("rejects path traversal outside the artifact root", async () => {

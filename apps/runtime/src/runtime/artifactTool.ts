@@ -18,9 +18,17 @@ function projectNamespace(projectId: string): string {
   return cleaned;
 }
 
+function sessionNamespace(sessionId: string): string {
+  const cleaned = sessionId.trim().replace(/[\\/]+/g, "_");
+  if (!cleaned) {
+    throw new Error("system_write_artifact: sessionId is required");
+  }
+  return cleaned;
+}
+
 function normalizeRelativeArtifactPath(input: string): string {
   const trimmed = input.trim().replace(/\\/g, "/");
-  const cleaned = trimmed.replace(/^\/+/, "");
+  const cleaned = trimmed.replace(/^\/+/ , "");
   if (!cleaned) {
     throw new Error("system_write_artifact: path is required");
   }
@@ -65,7 +73,7 @@ export async function registerRuntimeArtifactTool(
     id: RUNTIME_WRITE_ARTIFACT_TOOL_ID,
     scope: "global",
     description:
-      "Writes an artifact file under the runtime artifact root, isolated by projectId. Use for planner outputs such as reports, JSON, markdown, or generated assets.",
+      "Writes an artifact file under the runtime artifact root, isolated by projectId and sessionId. Use for planner outputs such as reports, JSON, markdown, or generated assets.",
     inputSchema: {
       type: "object",
       properties: {
@@ -91,8 +99,9 @@ export async function registerRuntimeArtifactTool(
           : {};
       const relativePath = normalizeRelativeArtifactPath(String(args.path ?? ""));
       const projectId = projectNamespace(ctx.projectId);
-      const projectScopedRoot = path.resolve(config.rootDir, projectId);
-      const outputPath = path.resolve(projectScopedRoot, relativePath);
+      const sessionId = sessionNamespace(ctx.sessionId);
+      const scopedRoot = path.resolve(config.rootDir, projectId, sessionId);
+      const outputPath = path.resolve(scopedRoot, relativePath);
       const rootResolved = path.resolve(config.rootDir);
       if (outputPath !== rootResolved && !outputPath.startsWith(rootResolved + path.sep)) {
         throw new Error("system_write_artifact: resolved path escapes the configured artifact root");
@@ -102,15 +111,18 @@ export async function registerRuntimeArtifactTool(
       await fs.mkdir(path.dirname(outputPath), { recursive: true });
       await fs.writeFile(outputPath, body);
 
+      const scopedUrlPath = `${projectId}/${sessionId}/${relativePath.split(path.sep).join("/")}`;
+
       return {
         success: true,
         projectId,
+        sessionId,
         path: relativePath,
-        scopedPath: `${projectId}/${relativePath.split(path.sep).join("/")}`,
+        scopedPath: scopedUrlPath,
         absolutePath: outputPath,
         bytes: body.byteLength,
-        ...(publicUrlFor(config.publicBaseUrl, `${projectId}/${relativePath}`)
-          ? { publicUrl: publicUrlFor(config.publicBaseUrl, `${projectId}/${relativePath}`) }
+        ...(publicUrlFor(config.publicBaseUrl, scopedUrlPath)
+          ? { publicUrl: publicUrlFor(config.publicBaseUrl, scopedUrlPath) }
           : {}),
       };
     },
