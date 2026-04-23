@@ -90,11 +90,17 @@ export interface RuntimeRestPluginOptions {
   apiKey?: string;
   /**
    * Expected secret per request. Runs **after** tenant resolution — use **`getRuntimeRestRouterProjectId(res)`**
-   * for a key per **`projectId`** (env map, vault, etc.).
+   * and **`getRuntimeRestRouterTenantId(res)`** for keys per **`projectId`** and optional **`tenantId`**
+   * (env map, vault, etc.).
    * If it returns a non-empty string, that value is used; otherwise **`apiKey`** is used as fallback.
    * If both are unset or both yield empty for a request, that request skips API-key auth.
    */
   resolveApiKey?: (req: Request, res: Response) => string | undefined;
+  /**
+   * When true, run lifecycle and run-read routes require a non-empty **`tenantId`**.
+   * Defaults to false so project-only deployments remain backward compatible.
+   */
+  requiredTenant?: boolean;
   /**
    * Expose **OpenAPI JSON** + **Swagger UI** on the same router (no extra npm deps — UI loads from **unpkg**).
    * These routes are registered **before** tenant + API-key middleware so **`GET /docs`** and **`GET /openapi.json`**
@@ -104,6 +110,7 @@ export interface RuntimeRestPluginOptions {
 }
 
 const localsKey = "runtimeRestProjectId" as const;
+const tenantLocalsKey = "runtimeRestTenantId" as const;
 
 /**
  * Effective **`projectId`** for this request after tenant middleware (same value **`Session`** uses).
@@ -111,6 +118,11 @@ const localsKey = "runtimeRestProjectId" as const;
  */
 export function getRuntimeRestRouterProjectId(res: Response): string | undefined {
   return (res.locals as Record<string, string | undefined>)[localsKey];
+}
+
+/** Optional **`tenantId`** resolved before API-key auth. */
+export function getRuntimeRestRouterTenantId(res: Response): string | undefined {
+  return (res.locals as Record<string, string | undefined>)[tenantLocalsKey];
 }
 
 function getRuntimeRestProjectId(res: Response): string {
@@ -134,6 +146,25 @@ export function defaultRuntimeRestResolveProjectId(req: Request): string | undef
   ) {
     const p = (body as { projectId: string }).projectId.trim();
     if (p) return p;
+  }
+  return undefined;
+}
+
+/** Default tenant sub-scope resolution: header **`X-Tenant-Id`**, then **`?tenantId=`**, then **`body.tenantId`**. */
+export function defaultRuntimeRestResolveTenantId(req: Request): string | undefined {
+  const h = req.header("x-tenant-id")?.trim();
+  if (h) return h;
+  const q = req.query.tenantId;
+  if (typeof q === "string" && q.trim()) return q.trim();
+  const body = req.body;
+  if (
+    body &&
+    typeof body === "object" &&
+    !Array.isArray(body) &&
+    typeof (body as { tenantId?: unknown }).tenantId === "string"
+  ) {
+    const t = (body as { tenantId: string }).tenantId.trim();
+    if (t) return t;
   }
   return undefined;
 }
@@ -211,9 +242,41 @@ function parseRunListLimit(q: unknown): number {
   return Math.min(100, Math.max(1, n));
 }
 
-function runMatchesListTenant(run: Run, effectiveProjectId: string): boolean {
-  if (run.projectId != null) return run.projectId === effectiveProjectId;
+function runMatchesListTenant(
+  run: Run,
+  effectiveProjectId: string,
+  tenantId?: string,
+): boolean {
+  if (run.projectId !== effectiveProjectId) return false;
+  if (tenantId !== undefined) return run.tenantId === tenantId;
+  if (run.tenantId !== undefined) return false;
   return true;
+}
+
+function parseOptionalTenantIdQuery(v: unknown): string | undefined {
+  return typeof v === "string" && v.trim() ? v.trim() : undefined;
+}
+
+function requireTenantId(
+  requiredTenant: boolean,
+  tenantId: string | undefined,
+): { ok: true } | { ok: false; error: string } {
+  if (!requiredTenant || tenantId !== undefined) return { ok: true };
+  return { ok: false, error: "tenantId is required" };
+}
+
+function parseOptionalTenantIdBody(body: unknown):
+  | { ok: true; tenantId?: string }
+  | { ok: false; error: string } {
+  if (body == null || typeof body !== "object" || Array.isArray(body)) {
+    return { ok: true };
+  }
+  const tenantId = (body as { tenantId?: unknown }).tenantId;
+  if (tenantId === undefined) return { ok: true };
+  if (typeof tenantId !== "string" || !tenantId.trim()) {
+    return { ok: false, error: "tenantId must be a non-empty string when set" };
+  }
+  return { ok: true, tenantId: tenantId.trim() };
 }
 
 const MAX_BUS_AGENT_ID_LEN = 256;
@@ -320,6 +383,7 @@ async function loadRunForTenantScopedRead(
   runId: string,
   sessionId: string,
   projectId: string,
+  tenantId?: string,
 ): Promise<
   | { ok: true; run: Run }
   | { ok: false; status: number; body: { error: string } }
@@ -329,8 +393,15 @@ async function loadRunForTenantScopedRead(
   if (run.sessionId != null && run.sessionId !== sessionId) {
     return { ok: false, status: 403, body: { error: "sessionId does not match this run" } };
   }
-  if (run.projectId != null && run.projectId !== projectId) {
+  if (run.projectId !== projectId) {
     return { ok: false, status: 403, body: { error: "projectId does not match this run" } };
+  }
+  if (tenantId !== undefined) {
+    if (run.tenantId !== tenantId) {
+      return { ok: false, status: 403, body: { error: "tenantId does not match this run" } };
+    }
+  } else if (run.tenantId !== undefined) {
+    return { ok: false, status: 403, body: { error: "tenantId required for this run" } };
   }
   return { ok: true, run };
 }
@@ -405,6 +476,7 @@ export function createRuntimeRestRouter(options: RuntimeRestPluginOptions): Rout
     runStore,
     apiKey,
     resolveApiKey,
+    requiredTenant = false,
     swagger: swaggerOption,
   } = options;
 
@@ -464,6 +536,14 @@ export function createRuntimeRestRouter(options: RuntimeRestPluginOptions): Rout
     next();
   };
 
+  const resolveEffectiveTenantId: RequestHandler = (req, res, next) => {
+    const tenantId = defaultRuntimeRestResolveTenantId(req);
+    if (tenantId !== undefined) {
+      (res.locals as Record<string, string>)[tenantLocalsKey] = tenantId;
+    }
+    next();
+  };
+
   const r = express.Router();
   r.use(express.json({ limit: "512kb" }));
 
@@ -477,6 +557,7 @@ export function createRuntimeRestRouter(options: RuntimeRestPluginOptions): Rout
       hasInterAgentSend: !!runtime,
       hasRunStore: !!runStore,
       multiProject: multiProjectOpenApi,
+      requiredTenant,
       hasApiKey: !!(apiKey?.trim() || resolveApiKey),
       title: swaggerInfo?.title,
       version: swaggerInfo?.version,
@@ -495,6 +576,7 @@ export function createRuntimeRestRouter(options: RuntimeRestPluginOptions): Rout
   }
 
   r.use(resolveEffectiveProjectId);
+  r.use(resolveEffectiveTenantId);
   r.use(optionalApiKeyAuth({ apiKey, resolveApiKey }));
 
   r.get("/agents", (_req, res) => {
@@ -638,6 +720,7 @@ export function createRuntimeRestRouter(options: RuntimeRestPluginOptions): Rout
     const body = req.body as {
       message?: unknown;
       sessionId?: unknown;
+      tenantId?: unknown;
       expiresAtMs?: unknown;
       extendSessionTtlMs?: unknown;
     };
@@ -648,6 +731,17 @@ export function createRuntimeRestRouter(options: RuntimeRestPluginOptions): Rout
     const sessionTiming = parseSessionTiming(body);
     if (!sessionTiming.ok) {
       res.status(400).json({ error: sessionTiming.error });
+      return;
+    }
+    const parsedTenantId = parseOptionalTenantIdBody(body);
+    if (!parsedTenantId.ok) {
+      res.status(400).json({ error: parsedTenantId.error });
+      return;
+    }
+    const tenantId = parsedTenantId.tenantId ?? getRuntimeRestRouterTenantId(res);
+    const tenantPolicy = requireTenantId(requiredTenant, tenantId);
+    if (!tenantPolicy.ok) {
+      res.status(400).json({ error: tenantPolicy.error });
       return;
     }
 
@@ -665,6 +759,7 @@ export function createRuntimeRestRouter(options: RuntimeRestPluginOptions): Rout
           projectId,
           agentId,
           sessionId,
+          ...(tenantId !== undefined ? { tenantId } : {}),
           runId,
           ...(sessionTiming.expiresAtMs !== undefined
             ? { expiresAtMs: sessionTiming.expiresAtMs }
@@ -684,6 +779,7 @@ export function createRuntimeRestRouter(options: RuntimeRestPluginOptions): Rout
             runId,
             sessionId,
             projectId,
+            ...(tenantId !== undefined ? { tenantId } : {}),
             statusUrl: url,
             pollUrl: url,
           });
@@ -703,10 +799,22 @@ export function createRuntimeRestRouter(options: RuntimeRestPluginOptions): Rout
         } catch (waitErr) {
           const msg = errorMessage(waitErr);
           if (isBullmqJobWaitTimeoutError(waitErr)) {
-            res.status(504).json({ jobId, sessionId, projectId, error: msg });
+            res.status(504).json({
+              jobId,
+              sessionId,
+              projectId,
+              ...(tenantId !== undefined ? { tenantId } : {}),
+              error: msg,
+            });
             return;
           }
-          res.status(502).json({ jobId, sessionId, projectId, error: msg });
+          res.status(502).json({
+            jobId,
+            sessionId,
+            projectId,
+            ...(tenantId !== undefined ? { tenantId } : {}),
+            error: msg,
+          });
           return;
         }
 
@@ -716,6 +824,7 @@ export function createRuntimeRestRouter(options: RuntimeRestPluginOptions): Rout
             jobId,
             sessionId,
             projectId,
+            ...(tenantId !== undefined ? { tenantId } : {}),
             runId: s.runId,
             status: s.status,
             ...(s.reply !== undefined ? { reply: s.reply } : {}),
@@ -730,6 +839,7 @@ export function createRuntimeRestRouter(options: RuntimeRestPluginOptions): Rout
             jobId,
             sessionId,
             projectId,
+            ...(tenantId !== undefined ? { tenantId } : {}),
             runId: s.runId,
             status: s.status,
             ...(s.reply !== undefined ? { reply: s.reply } : {}),
@@ -757,6 +867,7 @@ export function createRuntimeRestRouter(options: RuntimeRestPluginOptions): Rout
       const session = new Session({
         id: sessionId,
         projectId,
+        ...(tenantId !== undefined ? { tenantId } : {}),
         ...(sessionTiming.expiresAtMs !== undefined
           ? { expiresAtMs: sessionTiming.expiresAtMs }
           : {}),
@@ -768,6 +879,7 @@ export function createRuntimeRestRouter(options: RuntimeRestPluginOptions): Rout
         sessionId,
         runId: run.runId,
         projectId,
+        ...(tenantId !== undefined ? { tenantId } : {}),
         status: run.status,
       };
       const reply = resultText(run);
@@ -779,6 +891,7 @@ export function createRuntimeRestRouter(options: RuntimeRestPluginOptions): Rout
           body: {
             runId: run.runId,
             sessionId,
+            ...(tenantId !== undefined ? { tenantId } : {}),
             resumeInput: { type: "text", content: "<user follow-up>" },
           },
         };
@@ -817,6 +930,7 @@ export function createRuntimeRestRouter(options: RuntimeRestPluginOptions): Rout
       runId?: unknown;
       sessionId?: unknown;
       resumeInput?: unknown;
+      tenantId?: unknown;
       expiresAtMs?: unknown;
       extendSessionTtlMs?: unknown;
     };
@@ -846,6 +960,17 @@ export function createRuntimeRestRouter(options: RuntimeRestPluginOptions): Rout
       res.status(400).json({ error: sessionTiming.error });
       return;
     }
+    const parsedTenantId = parseOptionalTenantIdBody(body);
+    if (!parsedTenantId.ok) {
+      res.status(400).json({ error: parsedTenantId.error });
+      return;
+    }
+    const tenantId = parsedTenantId.tenantId ?? getRuntimeRestRouterTenantId(res);
+    const tenantPolicy = requireTenantId(requiredTenant, tenantId);
+    if (!tenantPolicy.ok) {
+      res.status(400).json({ error: tenantPolicy.error });
+      return;
+    }
 
     if (dispatch) {
       const wait = parseWait(req);
@@ -855,6 +980,7 @@ export function createRuntimeRestRouter(options: RuntimeRestPluginOptions): Rout
           projectId,
           agentId,
           sessionId: body.sessionId.trim(),
+          ...(tenantId !== undefined ? { tenantId } : {}),
           ...(sessionTiming.expiresAtMs !== undefined
             ? { expiresAtMs: sessionTiming.expiresAtMs }
             : {}),
@@ -874,6 +1000,7 @@ export function createRuntimeRestRouter(options: RuntimeRestPluginOptions): Rout
             sessionId: body.sessionId.trim(),
             runId: body.runId.trim(),
             projectId,
+            ...(tenantId !== undefined ? { tenantId } : {}),
             statusUrl: url,
             pollUrl: url,
           });
@@ -894,10 +1021,22 @@ export function createRuntimeRestRouter(options: RuntimeRestPluginOptions): Rout
           const msg = errorMessage(waitErr);
           const sid = body.sessionId.trim();
           if (isBullmqJobWaitTimeoutError(waitErr)) {
-            res.status(504).json({ jobId, sessionId: sid, projectId, error: msg });
+            res.status(504).json({
+              jobId,
+              sessionId: sid,
+              projectId,
+              ...(tenantId !== undefined ? { tenantId } : {}),
+              error: msg,
+            });
             return;
           }
-          res.status(502).json({ jobId, sessionId: sid, projectId, error: msg });
+          res.status(502).json({
+            jobId,
+            sessionId: sid,
+            projectId,
+            ...(tenantId !== undefined ? { tenantId } : {}),
+            error: msg,
+          });
           return;
         }
 
@@ -907,6 +1046,7 @@ export function createRuntimeRestRouter(options: RuntimeRestPluginOptions): Rout
             jobId,
             sessionId: body.sessionId.trim(),
             projectId,
+            ...(tenantId !== undefined ? { tenantId } : {}),
             runId: s.runId,
             status: s.status,
             ...(s.reply !== undefined ? { reply: s.reply } : {}),
@@ -921,6 +1061,7 @@ export function createRuntimeRestRouter(options: RuntimeRestPluginOptions): Rout
             jobId,
             sessionId: body.sessionId.trim(),
             projectId,
+            ...(tenantId !== undefined ? { tenantId } : {}),
             runId: s.runId,
             status: s.status,
             ...(s.reply !== undefined ? { reply: s.reply } : {}),
@@ -947,6 +1088,7 @@ export function createRuntimeRestRouter(options: RuntimeRestPluginOptions): Rout
       const session = new Session({
         id: body.sessionId.trim(),
         projectId,
+        ...(tenantId !== undefined ? { tenantId } : {}),
         ...(sessionTiming.expiresAtMs !== undefined
           ? { expiresAtMs: sessionTiming.expiresAtMs }
           : {}),
@@ -958,6 +1100,7 @@ export function createRuntimeRestRouter(options: RuntimeRestPluginOptions): Rout
         sessionId: body.sessionId.trim(),
         runId: run.runId,
         projectId,
+        ...(tenantId !== undefined ? { tenantId } : {}),
         status: run.status,
       };
       const reply = resultText(run);
@@ -991,6 +1134,7 @@ export function createRuntimeRestRouter(options: RuntimeRestPluginOptions): Rout
       runId?: unknown;
       sessionId?: unknown;
       message?: unknown;
+      tenantId?: unknown;
       expiresAtMs?: unknown;
       extendSessionTtlMs?: unknown;
     };
@@ -1011,6 +1155,17 @@ export function createRuntimeRestRouter(options: RuntimeRestPluginOptions): Rout
       res.status(400).json({ error: sessionTiming.error });
       return;
     }
+    const parsedTenantId = parseOptionalTenantIdBody(body);
+    if (!parsedTenantId.ok) {
+      res.status(400).json({ error: parsedTenantId.error });
+      return;
+    }
+    const tenantId = parsedTenantId.tenantId ?? getRuntimeRestRouterTenantId(res);
+    const tenantPolicy = requireTenantId(requiredTenant, tenantId);
+    if (!tenantPolicy.ok) {
+      res.status(400).json({ error: tenantPolicy.error });
+      return;
+    }
 
     if (dispatch) {
       const wait = parseWait(req);
@@ -1020,6 +1175,7 @@ export function createRuntimeRestRouter(options: RuntimeRestPluginOptions): Rout
           projectId,
           agentId,
           sessionId: body.sessionId.trim(),
+          ...(tenantId !== undefined ? { tenantId } : {}),
           ...(sessionTiming.expiresAtMs !== undefined
             ? { expiresAtMs: sessionTiming.expiresAtMs }
             : {}),
@@ -1039,6 +1195,7 @@ export function createRuntimeRestRouter(options: RuntimeRestPluginOptions): Rout
             sessionId: body.sessionId.trim(),
             runId: body.runId.trim(),
             projectId,
+            ...(tenantId !== undefined ? { tenantId } : {}),
             statusUrl: url,
             pollUrl: url,
           });
@@ -1059,10 +1216,22 @@ export function createRuntimeRestRouter(options: RuntimeRestPluginOptions): Rout
           const msg = errorMessage(waitErr);
           const sid = body.sessionId.trim();
           if (isBullmqJobWaitTimeoutError(waitErr)) {
-            res.status(504).json({ jobId, sessionId: sid, projectId, error: msg });
+            res.status(504).json({
+              jobId,
+              sessionId: sid,
+              projectId,
+              ...(tenantId !== undefined ? { tenantId } : {}),
+              error: msg,
+            });
             return;
           }
-          res.status(502).json({ jobId, sessionId: sid, projectId, error: msg });
+          res.status(502).json({
+            jobId,
+            sessionId: sid,
+            projectId,
+            ...(tenantId !== undefined ? { tenantId } : {}),
+            error: msg,
+          });
           return;
         }
 
@@ -1072,6 +1241,7 @@ export function createRuntimeRestRouter(options: RuntimeRestPluginOptions): Rout
             jobId,
             sessionId: body.sessionId.trim(),
             projectId,
+            ...(tenantId !== undefined ? { tenantId } : {}),
             runId: s.runId,
             status: s.status,
             ...(s.reply !== undefined ? { reply: s.reply } : {}),
@@ -1086,6 +1256,7 @@ export function createRuntimeRestRouter(options: RuntimeRestPluginOptions): Rout
             jobId,
             sessionId: body.sessionId.trim(),
             projectId,
+            ...(tenantId !== undefined ? { tenantId } : {}),
             runId: s.runId,
             status: s.status,
             ...(s.reply !== undefined ? { reply: s.reply } : {}),
@@ -1114,6 +1285,7 @@ export function createRuntimeRestRouter(options: RuntimeRestPluginOptions): Rout
       const session = new Session({
         id: body.sessionId.trim(),
         projectId,
+        ...(tenantId !== undefined ? { tenantId } : {}),
         ...(sessionTiming.expiresAtMs !== undefined
           ? { expiresAtMs: sessionTiming.expiresAtMs }
           : {}),
@@ -1125,6 +1297,7 @@ export function createRuntimeRestRouter(options: RuntimeRestPluginOptions): Rout
         sessionId: body.sessionId.trim(),
         runId: run.runId,
         projectId,
+        ...(tenantId !== undefined ? { tenantId } : {}),
         status: run.status,
       };
       const reply = resultText(run);
@@ -1172,16 +1345,29 @@ export function createRuntimeRestRouter(options: RuntimeRestPluginOptions): Rout
       typeof sessionFilterRaw === "string" && sessionFilterRaw.trim()
         ? sessionFilterRaw.trim()
         : undefined;
+    const tenantFilter =
+      parseOptionalTenantIdQuery(req.query.tenantId) ?? getRuntimeRestRouterTenantId(res);
+    const tenantPolicy = requireTenantId(requiredTenant, tenantFilter);
+    if (!tenantPolicy.ok) {
+      res.status(400).json({ error: tenantPolicy.error });
+      return;
+    }
 
     const limit = parseRunListLimit(req.query.limit);
 
     try {
-      let rows = await runStore.listByAgent(agentId, statusFilter);
-      rows = rows.filter(
-        (run) =>
-          runMatchesListTenant(run, projectId) &&
-          (sessionFilter === undefined || run.sessionId === sessionFilter),
-      );
+      let rows =
+        sessionFilter === undefined
+          ? await runStore.listByAgent(agentId, statusFilter)
+          : (
+              await runStore.listByAgentAndSession(projectId, agentId, sessionFilter, {
+                tenantId: tenantFilter,
+                status: statusFilter,
+                limit,
+                order: "desc",
+              })
+            ).runs;
+      rows = rows.filter((run) => runMatchesListTenant(run, projectId, tenantFilter));
       rows = rows.slice(0, limit);
 
       res.json({
@@ -1214,10 +1400,17 @@ export function createRuntimeRestRouter(options: RuntimeRestPluginOptions): Rout
 
     const projectId = getRuntimeRestProjectId(res);
     const light = parseQueryFlag(req.query.light);
+    const tenantId =
+      parseOptionalTenantIdQuery(req.query.tenantId) ?? getRuntimeRestRouterTenantId(res);
+    const tenantPolicy = requireTenantId(requiredTenant, tenantId);
+    if (!tenantPolicy.ok) {
+      res.status(400).json({ error: tenantPolicy.error });
+      return;
+    }
 
     try {
       const agentIds = agentsListedForProject(projectId);
-      const runs = await loadRunsForSession(runStore, { sessionId, projectId, agentIds });
+      const runs = await loadRunsForSession(runStore, { sessionId, projectId, tenantId, agentIds });
       const byStatus = emptyRunStatusSummary();
       for (const r of runs) {
         byStatus[r.status] += 1;
@@ -1237,6 +1430,7 @@ export function createRuntimeRestRouter(options: RuntimeRestPluginOptions): Rout
             agentId: r.agentId,
             ...(r.sessionId !== undefined ? { sessionId: r.sessionId } : {}),
             ...(r.projectId !== undefined ? { projectId: r.projectId } : {}),
+            ...(r.tenantId !== undefined ? { tenantId: r.tenantId } : {}),
             status: r.status,
             ...(userInput !== undefined ? { userInput } : {}),
             ...(resumeInputs ? { resumeInputs } : {}),
@@ -1277,9 +1471,16 @@ export function createRuntimeRestRouter(options: RuntimeRestPluginOptions): Rout
 
     const projectId = getRuntimeRestProjectId(res);
     const wantTimeline = parseQueryFlag(req.query.timeline);
+    const tenantId =
+      parseOptionalTenantIdQuery(req.query.tenantId) ?? getRuntimeRestRouterTenantId(res);
+    const tenantPolicy = requireTenantId(requiredTenant, tenantId);
+    if (!tenantPolicy.ok) {
+      res.status(400).json({ error: tenantPolicy.error });
+      return;
+    }
 
     try {
-      const loaded = await loadRunForTenantScopedRead(runStore, runId, sessionId, projectId);
+      const loaded = await loadRunForTenantScopedRead(runStore, runId, sessionId, projectId, tenantId);
       if (!loaded.ok) {
         res.status(loaded.status).json(loaded.body);
         return;
@@ -1291,6 +1492,7 @@ export function createRuntimeRestRouter(options: RuntimeRestPluginOptions): Rout
         agentId: run.agentId,
         ...(run.sessionId !== undefined ? { sessionId: run.sessionId } : {}),
         ...(run.projectId !== undefined ? { projectId: run.projectId } : {}),
+        ...(run.tenantId !== undefined ? { tenantId: run.tenantId } : {}),
         status: run.status,
         history,
       });
@@ -1319,9 +1521,16 @@ export function createRuntimeRestRouter(options: RuntimeRestPluginOptions): Rout
     }
 
     const projectId = getRuntimeRestProjectId(res);
+    const tenantId =
+      parseOptionalTenantIdQuery(req.query.tenantId) ?? getRuntimeRestRouterTenantId(res);
+    const tenantPolicy = requireTenantId(requiredTenant, tenantId);
+    if (!tenantPolicy.ok) {
+      res.status(400).json({ error: tenantPolicy.error });
+      return;
+    }
 
     try {
-      const loaded = await loadRunForTenantScopedRead(runStore, runId, sessionId, projectId);
+      const loaded = await loadRunForTenantScopedRead(runStore, runId, sessionId, projectId, tenantId);
       if (!loaded.ok) {
         res.status(loaded.status).json(loaded.body);
         return;
@@ -1341,6 +1550,7 @@ export function createRuntimeRestRouter(options: RuntimeRestPluginOptions): Rout
         agentId: run.agentId,
         sessionId: run.sessionId,
         ...(run.projectId !== undefined ? { projectId: run.projectId } : {}),
+        ...(run.tenantId !== undefined ? { tenantId: run.tenantId } : {}),
         status: run.status,
         ...(userInput !== undefined ? { userInput } : {}),
         ...(resumeInputs ? { resumeInputs } : {}),

@@ -131,6 +131,18 @@ interface RunStore {
   load(runId: string): Promise<Run | null>;
   delete(runId: string): Promise<void>;
   listByAgent(agentId: string, status?: RunStatus): Promise<Run[]>;
+  listByAgentAndSession(
+    projectId: string,
+    agentId: string,
+    sessionId: string,
+    opts?: {
+      tenantId?: string;
+      status?: RunStatus;
+      limit?: number;
+      cursor?: string;
+      order?: "asc" | "desc";
+    }
+  ): Promise<{ runs: Run[]; nextCursor?: string }>;
 }
 ```
 
@@ -145,8 +157,8 @@ interface RunStore {
 ### 3.3 Integration points
 
 - `Agent.run()` / `Agent.resume()` → `RunBuilder` persists after every `executeRun` when `runStore` is configured (including `status: waiting` so another worker can resume): unconditional **`save`** for the first write of a new run; **`saveIfStatus(..., "waiting")`** when resuming or continuing in-process after a **`waiting`** persist (see §3.4).
-- **`buildEngineDeps` + `createRun` + `executeRun`** (no `RunBuilder`) → pass **`session.projectId`** as the fourth argument to **`createRun`** so stored runs match tenant and **`Agent.resume`** validation; you must **`runStore.save(run)`** after each `executeRun` when `runStore` is set, same as `RunBuilder` (including `waiting`).
-- `Agent.resume(runId, input)` → `runStore.load(runId)` (must be `waiting`), injects a user `resumeMessages` turn, then `executeRun` continues the loop.
+- **`buildEngineDeps` + `createRun` + `executeRun`** (no `RunBuilder`) → pass **`session.projectId`** as the fourth argument and optional **`session.tenantId`** as the sixth argument to **`createRun`** so stored runs match the session isolation scope; you must **`runStore.save(run)`** after each `executeRun` when `runStore` is set, same as `RunBuilder` (including `waiting`).
+- `Agent.resume(runId, input)` → `runStore.load(runId)` (must be `waiting`), verifies exact **`projectId`** and optional **`tenantId`** match the current **`Session`**, injects a user `resumeMessages` turn, then `executeRun` continues the loop.
 - On `completed` / `failed` → same save applies; optionally delete or archive in your app if you do not want long-term retention.
 
 Pass **`runStore`** (and other adapters) in the **`AgentRuntime`** constructor alongside **`memoryAdapter`** and **`llmAdapter`**.
@@ -155,7 +167,7 @@ Pass **`runStore`** (and other adapters) in the **`AgentRuntime`** constructor a
 
 - **`RunStore.saveIfStatus` (bundled adapters):** after **`resume`** and after in-process **`onWait`** when the run was last persisted as **`waiting`**, **`RunBuilder`** calls **`saveIfStatus(..., "waiting")`** so only one writer succeeds; the other gets **`RunInvalidStateError`**. **`RedisRunStore`** uses **`WATCH`/`MULTI`/`EXEC`**; **`UpstashRunStore`** uses one **`EVAL`** per commit. The **first** persist of a brand-new run still uses unconditional **`save`**. Prefer **BullMQ `jobId`** dedupe anyway to avoid wasted work.
 - **Memory adapters (`Redis` / `Upstash`)** use **read–modify–write** for **`save`** (append to a JSON list). Concurrent **`system_save_memory`** for the **same** session + `memoryType` can **lose** updates. Use app-level serialization, **Lua** / **`WATCH`**, or list primitives if you need atomic append under load.
-- **`EngineJobPayload`** (BullMQ) includes **`sessionId`**, optional **`endUserId`**, and optional **`expiresAtMs`**. **`dispatchEngineJob`** forwards **`endUserId`** into **`Session`** and throws **`EngineJobExpiredError`** if the job is processed after **`expiresAtMs`** — treat as **non-retryable** in BullMQ if appropriate. For B2B2C **`longTerm`** / **`vectorMemory`**, enqueue jobs with **`endUserId`** set when the run is on behalf of an end-user ([15-multi-tenancy.md §4](./15-multi-tenancy.md)).
+- **`EngineJobPayload`** (BullMQ) includes **`sessionId`**, **`projectId`**, optional **`tenantId`**, optional **`endUserId`**, and optional **`expiresAtMs`**. **`dispatchEngineJob`** forwards these into **`Session`** and throws **`EngineJobExpiredError`** if the job is processed after **`expiresAtMs`** — treat as **non-retryable** in BullMQ if appropriate. For B2B2C **`longTerm`** / **`vectorMemory`**, enqueue jobs with **`endUserId`** set when the run is on behalf of an end-user ([15-multi-tenancy.md §4](./15-multi-tenancy.md)).
 
 Full table: [`technical-debt-security-production.md` §2](../planning/technical-debt-security-production.md#2-multi-worker-concurrency-and-integrity).
 

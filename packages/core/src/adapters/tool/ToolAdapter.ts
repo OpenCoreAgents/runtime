@@ -6,6 +6,7 @@ import type { RagFileSourceEntry } from "../../ragCatalogTypes.js";
 
 export interface ToolContext {
   projectId: string;
+  tenantId?: string;
   agentId: string;
   runId: string;
   sessionId: string;

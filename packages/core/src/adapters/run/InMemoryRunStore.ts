@@ -1,5 +1,5 @@
 import type { Run, RunStatus } from "../../protocol/types.js";
-import type { RunStore } from "./RunStore.js";
+import type { RunStore, RunStoreListByAgentAndSessionOptions } from "./RunStore.js";
 
 function runRecencyScore(run: Run): number {
   const lastTs = run.history[run.history.length - 1]?.meta.ts;
@@ -48,20 +48,22 @@ export class InMemoryRunStore implements RunStore {
   }
 
   async listByAgentAndSession(
+    projectId: string,
     agentId: string,
     sessionId: string,
-    opts?: {
-      status?: RunStatus;
-      limit?: number;
-      cursor?: string;
-      order?: "asc" | "desc";
-    },
+    opts?: RunStoreListByAgentAndSessionOptions,
   ): Promise<{ runs: Run[]; nextCursor?: string }> {
     const order = opts?.order ?? "desc";
     const limit = Math.max(1, opts?.limit ?? 50);
     const offset = parseCursor(opts?.cursor);
     const rows: Run[] = [];
     for (const run of this.runs.values()) {
+      if (run.projectId !== projectId) continue;
+      if (opts?.tenantId !== undefined) {
+        if (run.tenantId !== opts.tenantId) continue;
+      } else if (run.tenantId !== undefined) {
+        continue;
+      }
       if (run.agentId !== agentId) continue;
       if (run.sessionId !== sessionId) continue;
       if (opts?.status !== undefined && run.status !== opts.status) continue;

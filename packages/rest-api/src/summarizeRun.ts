@@ -46,6 +46,7 @@ export interface RuntimeRestRunListItem {
   agentId: string;
   sessionId?: string;
   projectId?: string;
+  tenantId?: string;
   status: Run["status"];
   iteration: number;
   historyStepCount: number;
@@ -67,6 +68,7 @@ export function summarizeRunListEntry(run: Run): RuntimeRestRunListItem {
   };
   if (run.sessionId !== undefined) row.sessionId = run.sessionId;
   if (run.projectId !== undefined) row.projectId = run.projectId;
+  if (run.tenantId !== undefined) row.tenantId = run.tenantId;
   if (userInput !== undefined) row.userInput = userInput;
   if (reply !== undefined) row.reply = reply;
   if (failedReason !== undefined) row.failedReason = failedReason;

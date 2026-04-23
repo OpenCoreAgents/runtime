@@ -189,8 +189,8 @@ describe("ConversationGateway", () => {
       runtime: rt,
       agentId: "g4",
       resolveSession: () => ({ sessionId: "s-w", projectId: "p1" }),
-      findWaitingRunId: (sid, aid) =>
-        findWaitingRunIdFromRunStore(store, sid, aid),
+      findWaitingRunId: (projectId, sid, aid) =>
+        findWaitingRunIdFromRunStore(store, projectId, sid, aid),
       outbound: { sendReply },
       idempotency: {
         seen: (id) => seen.has(id),

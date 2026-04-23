@@ -7,6 +7,7 @@ export type EngineResumeInput = { type: string; content: string };
 export type EngineRunJobPayload = {
   kind: "run";
   projectId: string;
+  tenantId?: string;
   agentId: string;
   sessionId: string;
   /**
@@ -31,6 +32,7 @@ export type EngineRunJobPayload = {
 export type EngineResumeJobPayload = {
   kind: "resume";
   projectId: string;
+  tenantId?: string;
   agentId: string;
   sessionId: string;
   endUserId?: string;
@@ -51,6 +53,7 @@ export type EngineResumeJobPayload = {
 export type EngineContinueJobPayload = {
   kind: "continue";
   projectId: string;
+  tenantId?: string;
   agentId: string;
   sessionId: string;
   endUserId?: string;

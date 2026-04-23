@@ -14,6 +14,7 @@ import {
 import {
   createRuntimeRestRouter,
   getRuntimeRestRouterProjectId,
+  getRuntimeRestRouterTenantId,
 } from "../src/runtimeRestRouter.js";
 
 class TwoStepLlm implements LLMAdapter {
@@ -515,6 +516,152 @@ describe("createRuntimeRestRouter", () => {
     expect(sess.body.runs[0].history).toBeUndefined();
   });
 
+  it("isolates tenant-scoped runs inside the effective project", async () => {
+    const runStore = new InMemoryRunStore();
+    const runtime = new AgentRuntime({
+      llmAdapter: new WaitThenResultLlm(),
+      memoryAdapter: new InMemoryMemoryAdapter(),
+      runStore,
+      maxIterations: 10,
+    });
+
+    await Agent.define({
+      id: "tenant-waiter",
+      projectId: "p1",
+      systemPrompt: "x",
+      tools: [],
+      llm: { provider: "openai", model: "gpt-4o-mini" },
+    });
+
+    const app = express();
+    app.use(
+      createRuntimeRestRouter({
+        runtime,
+        projectId: "p1",
+        agentIds: ["tenant-waiter"],
+        runStore,
+      }),
+    );
+
+    const started = await request(app)
+      .post("/agents/tenant-waiter/run")
+      .send({ message: "hi", sessionId: "sess-tenant", tenantId: "t1" })
+      .expect(200);
+
+    expect(started.body).toMatchObject({
+      projectId: "p1",
+      tenantId: "t1",
+      status: "waiting",
+    });
+
+    await request(app)
+      .get(`/runs/${started.body.runId}`)
+      .query({ sessionId: "sess-tenant" })
+      .expect(403);
+
+    const snap = await request(app)
+      .get(`/runs/${started.body.runId}`)
+      .query({ sessionId: "sess-tenant", tenantId: "t1" })
+      .expect(200);
+    expect(snap.body.tenantId).toBe("t1");
+
+    const hiddenList = await request(app)
+      .get("/agents/tenant-waiter/runs")
+      .query({ sessionId: "sess-tenant" })
+      .expect(200);
+    expect(hiddenList.body.runs).toEqual([]);
+
+    const tenantList = await request(app)
+      .get("/agents/tenant-waiter/runs")
+      .query({ sessionId: "sess-tenant", tenantId: "t1" })
+      .expect(200);
+    expect(tenantList.body.runs.map((row: { runId: string }) => row.runId)).toEqual([
+      started.body.runId,
+    ]);
+
+    const sessionStatus = await request(app)
+      .get("/sessions/sess-tenant/status")
+      .query({ tenantId: "t1", light: "1" })
+      .expect(200);
+    expect(sessionStatus.body.runs.map((row: { runId: string }) => row.runId)).toEqual([
+      started.body.runId,
+    ]);
+
+    await request(app)
+      .post("/agents/tenant-waiter/resume")
+      .send({
+        runId: started.body.runId,
+        sessionId: "sess-tenant",
+        resumeInput: { type: "text", content: "go" },
+      })
+      .expect(409);
+
+    const resumed = await request(app)
+      .post("/agents/tenant-waiter/resume")
+      .send({
+        runId: started.body.runId,
+        sessionId: "sess-tenant",
+        tenantId: "t1",
+        resumeInput: { type: "text", content: "go" },
+      })
+      .expect(200);
+    expect(resumed.body.tenantId).toBe("t1");
+    expect(resumed.body.status).toBe("completed");
+  });
+
+  it("requiredTenant requires tenantId on run routes and accepts X-Tenant-Id", async () => {
+    const runStore = new InMemoryRunStore();
+    const runtime = new AgentRuntime({
+      llmAdapter: new TwoStepLlm(),
+      memoryAdapter: new InMemoryMemoryAdapter(),
+      runStore,
+      maxIterations: 10,
+    });
+
+    await Agent.define({
+      id: "tenant-required",
+      projectId: "p1",
+      systemPrompt: "x",
+      tools: [],
+      llm: { provider: "openai", model: "gpt-4o-mini" },
+    });
+
+    const app = express();
+    app.use(
+      createRuntimeRestRouter({
+        runtime,
+        projectId: "p1",
+        agentIds: ["tenant-required"],
+        runStore,
+        requiredTenant: true,
+      }),
+    );
+
+    await request(app)
+      .post("/agents/tenant-required/run")
+      .send({ message: "hi", sessionId: "sess-required" })
+      .expect(400);
+
+    const ok = await request(app)
+      .post("/agents/tenant-required/run")
+      .set("X-Tenant-Id", "tenant-header")
+      .send({ message: "hi", sessionId: "sess-required" })
+      .expect(200);
+
+    expect(ok.body.tenantId).toBe("tenant-header");
+
+    await request(app)
+      .get(`/runs/${ok.body.runId}`)
+      .query({ sessionId: "sess-required" })
+      .expect(400);
+
+    await request(app)
+      .get(`/runs/${ok.body.runId}`)
+      .set("X-Tenant-Id", "tenant-header")
+      .query({ sessionId: "sess-required" })
+      .expect(200);
+  });
+
   it("GET /runs/:runId and GET /agents/:agentId/runs return 501 without runStore", async () => {
     const runtime = new AgentRuntime({
       llmAdapter: new TwoStepLlm(),
@@ -575,6 +722,15 @@ describe("createRuntimeRestRouter", () => {
       status: "completed",
       history: [],
       state: { iteration: 0, pending: null, parseAttempts: 0 },
+    });
+    await runStore.save({
+      runId: "r-other-project-same-session",
+      agentId: "bot",
+      sessionId: "sess-b",
+      projectId: "p2",
+      status: "completed",
+      history: [{ type: "result", content: "wrong-tenant", meta }],
+      state: { iteration: 1, pending: null, parseAttempts: 0, userInput: "yo" },
     });
 
     const runtime = new AgentRuntime({
@@ -988,6 +1144,49 @@ describe("createRuntimeRestRouter", () => {
       .get("/agents")
       .set("X-Project-Id", "tenant-b")
       .set("X-Api-Key", "secret-b")
+      .expect(200);
+  });
+
+  it("resolveApiKey can use projectId and tenantId locals", async () => {
+    const runtime = new AgentRuntime({
+      llmAdapter: new TwoStepLlm(),
+      memoryAdapter: new InMemoryMemoryAdapter(),
+      maxIterations: 10,
+    });
+
+    await Agent.define({
+      id: "tenant-key",
+      projectId: "p-auth",
+      systemPrompt: "x",
+      tools: [],
+      llm: { provider: "openai", model: "gpt-4o-mini" },
+    });
+
+    const app = express();
+    app.use(
+      createRuntimeRestRouter({
+        runtime,
+        projectId: "p-auth",
+        agentIds: ["tenant-key"],
+        requiredTenant: true,
+        apiKey: "fallback-secret",
+        resolveApiKey: (_req, res) => {
+          const projectId = getRuntimeRestRouterProjectId(res);
+          const tenantId = getRuntimeRestRouterTenantId(res);
+          return projectId === "p-auth" && tenantId === "t-auth" ? "secret-t-auth" : undefined;
+        },
+      }),
+    );
+
+    await request(app)
+      .get("/agents")
+      .set("Authorization", "Bearer secret-t-auth")
+      .expect(401);
+
+    await request(app)
+      .get("/agents")
+      .set("X-Tenant-Id", "t-auth")
+      .set("Authorization", "Bearer secret-t-auth")
       .expect(200);
   });
 

@@ -47,9 +47,11 @@ Minimum addition:
 interface RunStore {
   // existing methods...
   listByAgentAndSession(
+    projectId: string,
     agentId: string,
     sessionId: string,
     opts?: {
+      tenantId?: string;
       status?: RunStatus;
       limit?: number;
       cursor?: string;
@@ -72,6 +74,7 @@ interface SessionQueryableRunStore extends RunStore {
     projectId: string,
     sessionId: string,
     opts?: {
+      tenantId?: string;
       status?: RunStatus;
       limit?: number;
       cursor?: string;
@@ -107,7 +110,7 @@ interface RunStore {
 
 For `@opencoreagents/adapters-redis`:
 
-- Maintain a secondary index keyed by `agentId + sessionId`.
+- Maintain a secondary index keyed by `projectId + optional tenantId + agentId + sessionId`.
 - Keep index mutations atomic with `save(...)` and `saveIfStatus(...)`.
 - Support efficient pagination.
 - Support recency ordering without loading every run in the agent set.

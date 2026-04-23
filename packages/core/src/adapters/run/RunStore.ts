@@ -1,6 +1,7 @@
 import type { Run, RunStatus } from "../../protocol/types.js";
 
 export interface RunStoreListByAgentAndSessionOptions {
+  tenantId?: string;
   status?: RunStatus;
   limit?: number;
   cursor?: string;
@@ -33,6 +34,7 @@ export interface RunStore {
   delete(runId: string): Promise<void>;
   listByAgent(agentId: string, status?: RunStatus): Promise<Run[]>;
   listByAgentAndSession(
+    projectId: string,
     agentId: string,
     sessionId: string,
     opts?: RunStoreListByAgentAndSessionOptions,

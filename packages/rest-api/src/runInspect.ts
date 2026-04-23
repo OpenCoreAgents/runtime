@@ -59,19 +59,26 @@ export function emptyRunStatusSummary(): Record<RunStatus, number> {
 
 /**
  * All persisted runs for **`sessionId`** across the given **`agentIds`**, de-duplicated by **`runId`**.
- * Rows with **`run.projectId`** set are skipped when it disagrees with **`projectId`**.
+ * Rows are included only when **`run.projectId`** exactly matches **`projectId`**.
  */
 export async function loadRunsForSession(
   store: RunStore,
-  options: { sessionId: string; projectId: string; agentIds: string[] },
+  options: { sessionId: string; projectId: string; tenantId?: string; agentIds: string[] },
 ): Promise<Run[]> {
-  const { sessionId, projectId, agentIds } = options;
+  const { sessionId, projectId, tenantId, agentIds } = options;
   const byId = new Map<string, Run>();
   for (const agentId of agentIds) {
-    const rows = await store.listByAgent(agentId);
+    const rows = (await store.listByAgentAndSession(projectId, agentId, sessionId, {
+      tenantId,
+      order: "desc",
+    })).runs;
     for (const r of rows) {
-      if (r.sessionId !== sessionId) continue;
-      if (r.projectId != null && r.projectId !== "" && r.projectId !== projectId) continue;
+      if (r.projectId !== projectId) continue;
+      if (tenantId !== undefined) {
+        if (r.tenantId !== tenantId) continue;
+      } else if (r.tenantId !== undefined) {
+        continue;
+      }
       byId.set(r.runId, r);
     }
   }

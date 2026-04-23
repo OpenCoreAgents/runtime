@@ -23,12 +23,12 @@ export class ConversationGateway {
 
     idempotency.markProcessed(msg.externalMessageId);
 
-    const { sessionId, projectId } = resolveSession(msg.conversationKey);
-    const session = new Session({ id: sessionId, projectId });
+    const { sessionId, projectId, tenantId } = resolveSession(msg.conversationKey);
+    const session = new Session({ id: sessionId, projectId, tenantId });
     const agent = await Agent.load(agentId, runtime, { session });
 
     try {
-      const waitingRunId = await findWaitingRunId(sessionId, agentId);
+      const waitingRunId = await findWaitingRunId(projectId, sessionId, agentId, tenantId);
 
       const run: Run = waitingRunId
         ? await agent.resume(waitingRunId, { type: "text", content: msg.text })

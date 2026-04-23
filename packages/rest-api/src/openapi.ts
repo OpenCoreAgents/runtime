@@ -14,6 +14,8 @@ export interface RuntimeRestOpenApiInput {
   hasRunStore: boolean;
   /** Clients must send tenant via header/query/body (no fixed **`projectId`** in router options). */
   multiProject: boolean;
+  /** Run lifecycle/read routes require **`tenantId`** when true. */
+  requiredTenant?: boolean;
   /** **`apiKey`** option is set on the router. */
   hasApiKey: boolean;
   /** `info.title` (default **Runtime REST API**). */
@@ -93,6 +95,7 @@ export function buildRuntimeRestOpenApiSpec(input: RuntimeRestOpenApiInput): Rec
     hasInterAgentSend = false,
     hasRunStore,
     multiProject,
+    requiredTenant = false,
     hasApiKey,
     title = "Runtime REST API",
     version = "0.0.0",
@@ -113,6 +116,20 @@ export function buildRuntimeRestOpenApiSpec(input: RuntimeRestOpenApiInput): Rec
         "Tenant when router has no fixed `projectId`. Also `?projectId=` (GET) or `body.projectId` (POST).",
     });
   }
+  const tenantIdQueryParam = {
+    name: "tenantId",
+    in: "query",
+    required: requiredTenant,
+    schema: { type: "string" },
+    description:
+      "Optional sub-scope inside the effective `projectId`. When set, only runs with the same `tenantId` are returned/read; when omitted, tenant-scoped runs are hidden.",
+  };
+  const tenantIdBodyProperty = {
+    type: "string",
+    description: requiredTenant
+      ? "Required sub-scope inside the effective `projectId`; persisted on the run and required for later tenant-scoped reads/resume/continue."
+      : "Optional sub-scope inside the effective `projectId`; persisted on the run and required for later tenant-scoped reads/resume/continue.",
+  };
 
   const runPostResponses: Record<string, unknown> = {
     "400": jsonErr(
@@ -405,10 +422,11 @@ export function buildRuntimeRestOpenApiSpec(input: RuntimeRestOpenApiInput): Rec
             "application/json": {
               schema: {
                 type: "object",
-                required: ["message"],
+                required: requiredTenant ? ["message", "tenantId"] : ["message"],
                 properties: {
                   message: { type: "string" },
                   sessionId: { type: "string" },
+                  tenantId: tenantIdBodyProperty,
                   expiresAtMs: {
                     type: "number",
                     description: "Absolute Unix ms deadline for the Session used by this request",
@@ -554,10 +572,13 @@ export function buildRuntimeRestOpenApiSpec(input: RuntimeRestOpenApiInput): Rec
           "application/json": {
             schema: {
               type: "object",
-              required: ["runId", "sessionId", "resumeInput"],
+              required: requiredTenant
+                ? ["runId", "sessionId", "resumeInput", "tenantId"]
+                : ["runId", "sessionId", "resumeInput"],
               properties: {
                 runId: { type: "string" },
                 sessionId: { type: "string" },
+                tenantId: tenantIdBodyProperty,
                 expiresAtMs: {
                   type: "number",
                   description: "Absolute Unix ms deadline for the Session used by this resume",
@@ -614,11 +635,14 @@ export function buildRuntimeRestOpenApiSpec(input: RuntimeRestOpenApiInput): Rec
           "application/json": {
             schema: {
               type: "object",
-              required: ["runId", "sessionId", "message"],
+              required: requiredTenant
+                ? ["runId", "sessionId", "message", "tenantId"]
+                : ["runId", "sessionId", "message"],
               properties: {
                 runId: { type: "string" },
                 sessionId: { type: "string" },
                 message: { type: "string", description: "Next user message for this run" },
+                tenantId: tenantIdBodyProperty,
                 expiresAtMs: {
                   type: "number",
                   description: "Absolute Unix ms deadline for the Session used by this continue",
@@ -644,7 +668,7 @@ export function buildRuntimeRestOpenApiSpec(input: RuntimeRestOpenApiInput): Rec
       get: {
         summary: "List runs for an agent (RunStore.listByAgent)",
         description:
-          "Dashboard-style summaries (`historyStepCount`, optional `reply`) — not a full step log. Rows with **`run.projectId`** set are omitted when it disagrees with the effective tenant. **`RunStore`** indexes by **`agentId`** only (e.g. Redis **`run:agent:{id}`**) — shared stores need globally unique agent ids or per-tenant backends.",
+          "Dashboard-style summaries (`historyStepCount`, optional `reply`) — not a full step log. Rows must match the effective **`projectId`**. When **`?tenantId=`** is set, rows must also match that tenant; when omitted, tenant-scoped rows are hidden. When **`?sessionId=`** is set, the router uses **`RunStore.listByAgentAndSession(projectId, agentId, sessionId, { tenantId?, ... })`**.",
         tags: ["Runs"],
         parameters: [
           { name: "agentId", in: "path", required: true, schema: { type: "string" } },
@@ -661,6 +685,7 @@ export function buildRuntimeRestOpenApiSpec(input: RuntimeRestOpenApiInput): Rec
             schema: { type: "string" },
             description: "If set, only runs with this `sessionId`",
           },
+          tenantIdQueryParam,
           {
             name: "limit",
             in: "query",
@@ -690,6 +715,7 @@ export function buildRuntimeRestOpenApiSpec(input: RuntimeRestOpenApiInput): Rec
                           agentId: { type: "string" },
                           sessionId: { type: "string" },
                           projectId: { type: "string" },
+                          tenantId: { type: "string" },
                           status: { type: "string" },
                           iteration: { type: "number" },
                           historyStepCount: { type: "number" },
@@ -714,7 +740,7 @@ export function buildRuntimeRestOpenApiSpec(input: RuntimeRestOpenApiInput): Rec
       get: {
         summary: "List all persisted runs for a session (dashboard / playground)",
         description:
-          "Unions **`RunStore.listByAgent`** across agents registered for this **`projectId`**, filtered by **`sessionId`**. Use **`?light=1`** to omit per-run **`history`** (still returns **`historyStepCount`** from the resume-aware timeline). Each run’s **`history`** includes synthetic **`observation`** rows after **`wait`** when **`resumeInputs`** exist (same merge as **`?timeline=1`** on **`GET /runs/{runId}`**).",
+          "Unions **`RunStore.listByAgentAndSession`** across agents registered for this **`projectId`**, filtered by **`sessionId`** and optional **`?tenantId=`**. Use **`?light=1`** to omit per-run **`history`** (still returns **`historyStepCount`** from the resume-aware timeline). Each run’s **`history`** includes synthetic **`observation`** rows after **`wait`** when **`resumeInputs`** exist (same merge as **`?timeline=1`** on **`GET /runs/{runId}`**).",
         tags: ["Sessions"],
         parameters: [
           { name: "sessionId", in: "path", required: true, schema: { type: "string" } },
@@ -725,6 +751,7 @@ export function buildRuntimeRestOpenApiSpec(input: RuntimeRestOpenApiInput): Rec
             schema: { type: "string", enum: ["0", "1", "true", "false", "yes"] },
             description: "If `1` / `true` / `yes`, omit per-run `history` (smaller payload).",
           },
+          tenantIdQueryParam,
           ...tenantParams,
         ],
         responses: compactResponses({
@@ -786,6 +813,7 @@ export function buildRuntimeRestOpenApiSpec(input: RuntimeRestOpenApiInput): Rec
             description:
               "If `1` / `true` / `yes`, include merged `history` (resume text as synthetic observations after each `wait`) and set `historyStepCount` to that timeline length. Also exposes `resumeInputs` / `continueInputs` / `waitReason` when applicable.",
           },
+          tenantIdQueryParam,
           ...tenantParams,
         ],
         responses: compactResponses({
@@ -800,6 +828,7 @@ export function buildRuntimeRestOpenApiSpec(input: RuntimeRestOpenApiInput): Rec
                     agentId: { type: "string" },
                     sessionId: { type: "string" },
                     projectId: { type: "string" },
+                    tenantId: { type: "string" },
                     status: { type: "string" },
                     userInput: { type: "string" },
                     resumeInputs: { type: "array", items: { type: "string" } },
@@ -856,6 +885,7 @@ export function buildRuntimeRestOpenApiSpec(input: RuntimeRestOpenApiInput): Rec
             schema: { type: "string", enum: ["0", "1", "true", "false", "yes"] },
             description: "If `1` / `true` / `yes`, splice resume text into `history` after each `wait`.",
           },
+          tenantIdQueryParam,
           ...tenantParams,
         ],
         responses: compactResponses({
@@ -870,6 +900,7 @@ export function buildRuntimeRestOpenApiSpec(input: RuntimeRestOpenApiInput): Rec
                     agentId: { type: "string" },
                     sessionId: { type: "string" },
                     projectId: { type: "string" },
+                    tenantId: { type: "string" },
                     status: { type: "string" },
                     history: {
                       type: "array",

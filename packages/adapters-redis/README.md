@@ -129,9 +129,11 @@ Use:
 ```ts
 interface RunStore {
   listByAgentAndSession(
+    projectId: string,
     agentId: string,
     sessionId: string,
     opts?: {
+      tenantId?: string;
       status?: RunStatus;
       limit?: number;
       cursor?: string;
@@ -141,7 +143,7 @@ interface RunStore {
 }
 ```
 
-The Redis implementation maintains a secondary `agentId + sessionId` index so common history paths scale with runs in that session instead of all runs for the agent.
+The Redis implementation maintains a secondary `projectId + optional tenantId + agentId + sessionId` index so common history paths scale with runs in that scope instead of all runs for the agent. `projectId` is always part of the key; `tenantId` is an optional sub-scope inside the project.
 
 ## Key Compatibility
 

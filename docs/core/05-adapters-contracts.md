@@ -143,6 +143,7 @@ Persists **`Run`** snapshots so a **`waiting`** run can be **resumed** later —
 - **Wiring**: pass **`runStore`** (and other adapters) into **`new AgentRuntime({ … })`** once per worker ([19-cluster-deployment.md §2–§3](./19-cluster-deployment.md)).
 - **Implementations**: **`InMemoryRunStore`** (tests / single process), **`RedisRunStore`** (`@opencoreagents/adapters-redis`), **`UpstashRunStore`** (`@opencoreagents/adapters-upstash`).
 - **Consumers** using **`executeRun`** directly must **`runStore.save`** after each invocation when **`runStore`** is enabled (including **`waiting`** exits) — same persistence rules as **`RunBuilder`** / **`Agent.resume`**.
+- **Session queries**: use **`listByAgentAndSession(projectId, agentId, sessionId, { tenantId?, ... })`** for recall/history paths. **`projectId`** is always the outer isolation boundary; **`tenantId`** optionally narrows runs inside that project.
 
 ## Hooks vs adapters
 

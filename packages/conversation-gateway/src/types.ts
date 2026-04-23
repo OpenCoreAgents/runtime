@@ -22,6 +22,7 @@ export interface OutboundDispatcher {
 export type SessionResolver = (conversationKey: string) => {
   sessionId: string;
   projectId: string;
+  tenantId?: string;
 };
 
 /**
@@ -29,8 +30,10 @@ export type SessionResolver = (conversationKey: string) => {
  * Often implemented via {@link findWaitingRunIdFromRunStore}.
  */
 export type WaitingRunLookup = (
+  projectId: string,
   sessionId: string,
   agentId: string,
+  tenantId?: string,
 ) => Promise<string | undefined>;
 
 export interface IdempotencyStore {
