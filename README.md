@@ -4,7 +4,7 @@ TypeScript **monorepo**: **`@opencoreagents/*`** in **`packages/`**, consumed vi
 
 **Production-shaped agent backends in TypeScript**—so you ship **APIs and workers** your team can own, not a demo script that dies on the first timeout.
 
-**Using Cursor, Claude Code, Codex, or similar?** Point them at **[`@opencoreagents/code-skills`](packages/code-skills/README.md)** (`SKILL.md` packs for this repo’s engine, REST/RAG, and layout)—see [Coding assistant skill packs](#coding-assistant-skill-packs) and the [table below](#assistant-skills-cursor--claude--codex).
+Use the OpenClaw skill ecosystem you already know, but run it your way. **`@opencoreagents/runtime`** gives you the freedom to build, customize, and scale your assistant without relying on the OpenClaw Gateway.
 
 Stop hand-rolling the same glue: a **typed agent loop** (`thought` → `action` → `observation` → `result`, plus **`wait` / `resume`**), **tools and RAG**, **shared memory and run state**, and **BullMQ** execution.
 
@@ -24,6 +24,8 @@ To try the **REST API** contract ([**plan-rest**](docs/planning/plan-rest.md)) a
 4. Open [http://localhost:3010/health](http://localhost:3010/health) (optional [?details=1](http://localhost:3010/health?details=1) for `projectId` and queue) and the OpenAPI UI at `/docs` on the same port.
 
 Full guides (Docker, config, security, cloud): **[`apps/runtime/README.md`](apps/runtime/README.md)** and **[`apps/runtime/docs/`](apps/runtime/docs/README.md)**.
+
+**Using Cursor, Claude Code, Codex, or similar?** Point them at **[`@opencoreagents/code-skills`](packages/code-skills/README.md)** (`SKILL.md` packs for this repo’s engine, REST/RAG, and layout)—see [Coding assistant skill packs](#coding-assistant-skill-packs) and the [table below](#assistant-skills-cursor--claude--codex).
 
 ---
 
