@@ -7,15 +7,17 @@ const repoRoot = join(pkgRoot, "..", "..");
 const dist = join(pkgRoot, "dist");
 
 /**
- * Per-skill layout (mirrors monorepo link targets from `docs/core/*.md`):
- *   skills/<id>/docs/     — core/, planning/, optional top-level guides
+ * Per-skill layout (mirrors monorepo link targets from `docs/reference/core/*.md`):
+ *   skills/<id>/docs/     — reference/, roadmap/, optional top-level guides
  *   skills/<id>/packages/ — README.md subset (sibling of docs/ so ../../packages/... works)
  */
 const bundles = {
   "opencoreagents-workspace": {
     dirs: [
-      ["docs/core", "core"],
-      ["docs/planning", "planning"],
+      ["docs/reference", "reference"],
+      ["docs/roadmap", "roadmap"],
+      ["docs/archive", "archive"],
+      ["docs/guides", "guides"],
     ],
     rootFiles: ["README.md", "getting-started.md"].map((n) => join("docs", n)),
     packageReadmes: ["core/README.md", "rest-api/README.md", "rag/README.md"],
@@ -28,25 +30,25 @@ const bundles = {
       "03-execution-model.md",
       "04-protocol.md",
       "05-adapters-contracts.md",
-      "06-adapters-infrastructure.md",
-      "07-definition-syntax.md",
-      "08-scope-and-security.md",
-      "09-communication-multiagent.md",
-      "10-llm-adapter.md",
-      "11-context-builder.md",
-      "12-skills.md",
-      "13-errors-parsing-and-recovery.md",
-      "19-cluster-deployment.md",
+      "13-adapters-infrastructure.md",
+      "06-definition-syntax.md",
+      "11-scope-and-security.md",
+      "14-communication-multiagent.md",
+      "07-llm-adapter.md",
+      "08-context-builder.md",
+      "09-skills.md",
+      "10-errors-parsing-and-recovery.md",
+      "16-cluster-deployment.md",
     ],
     planningFiles: ["mvp.md"],
     packageReadmes: ["core/README.md"],
   },
   "opencoreagents-rest-workers": {
-    coreFiles: ["15-multi-tenancy.md", "21-dynamic-runtime-rest.md"],
+    coreFiles: ["12-multi-tenancy.md", "21-dynamic-runtime-rest.md"],
     packageReadmes: ["rest-api/README.md", "core/README.md"],
   },
   "opencoreagents-rag-dynamic": {
-    coreFiles: ["17-rag-pipeline.md", "07-definition-syntax.md"],
+    coreFiles: ["18-rag-pipeline.md", "06-definition-syntax.md"],
     packageReadmes: ["rag/README.md", "core/README.md"],
   },
 };
@@ -92,13 +94,13 @@ function populateDocsFolder(destDocs, spec) {
 
   if (spec.coreFiles) {
     for (const f of spec.coreFiles) {
-      copyRepoFile(`docs/core/${f}`, join(destDocs, "core", f));
+      copyRepoFile(`docs/reference/core/${f}`, join(destDocs, "reference", "core", f));
     }
   }
 
   if (spec.planningFiles) {
     for (const f of spec.planningFiles) {
-      copyRepoFile(`docs/planning/${f}`, join(destDocs, "planning", f));
+      copyRepoFile(`docs/roadmap/${f}`, join(destDocs, "roadmap", f));
     }
   }
 }
@@ -109,7 +111,7 @@ function populateSkill(skillId, spec) {
 
   // Omit stale snapshots: technical-debt changes often: see live repo, not an old skill tarball.
   if (skillId === "opencoreagents-workspace") {
-    rmIfExists(join(skillRoot, "docs", "planning", "technical-debt.md"));
+    rmIfExists(join(skillRoot, "docs", "roadmap", "technical-debt.md"));
   }
 
   const destPkgs = join(skillRoot, "packages");

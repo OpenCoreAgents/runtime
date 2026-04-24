@@ -9,7 +9,7 @@
  * There is no cross-process sync protocol; definitions are **code, not
  * runtime data**. If you add a new definition, redeploy all workers.
  *
- * See docs/core/19-cluster-deployment.md §1.1 for details.
+ * See docs/reference/core/16-cluster-deployment.md §1.1 for details.
  */
 import type { AgentDefinitionPersisted, SkillDefinition, ToolDefinition } from "./types.js";
 import type { ToolAdapter } from "../adapters/tool/ToolAdapter.js";

@@ -1,27 +1,53 @@
-# Documentation
+# Documentation Hub
 
-**Start here:** **[Getting started](./getting-started.md)** — tutorial, architecture summary, further reading, and where to go next.
+Status: stable  
+Audience: users, contributors, maintainers
 
-**[Agent Engine overview](./planning/agent-engine-overview.md)** — full product narrative: why the engine exists, the loop, invariants, dynamic definitions with examples, consumers (SDK / REST / MCP shapes), architecture diagram, and where to read next. Use it alongside **Getting started** and the normative [**Engine reference**](./core/README.md).
+This folder is organized by intent so you can find the right document faster.
 
-Developer **monorepo** entry (packages, `pnpm` commands): [README](../README.md) at the repository root.
-
-> **Name TBD.** There is no final product, org, or npm scope name yet. The repository folder is a working codename only — it is **not** the intended public brand.
+- Start with [guides](./guides/README.md) if you are onboarding.
+- Use [reference](./reference/README.md) for normative engine behavior.
+- Use [roadmap](./roadmap/README.md) for implementation plans and open gaps.
+- Use [archive](./archive/README.md) for historical design notes.
 
 ---
 
-## Quick links
+## Reading paths
 
-| Topic | Document |
-|--------|----------|
-| **Engine index** (all core topics) | [core/README.md](./core/README.md) |
-| **Planning** (roadmap, scaffold, technical debt, REST/CLI/MCP) | [planning/README.md](./planning/README.md) |
-| **Monorepo layout / file tree** | [planning/scaffold.md](./planning/scaffold.md) |
-| **REST plugin (`createRuntimeRestRouter`)** | [planning/plan-rest.md](./planning/plan-rest.md) |
-| **Dynamic definitions + Redis + workers** | [core/21-dynamic-runtime-rest.md](./core/21-dynamic-runtime-rest.md) |
-| **Roadmap** | [planning/plan.md](./planning/plan.md) |
-| **Engine MVP** (scope, risks, build order) | [planning/mvp.md](./planning/mvp.md) |
-| **Known gaps** | [technical-debt.md](./planning/technical-debt.md) (hub: [security & production](./planning/technical-debt-security-production.md), [platform / CI](./planning/technical-debt-platform-core-ci.md), [deferred](./planning/technical-debt-deferred.md)) |
-| **Scope and security** | [core/08-scope-and-security.md](./core/08-scope-and-security.md) |
-| **Agent Engine (product overview)** | [planning/agent-engine-overview.md](./planning/agent-engine-overview.md) |
-| **Runnable examples** (`examples/*` index) | [examples/README.md](../examples/README.md) |
+### Path 1: New to the project (20-30 min)
+
+1. [Getting started](./getting-started.md)
+2. [Agent Engine overview](./roadmap/agent-engine-overview.md)
+3. [Core reference index](./reference/core/README.md)
+
+### Path 2: Shipping a production runtime
+
+1. [Root README quickstart](../README.md#easy-getting-started-runnable-stack)
+2. [Scope and security](./reference/core/11-scope-and-security.md)
+3. [Cluster deployment](./reference/core/16-cluster-deployment.md)
+4. [Dynamic runtime definitions](./reference/core/21-dynamic-runtime-rest.md)
+5. [Technical debt: security and production](./roadmap/technical-debt-security-production.md)
+
+### Path 3: Extending the engine
+
+1. [Core reference index](./reference/core/README.md)
+2. [Adapters and contracts](./reference/core/05-adapters-contracts.md)
+3. [Adapters infrastructure](./reference/core/13-adapters-infrastructure.md)
+4. [Definition syntax](./reference/core/06-definition-syntax.md)
+5. [Planning index](./roadmap/README.md)
+
+---
+
+## Documentation map
+
+| Area | Purpose | Primary entry |
+|---|---|---|
+| Guides | onboarding and practical setup | [guides/README.md](./guides/README.md) |
+| Reference | canonical behavior and contracts | [reference/README.md](./reference/README.md) |
+| Roadmap | plans, sequencing, known gaps | [roadmap/README.md](./roadmap/README.md) |
+| Archive | historical design context | [archive/README.md](./archive/README.md) |
+
+## Compatibility notes
+
+- Existing paths under `docs/reference/core/`, `docs/roadmap/`, and `docs/archive/brainstorm/` remain valid.
+- New sections above are the preferred navigation entrypoints.

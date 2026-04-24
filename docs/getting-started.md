@@ -1,5 +1,8 @@
 # Getting Started
 
+Status: stable  
+Audience: users, contributors
+
 This guide explains what the agents framework is, how it behaves architecturally, and how to set up an agent workflow end to end. Topics such as adapters, multi-tenancy, RAG, cluster deployment, and consumer APIs are only summarized here — see [§15 Further reading](#15-further-reading).
 
 > **npm package name TBD.** The public package name and scope are not decided yet. Install commands and `import` paths use the placeholder **`@your-scope/agents`** — replace it with the real package name once it is published.
@@ -281,39 +284,42 @@ The sections below point to documentation in this repository that goes beyond th
 
 | Resource | What you get |
 |----------|----------------|
-| [Documentation index](./README.md) | Hub: **Getting started** (this guide), **[Agent Engine overview](./planning/agent-engine-overview.md)** (full narrative), quick links to **Engine reference** and other docs. |
+| [Documentation index](./README.md) | Hub with reading paths and navigation by intent: **guides**, **reference**, **roadmap**, and **archive**. |
 | [Repository root README](../README.md) | Monorepo layout, `pnpm` / Turbo commands, how packages relate. |
-| [plan.md](./planning/plan.md) | Roadmap and implementation progress. |
-| [technical-debt.md](./planning/technical-debt.md) | Known gaps (hub; triage [security & production](./planning/technical-debt-security-production.md) before [deferred / examples](./planning/technical-debt-deferred.md)). |
+| [plan.md](./roadmap/plan.md) | Roadmap and implementation progress. |
+| [technical-debt.md](./roadmap/technical-debt.md) | Known gaps (hub; triage [security & production](./roadmap/technical-debt-security-production.md) before [deferred / examples](./roadmap/technical-debt-deferred.md)). |
 
-### Core engine reference (`docs/core/`)
+### Core engine reference (`docs/reference/core/`)
 
-The **canonical index** of engine topics (one table with every core doc) is [core/README.md](./core/README.md). Use it as the starting point for deep dives.
+The **canonical index** of engine topics (one table with every core doc) is [core/README.md](./reference/core/README.md). Use it as the starting point for deep dives.
 
 Highlights that this guide does **not** spell out:
 
 | Topic | Document |
 |--------|----------|
-| Internal components and boundaries | [core/02-architecture.md](./core/02-architecture.md) |
-| Run lifecycle, states, **RunStore**, wait/resume mechanics | [core/03-execution-model.md](./core/03-execution-model.md) |
-| Message envelope, protocol rules, durable **waiting** | [core/04-protocol.md](./core/04-protocol.md) |
-| **Adapters**: memory, tools, RunStore; OpenAI / Anthropic; **Redis** (TCP); Upstash; **BullMQ** queues; **HTTP tools** JSON + **dynamic-definitions**; per-tool timeouts | [core/05-adapters-contracts.md](./core/05-adapters-contracts.md), [core/06-adapters-infrastructure.md](./core/06-adapters-infrastructure.md) |
-| **`Tool.define` / `Skill.define` / `Agent.define`**, `defineBatch`, persisted shapes | [core/07-definition-syntax.md](./core/07-definition-syntax.md) |
-| **`scope`**, **`projectId`**, **SecurityLayer**, production checklist | [core/08-scope-and-security.md](./core/08-scope-and-security.md) |
-| **MessageBus**, **`system_send_message`**, multi-agent **wait**/**resume** | [core/09-communication-multiagent.md](./core/09-communication-multiagent.md) |
-| **LLMAdapter** contract, multiple providers on **AgentRuntime** | [core/10-llm-adapter.md](./core/10-llm-adapter.md) |
-| **Context builder**: prompt ordering, truncation, **effectiveToolAllowlist** | [core/11-context-builder.md](./core/11-context-builder.md) |
-| **Skills** vs tools, resolution, **`defineBatch`** | [core/12-skills.md](./core/12-skills.md) |
-| Errors, abort/timeout, **parse recovery** and re-prompt | [core/13-errors-parsing-and-recovery.md](./core/13-errors-parsing-and-recovery.md) |
-| **Consumers**: SDK, BullMQ worker, CLI, REST, MCP | [core/14-consumers.md](./core/14-consumers.md) |
-| **Multi-tenancy**: orgs, projects, end-users, memory scoping | [core/15-multi-tenancy.md](./core/15-multi-tenancy.md) |
-| **RAG**: embeddings, vector adapters, catalog tools, patterns | [core/17-rag-pipeline.md](./core/17-rag-pipeline.md) |
-| **Scaffold** CLI (`init`, `generate`, templates) | [core/18-scaffold.md](./core/18-scaffold.md) |
-| **Cluster**: shared Redis, RunStore, MessageBus, horizontal scaling | [core/19-cluster-deployment.md](./core/19-cluster-deployment.md) |
-| **HTTP tools from JSON** (`adapters-http-tool`) | [core/20-http-tool-adapter.md](./core/20-http-tool-adapter.md) |
-| **Dynamic definitions** store + hydrate (`dynamic-definitions`, Redis REST) | [core/21-dynamic-runtime-rest.md](./core/21-dynamic-runtime-rest.md) |
+| Purpose, boundaries, and engine layers | [Purpose](./reference/core/01-purpose.md) |
+| Internal components and boundaries | [Architecture](./reference/core/02-architecture.md) |
+| Run lifecycle, states, **RunStore**, wait/resume mechanics | [Execution model](./reference/core/03-execution-model.md) |
+| Message envelope, protocol rules, durable **waiting** | [Protocol](./reference/core/04-protocol.md) |
+| **Adapters contracts**: memory, tools, and RunStore interfaces | [Adapters contracts](./reference/core/05-adapters-contracts.md) |
+| **`Tool.define` / `Skill.define` / `Agent.define`**, `defineBatch`, persisted shapes | [Definition syntax](./reference/core/06-definition-syntax.md) |
+| **LLMAdapter** contract, multiple providers on **AgentRuntime** | [LLM adapter](./reference/core/07-llm-adapter.md) |
+| **Context builder**: prompt ordering, truncation, **effectiveToolAllowlist** | [Context builder](./reference/core/08-context-builder.md) |
+| **Skills** vs tools, resolution, **`defineBatch`** | [Skills](./reference/core/09-skills.md) |
+| Errors, abort/timeout, **parse recovery** and re-prompt | [Errors, parsing, and recovery](./reference/core/10-errors-parsing-and-recovery.md) |
+| **`scope`**, **`projectId`**, **SecurityLayer**, production checklist | [Scope and security](./reference/core/11-scope-and-security.md) |
+| **Multi-tenancy**: orgs, projects, end-users, memory scoping | [Multi-tenancy](./reference/core/12-multi-tenancy.md) |
+| **Adapters infrastructure**: **Redis** (TCP), Upstash, **BullMQ** queues, and runtime deployment patterns | [Adapters infrastructure](./reference/core/13-adapters-infrastructure.md) |
+| **MessageBus**, **`system_send_message`**, multi-agent **wait**/**resume** | [Multi-agent communication](./reference/core/14-communication-multiagent.md) |
+| **Consumers**: SDK, BullMQ worker, CLI, REST, MCP | [Consumers](./reference/core/15-consumers.md) |
+| **Cluster**: shared Redis, RunStore, MessageBus, horizontal scaling | [Cluster deployment](./reference/core/16-cluster-deployment.md) |
+| Internal **utils**: parsers, chunking, and file resolver | [Utils](./reference/core/17-utils.md) |
+| **RAG**: embeddings, vector adapters, catalog tools, patterns | [RAG pipeline](./reference/core/18-rag-pipeline.md) |
+| **Scaffold** CLI (`init`, `generate`, templates) | [Scaffold](./reference/core/19-scaffold.md) |
+| **HTTP tools from JSON** (`adapters-http-tool`) | [HTTP tool adapter](./reference/core/20-http-tool-adapter.md) |
+| **Dynamic definitions** store + hydrate (`dynamic-definitions`, Redis REST) | [Dynamic runtime REST](./reference/core/21-dynamic-runtime-rest.md) |
 
-Additional core docs: purpose ([core/01-purpose.md](./core/01-purpose.md)); MVP scope and risks ([planning/mvp.md](./planning/mvp.md)); internal **utils** ([core/16-utils.md](./core/16-utils.md)).
+Additional planning context: MVP scope and risks ([planning/mvp.md](./roadmap/mvp.md)).
 
 ### Runnable examples
 
@@ -325,14 +331,14 @@ Additional core docs: purpose ([core/01-purpose.md](./core/01-purpose.md)); MVP 
 
 | Resource | What you get |
 |----------|----------------|
-| [planning/README.md](./planning/README.md) | Index: reading order, roadmap, monorepo **scaffold** spec, technical debt, REST, CLI, MCP. |
-| [planning/scaffold.md](./planning/scaffold.md) | Monorepo package map, dependency graph, and codegen blueprint. |
-| [plan-rest.md](./planning/plan-rest.md) | REST roadmap + **`@opencoreagents/rest-api`** (`createRuntimeRestRouter`, **`resolveApiKey`**, tenancy) + **`plan-rest-express`**; BFF: `real-world-with-express`; async: `dynamic-runtime-rest`. |
-| [plan-cli.md](./planning/plan-cli.md) | CLI direction. |
-| [plan-mcp.md](./planning/plan-mcp.md) | MCP direction. |
+| [planning/README.md](./roadmap/README.md) | Index: reading order, roadmap, monorepo **scaffold** spec, technical debt, REST, CLI, MCP. |
+| [planning/scaffold.md](./roadmap/scaffold.md) | Monorepo package map, dependency graph, and codegen blueprint. |
+| [plan-rest.md](./roadmap/plan-rest.md) | REST roadmap + **`@opencoreagents/rest-api`** (`createRuntimeRestRouter`, **`resolveApiKey`**, tenancy) + **`plan-rest-express`**; BFF: `real-world-with-express`; async: `dynamic-runtime-rest`. |
+| [plan-cli.md](./roadmap/plan-cli.md) | CLI direction. |
+| [plan-mcp.md](./roadmap/plan-mcp.md) | MCP direction. |
 
 ### Design brainstorms (non-normative)
 
-Notes and proposals under [brainstorm/](./brainstorm/) are background — not guaranteed to match current code. Example: [conversation gateway + messaging channels](./brainstorm/14-conversation-gateway-implementation-proposal.md).
+Notes and proposals under [archive/brainstorm/](./archive/brainstorm/README.md) are background — not guaranteed to match current code. Example: [conversation gateway + messaging channels](./archive/brainstorm/14-conversation-gateway-implementation-proposal.md).
 
 ---

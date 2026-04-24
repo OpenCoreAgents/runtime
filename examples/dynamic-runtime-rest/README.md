@@ -1,6 +1,6 @@
 # `dynamic-runtime-rest` — Redis + BullMQ + runtime `dynamicDefinitionsStore`
 
-Production-shaped layout from [`docs/core/21-dynamic-runtime-rest.md`](../../docs/core/21-dynamic-runtime-rest.md):
+Production-shaped layout from [`docs/reference/core/21-dynamic-runtime-rest.md`](../../docs/reference/core/21-dynamic-runtime-rest.md):
 
 | Layer | This example |
 |--------|----------------|

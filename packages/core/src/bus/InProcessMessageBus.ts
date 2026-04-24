@@ -4,7 +4,7 @@ import type { AgentMessage, MessageBus } from "./MessageBus.js";
  * In-process message bus suitable for single-process multi-agent setups.
  * Messages are dispatched via EventEmitter-style callbacks — no
  * cross-process delivery. For cluster deployments use a Redis-backed
- * implementation. See docs/core/19-cluster-deployment.md §5.
+ * implementation. See docs/reference/core/16-cluster-deployment.md §5.
  */
 export class InProcessMessageBus implements MessageBus {
   private listeners = new Map<string, ((msg: AgentMessage) => void)[]>();

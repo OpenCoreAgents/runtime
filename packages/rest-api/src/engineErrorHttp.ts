@@ -30,7 +30,7 @@ export const RUNTIME_REST_ENGINE_ERROR_CODES = [
 
 /**
  * Map **`EngineError`** from **`@opencoreagents/core`** to HTTP status + body for inline routes.
- * Covers phased plan **R0** (contract) in **`docs/planning/plan-rest.md`**; unknown errors stay **`null`** (caller uses generic **500** / **400**).
+ * Covers phased plan **R0** (contract) in **`docs/roadmap/plan-rest.md`**; unknown errors stay **`null`** (caller uses generic **500** / **400**).
  */
 export function mapEngineErrorToHttp(e: unknown): {
   status: number;

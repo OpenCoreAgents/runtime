@@ -41,4 +41,4 @@ Piping stdin into this script is **unreliable** in some environments because **`
 - Implement **`contact_support`** `execute` against your ticket system (HTTP, queue, CRM).
 - Tighten **`allowedToolIds`** on **`AgentRuntime`** and roles so only trusted agents may ingest or escalate.
 
-See also: [`docs/core/17-rag-pipeline.md`](../../docs/core/17-rag-pipeline.md), [`docs/core/07-definition-syntax.md`](../../docs/core/07-definition-syntax.md) §9.
+See also: [`docs/reference/core/18-rag-pipeline.md`](../../docs/reference/core/18-rag-pipeline.md), [`docs/reference/core/06-definition-syntax.md`](../../docs/reference/core/06-definition-syntax.md) §9.

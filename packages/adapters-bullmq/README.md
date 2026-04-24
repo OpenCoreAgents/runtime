@@ -56,5 +56,5 @@ For **`resume`** after a `wait`, use **`addResume`** with `runId` and **`resumeI
 
 ## Docs
 
-- [06-adapters-infrastructure.md](../../docs/core/06-adapters-infrastructure.md#job-queue-adapter-primary-bullmq) — BullMQ is the primary job-queue pattern
-- [19-cluster-deployment.md](../../docs/core/19-cluster-deployment.md) §4 — cluster execution model
+- [13-adapters-infrastructure.md](../../docs/reference/core/13-adapters-infrastructure.md#job-queue-adapter-primary-bullmq) — BullMQ is the primary job-queue pattern
+- [16-cluster-deployment.md](../../docs/reference/core/16-cluster-deployment.md) §4 — cluster execution model

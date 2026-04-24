@@ -17,7 +17,7 @@ export type {
   ScaffoldPackageManager,
 } from "./types.js";
 
-/** Programmatic project and file generation (see `docs/core/18-scaffold.md`). */
+/** Programmatic project and file generation (see `docs/reference/core/19-scaffold.md`). */
 export const scaffold = {
   initProject,
   generateAgent,

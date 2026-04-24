@@ -4,7 +4,7 @@ Registers **`ToolAdapter`** instances from **JSON-serializable** HTTP configurat
 
 ## Documentation
 
-Full reference: [`docs/core/20-http-tool-adapter.md`](../../docs/core/20-http-tool-adapter.md).
+Full reference: [`docs/reference/core/20-http-tool-adapter.md`](../../docs/reference/core/20-http-tool-adapter.md).
 
 ## Quick use
 

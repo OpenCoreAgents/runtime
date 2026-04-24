@@ -25,31 +25,31 @@ describe("code-skills pack", () => {
     expect(existsSync(join(distRoot, "index.js"))).toBe(true);
 
     const workspaceDocs = skillDocsDirectory("opencoreagents-workspace");
-    expect(existsSync(join(workspaceDocs, "core", "README.md"))).toBe(true);
-    expect(existsSync(join(workspaceDocs, "planning", "plan.md"))).toBe(true);
+    expect(existsSync(join(workspaceDocs, "reference", "core", "README.md"))).toBe(true);
+    expect(existsSync(join(workspaceDocs, "roadmap", "plan.md"))).toBe(true);
     expect(existsSync(join(skillPackagesDirectory("opencoreagents-workspace"), "rest-api", "README.md"))).toBe(
       true,
     );
 
     const engineDocs = skillDocsDirectory("opencoreagents-engine");
-    expect(existsSync(join(engineDocs, "core", "03-execution-model.md"))).toBe(true);
-    expect(existsSync(join(engineDocs, "core", "10-llm-adapter.md"))).toBe(true);
-    expect(existsSync(join(engineDocs, "core", "08-scope-and-security.md"))).toBe(true);
-    expect(existsSync(join(engineDocs, "planning", "mvp.md"))).toBe(true);
+    expect(existsSync(join(engineDocs, "reference", "core", "03-execution-model.md"))).toBe(true);
+    expect(existsSync(join(engineDocs, "reference", "core", "07-llm-adapter.md"))).toBe(true);
+    expect(existsSync(join(engineDocs, "reference", "core", "11-scope-and-security.md"))).toBe(true);
+    expect(existsSync(join(engineDocs, "roadmap", "mvp.md"))).toBe(true);
 
-    const workspacePlanning = join(skillDocsDirectory("opencoreagents-workspace"), "planning");
-    expect(existsSync(join(workspacePlanning, "plan.md"))).toBe(true);
-    expect(existsSync(join(workspacePlanning, "technical-debt.md"))).toBe(false);
+    const workspaceRoadmap = join(skillDocsDirectory("opencoreagents-workspace"), "roadmap");
+    expect(existsSync(join(workspaceRoadmap, "plan.md"))).toBe(true);
+    expect(existsSync(join(workspaceRoadmap, "technical-debt.md"))).toBe(false);
 
     const restDocs = skillDocsDirectory("opencoreagents-rest-workers");
-    expect(existsSync(join(restDocs, "core", "15-multi-tenancy.md"))).toBe(true);
-    expect(existsSync(join(restDocs, "core", "21-dynamic-runtime-rest.md"))).toBe(true);
+    expect(existsSync(join(restDocs, "reference", "core", "12-multi-tenancy.md"))).toBe(true);
+    expect(existsSync(join(restDocs, "reference", "core", "21-dynamic-runtime-rest.md"))).toBe(true);
     expect(existsSync(join(skillPackagesDirectory("opencoreagents-rest-workers"), "rest-api", "README.md"))).toBe(
       true,
     );
 
     const ragDocs = skillDocsDirectory("opencoreagents-rag-dynamic");
-    expect(existsSync(join(ragDocs, "core", "17-rag-pipeline.md"))).toBe(true);
+    expect(existsSync(join(ragDocs, "reference", "core", "18-rag-pipeline.md"))).toBe(true);
     expect(existsSync(join(skillPackagesDirectory("opencoreagents-rag-dynamic"), "rag", "README.md"))).toBe(true);
   });
 

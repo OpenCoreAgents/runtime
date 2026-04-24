@@ -4,7 +4,7 @@ type Key = string;
 
 /**
  * Storage partition for list memory (`save` / `query` / `delete`).
- * Aligns with `docs/core/15-multi-tenancy.md` §4.3:
+ * Aligns with `docs/reference/core/12-multi-tenancy.md` §4.3:
  * `longTerm` and `vectorMemory` are keyed by **`endUserId`** when present (shared across sessions);
  * other types use the **session** bucket.
  */
@@ -34,8 +34,8 @@ function statePartitionKey(scope: MemoryScope): Key {
  *
  * **Not suitable for cluster deployments** — data lives in the heap of a single
  * process. Use `RedisMemoryAdapter` / `UpstashRedisMemoryAdapter` in production;
- * their key layout for **`longTerm`** may differ — see `docs/planning/technical-debt-platform-core-ci.md` §1 (memory keys row).
- * See also docs/core/19-cluster-deployment.md §1.2.
+ * their key layout for **`longTerm`** may differ — see `docs/roadmap/technical-debt-platform-core-ci.md` §1 (memory keys row).
+ * See also docs/reference/core/16-cluster-deployment.md §1.2.
  */
 export class InMemoryMemoryAdapter implements MemoryAdapter {
   private readonly store = new Map<Key, Map<string, unknown[]>>();

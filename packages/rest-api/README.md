@@ -1,6 +1,6 @@
 # `@opencoreagents/rest-api`
 
-**Plugin-style** Express **`Router`**: after you **`Agent.define`** (and tools/skills), mount **`createRuntimeRestRouter({ … })`** to expose JSON routes for agents/runs/jobs (URL contract: **`docs/planning/plan-rest.md`**) without copying handlers from scratch. A minimal runnable host is [`examples/plan-rest-express`](../../examples/plan-rest-express/) (enables **`swagger`** → **`GET /openapi.json`**, **`GET /docs`**).
+**Plugin-style** Express **`Router`**: after you **`Agent.define`** (and tools/skills), mount **`createRuntimeRestRouter({ … })`** to expose JSON routes for agents/runs/jobs (URL contract: **`docs/roadmap/plan-rest.md`**) without copying handlers from scratch. A minimal runnable host is [`examples/plan-rest-express`](../../examples/plan-rest-express/) (enables **`swagger`** → **`GET /openapi.json`**, **`GET /docs`**).
 
 **Execution modes**
 
@@ -64,7 +64,7 @@ Inline and queued **`run`**, **`resume`**, and **`continue`** accept two optiona
 
 If both are present, the router applies **`extendSessionTtlMs`** on top of the later of **`expiresAtMs`** or **now**. This gives hosts a simple “keep this session alive for N more milliseconds” input without recomputing an absolute deadline client-side.
 
-## Phased plan ([`docs/planning/plan-rest.md`](../../docs/planning/plan-rest.md))
+## Phased plan ([`docs/roadmap/plan-rest.md`](../../docs/roadmap/plan-rest.md))
 
 | Phase | In this package |
 |-------|-----------------|
@@ -204,10 +204,10 @@ Set **`swagger: true`** (or an object) on **`createRuntimeRestRouter`** to add:
 
 Defaults: **`openapi.json`** + **`docs`**. Customize with **`swagger: { openApiPath, uiPath, info?: { title, version, description }, extendOpenApi?: (spec) => spec }`** — use **`extendOpenApi`** to merge paths (e.g. host-mounted **`/v1/...`** definition CRUD) into the same document for one Swagger UI.
 
-These routes are registered **before** API-key and tenant middleware, so they do not require **`Authorization`** or **`X-Project-Id`**. Put **`app.use`** in front of the router if you need to protect them. Production notes (CSP, public spec): [`docs/planning/technical-debt-security-production.md`](../../docs/planning/technical-debt-security-production.md#1-security-integrity-and-production-readiness) §1 (*OpenAPI / Swagger UI*).
+These routes are registered **before** API-key and tenant middleware, so they do not require **`Authorization`** or **`X-Project-Id`**. Put **`app.use`** in front of the router if you need to protect them. Production notes (CSP, public spec): [`docs/roadmap/technical-debt-security-production.md`](../../docs/roadmap/technical-debt-security-production.md#1-security-integrity-and-production-readiness) §1 (*OpenAPI / Swagger UI*).
 
 You can also call **`buildRuntimeRestOpenApiSpec({ … })`** and **`runtimeRestSwaggerUiHtml(openApiPath, uiPath)`** from **`@opencoreagents/rest-api`** to serve the spec or UI yourself.
 
 ## Docs
 
-[`docs/planning/plan-rest.md`](../../docs/planning/plan-rest.md) (roadmap + contract table). This package implements the **Implemented today** surface (inline **`runtime`**, optional **`dispatch`**, **`runStore`**, **`swagger`**). Worker wiring for BullMQ matches [`examples/dynamic-runtime-rest/`](../../examples/dynamic-runtime-rest/).
+[`docs/roadmap/plan-rest.md`](../../docs/roadmap/plan-rest.md) (roadmap + contract table). This package implements the **Implemented today** surface (inline **`runtime`**, optional **`dispatch`**, **`runStore`**, **`swagger`**). Worker wiring for BullMQ matches [`examples/dynamic-runtime-rest/`](../../examples/dynamic-runtime-rest/).

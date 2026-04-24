@@ -4,4 +4,4 @@ Shared **parsers**, **chunking**, and **file resolution** helpers used by **`@op
 
 ## Related docs
 
-[`docs/core/16-utils.md`](../../docs/core/16-utils.md).
+[`docs/reference/core/17-utils.md`](../../docs/reference/core/17-utils.md).

@@ -6,4 +6,4 @@ Sessions carry the required `projectId`, optional `tenantId` sub-scope for run i
 
 ## Related docs
 
-Canonical engine index: [`docs/core/README.md`](../../docs/core/README.md).
+Canonical engine index: [`docs/reference/core/README.md`](../../docs/reference/core/README.md).

@@ -23,4 +23,4 @@ You should see a pause, a prompt (`Type a line and press Enter…`), then a fina
 ## Relation to production
 
 - Same process: **`onWait` returns `string`** → engine injects `[resume:text] …` and continues.
-- **Cluster / another machine**: return **`undefined`** from `onWait`, persist with **`runStore`**, and call **`Agent.resume`** when the user answers (see [`docs/core/19-cluster-deployment.md`](../../docs/core/19-cluster-deployment.md)).
+- **Cluster / another machine**: return **`undefined`** from `onWait`, persist with **`runStore`**, and call **`Agent.resume`** when the user answers (see [`docs/reference/core/16-cluster-deployment.md`](../../docs/reference/core/16-cluster-deployment.md)).

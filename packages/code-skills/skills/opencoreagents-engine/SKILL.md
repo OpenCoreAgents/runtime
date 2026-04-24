@@ -5,11 +5,11 @@ description: Implement or debug @opencoreagents/core — AgentRuntime, Agent.loa
 
 # OpenCore Agents — engine (`@opencoreagents/core`)
 
-> **Bundled docs:** **`docs/`** next to this file. Paths below are relative to that folder (`docs/core/...`, `docs/planning/...`). API: `skillDocsDirectory("opencoreagents-engine")`.
+> **Bundled docs:** **`docs/`** next to this file. Paths below are relative to that folder (`docs/reference/core/...`, `docs/roadmap/...`). API: `skillDocsDirectory("opencoreagents-engine")`.
 
 Use when changing **runtime behavior**, **definitions** (`Tool` / `Skill` / `Agent`), or **adapter wiring**.
 
-For the full monorepo layout and every `docs/core/` topic (including RAG, scaffold, multi-tenancy, and planning), enable the **`opencoreagents-workspace`** skill alongside this one.
+For the full monorepo layout and every `docs/reference/core/` topic (including RAG, scaffold, multi-tenancy, and planning), enable the **`opencoreagents-workspace`** skill alongside this one.
 
 The open-source **runtime** (this engine and sibling packages) lives at [OpenCoreAgents/runtime](https://github.com/OpenCoreAgents/runtime).
 
@@ -22,17 +22,17 @@ The open-source **runtime** (this engine and sibling packages) lives at [OpenCor
 
 ## Where to read
 
-- Purpose & shape: `docs/core/01-purpose.md`, `docs/core/02-architecture.md`, `docs/planning/mvp.md`
-- Loop & state: `docs/core/03-execution-model.md`, `docs/core/04-protocol.md`
-- Definitions: `docs/core/07-definition-syntax.md`
-- Adapters: `docs/core/05-adapters-contracts.md`, `docs/core/06-adapters-infrastructure.md`
-- LLM contract: `docs/core/10-llm-adapter.md`
-- Context & tools in prompt: `docs/core/11-context-builder.md`
-- Skills vs tools: `docs/core/12-skills.md`
-- Failures & recovery: `docs/core/13-errors-parsing-and-recovery.md`
-- Scope & production checklist: `docs/core/08-scope-and-security.md`
-- Multi-agent: `docs/core/09-communication-multiagent.md`
-- Cluster / workers: `docs/core/19-cluster-deployment.md`
+- Purpose & shape: `docs/reference/core/01-purpose.md`, `docs/reference/core/02-architecture.md`, `docs/roadmap/mvp.md`
+- Loop & state: `docs/reference/core/03-execution-model.md`, `docs/reference/core/04-protocol.md`
+- Definitions: `docs/reference/core/06-definition-syntax.md`
+- Adapters: `docs/reference/core/05-adapters-contracts.md`, `docs/reference/core/13-adapters-infrastructure.md`
+- LLM contract: `docs/reference/core/07-llm-adapter.md`
+- Context & tools in prompt: `docs/reference/core/08-context-builder.md`
+- Skills vs tools: `docs/reference/core/09-skills.md`
+- Failures & recovery: `docs/reference/core/10-errors-parsing-and-recovery.md`
+- Scope & production checklist: `docs/reference/core/11-scope-and-security.md`
+- Multi-agent: `docs/reference/core/14-communication-multiagent.md`
+- Cluster / workers: `docs/reference/core/16-cluster-deployment.md`
 
 ## Fragments from `examples/minimal-run`
 
@@ -209,7 +209,7 @@ const run = await agent.run("Start the interactive flow.").onWait(async (step) =
 
 - **`InMemoryMemoryAdapter`** is single-process only; multi-worker needs **Redis** / **Upstash** memory adapters.
 - **`wait` across processes** needs **`RunStore`** + same session/run discipline (see cluster doc).
-- **`SecurityContext`** is often **not** applied in `ContextBuilder` for tool hiding—see `docs/core/08-scope-and-security.md` and `docs/core/11-context-builder.md` (verify on [OpenCoreAgents/runtime](https://github.com/OpenCoreAgents/runtime) `main` if behavior changed).
+- **`SecurityContext`** is often **not** applied in `ContextBuilder` for tool hiding—see `docs/reference/core/11-scope-and-security.md` and `docs/reference/core/08-context-builder.md` (verify on [OpenCoreAgents/runtime](https://github.com/OpenCoreAgents/runtime) `main` if behavior changed).
 
 ## Full examples (monorepo clone)
 

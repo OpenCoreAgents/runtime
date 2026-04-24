@@ -24,4 +24,4 @@ Optional second constructor argument: **OpenAI-compatible `baseUrl`** (default `
 
 ## Related docs
 
-[`docs/core/05-adapters-contracts.md`](../../docs/core/05-adapters-contracts.md) (inventory + wiring), [`docs/core/10-llm-adapter.md`](../../docs/core/10-llm-adapter.md) (contract).
+[`docs/reference/core/05-adapters-contracts.md`](../../docs/reference/core/05-adapters-contracts.md) (inventory + wiring), [`docs/reference/core/07-llm-adapter.md`](../../docs/reference/core/07-llm-adapter.md) (contract).
