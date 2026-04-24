@@ -6,10 +6,13 @@ import type { RunStore } from "@opencoreagents/core";
  */
 export async function findWaitingRunIdFromRunStore(
   runStore: RunStore,
+  projectId: string,
   sessionId: string,
   agentId: string,
+  tenantId?: string,
 ): Promise<string | undefined> {
-  const { runs } = await runStore.listByAgentAndSession(agentId, sessionId, {
+  const { runs } = await runStore.listByAgentAndSession(projectId, agentId, sessionId, {
+    tenantId,
     status: "waiting",
     limit: 1,
     order: "desc",

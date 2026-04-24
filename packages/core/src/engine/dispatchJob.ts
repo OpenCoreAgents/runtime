@@ -54,8 +54,10 @@ export async function dispatchEngineJob(
   const session = new Session({
     id: payload.sessionId,
     projectId: payload.projectId,
+    tenantId: payload.tenantId,
     endUserId: payload.endUserId,
     sessionContext: payload.sessionContext,
+    expiresAtMs: payload.expiresAtMs,
     fileReadRoot: payload.fileReadRoot,
     allowFileReadOutsideRoot: payload.allowFileReadOutsideRoot,
     allowHttpFileSources: payload.allowHttpFileSources,

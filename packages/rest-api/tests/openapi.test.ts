@@ -76,6 +76,64 @@ describe("buildRuntimeRestOpenApiSpec", () => {
     expect(continueProps.extendSessionTtlMs).toBeDefined();
   });
 
+  it("documents optional tenantId for run lifecycle and RunStore reads", () => {
+    const spec = buildRuntimeRestOpenApiSpec({
+      hasDispatch: false,
+      hasRunStore: true,
+      multiProject: false,
+      hasApiKey: false,
+    });
+    const paths = spec.paths as Record<string, {
+      get?: { parameters?: Array<{ name: string }> };
+      post?: { requestBody?: { content: { "application/json": { schema: { properties: Record<string, unknown> } } } } };
+    }>;
+    expect(
+      paths["/agents/{agentId}/run"]!.post!.requestBody!.content["application/json"].schema
+        .properties.tenantId,
+    ).toBeDefined();
+    expect(
+      paths["/agents/{agentId}/resume"]!.post!.requestBody!.content["application/json"].schema
+        .properties.tenantId,
+    ).toBeDefined();
+    expect(
+      paths["/agents/{agentId}/continue"]!.post!.requestBody!.content["application/json"].schema
+        .properties.tenantId,
+    ).toBeDefined();
+    expect(paths["/agents/{agentId}/runs"]!.get!.parameters?.some((p) => p.name === "tenantId")).toBe(true);
+    expect(paths["/sessions/{sessionId}/status"]!.get!.parameters?.some((p) => p.name === "tenantId")).toBe(true);
+    expect(paths["/runs/{runId}"]!.get!.parameters?.some((p) => p.name === "tenantId")).toBe(true);
+    expect(paths["/runs/{runId}/history"]!.get!.parameters?.some((p) => p.name === "tenantId")).toBe(true);
+  });
+
+  it("marks tenantId required when requiredTenant is true", () => {
+    const spec = buildRuntimeRestOpenApiSpec({
+      hasDispatch: false,
+      hasRunStore: true,
+      multiProject: false,
+      hasApiKey: false,
+      requiredTenant: true,
+    });
+    const paths = spec.paths as Record<string, {
+      get?: { parameters?: Array<{ name: string; required?: boolean }> };
+      post?: { requestBody?: { content: { "application/json": { schema: { required: string[] } } } } };
+    }>;
+    expect(
+      paths["/agents/{agentId}/run"]!.post!.requestBody!.content["application/json"].schema
+        .required,
+    ).toContain("tenantId");
+    expect(
+      paths["/agents/{agentId}/resume"]!.post!.requestBody!.content["application/json"].schema
+        .required,
+    ).toContain("tenantId");
+    expect(
+      paths["/agents/{agentId}/continue"]!.post!.requestBody!.content["application/json"].schema
+        .required,
+    ).toContain("tenantId");
+    expect(
+      paths["/runs/{runId}"]!.get!.parameters?.find((p) => p.name === "tenantId")?.required,
+    ).toBe(true);
+  });
+
   it("merges securitySchemes with schemas when hasApiKey", () => {
     const spec = buildRuntimeRestOpenApiSpec({
       hasDispatch: false,

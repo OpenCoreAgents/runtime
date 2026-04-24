@@ -11,7 +11,7 @@ Related: [02-architecture.md](./02-architecture.md) (SecurityLayer before Engine
 | Scope | Identifier | What it isolates |
 |-------|------------|------------------|
 | **Global** | No `projectId` or `scope: "global"` | Not per-customer: resources shared across the deployment (e.g. `LLMAdapter`, shared utilities). |
-| **Project** | `projectId` | A tenant's definitions and data: private agents, tools, skills; Redis/vector prefixes; MessageBus routes. This is the **only hard isolation boundary** the engine enforces. |
+| **Project** | `projectId` | A tenant's definitions and data: private agents, tools, skills; Redis/vector prefixes; MessageBus routes. This is the **outer hard isolation boundary** the engine enforces. |
 | **Session** | `sessionId` (within a project) | Working memory, conversation history, or business cycle without mixing users or parallel runs of the same agent. Optional **`expiresAtMs`** on `Session` lets the host reject further **`run`** / **`resume`** / **`onWait`** work after that instant (`SessionExpiredError`). |
 | **Run** | `runId` | One execution: append-only history, `waiting` state, snapshots for `resume`. |
 
@@ -188,6 +188,6 @@ Full gap list: [`technical-debt-security-production.md` §1–§3](../planning/t
 ## 8. Summary
 
 - **Scope** (global → project → session → run) defines **namespaces** for data and definitions.
-- **`projectId` is the only hard isolation boundary** the engine enforces.
+- **`projectId` is the outer hard isolation boundary** the engine enforces; **`tenantId`** can additionally narrow run/session operations inside a project.
 - **SecurityLayer** validates **who** acts and **what** they may touch **before** the loop; revalidation on high-risk tools mid-run is uncommon but possible if context can change.
 - **Organizations, teams, and end-users** are resolved to `SecurityContext` fields in the platform layer — the engine loop is unaware of these concepts. See [15-multi-tenancy.md](./15-multi-tenancy.md).

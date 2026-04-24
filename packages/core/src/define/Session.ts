@@ -3,6 +3,7 @@ import type { SessionOptions } from "../security/types.js";
 export class Session {
   readonly id: string;
   readonly projectId: string;
+  readonly tenantId?: string;
   readonly endUserId?: string;
   /** Host-owned bag; see {@link SessionOptions.sessionContext}. */
   readonly sessionContext?: Readonly<Record<string, unknown>>;
@@ -15,6 +16,7 @@ export class Session {
   constructor(opts: SessionOptions) {
     this.id = opts.id;
     this.projectId = opts.projectId;
+    this.tenantId = opts.tenantId;
     this.endUserId = opts.endUserId;
     this.sessionContext = opts.sessionContext;
     this.expiresAtMs = opts.expiresAtMs;
@@ -28,6 +30,7 @@ export class Session {
     return {
       id: this.id,
       projectId: this.projectId,
+      ...(this.tenantId !== undefined ? { tenantId: this.tenantId } : {}),
       ...(this.endUserId !== undefined ? { endUserId: this.endUserId } : {}),
       ...(this.sessionContext !== undefined ? { sessionContext: this.sessionContext } : {}),
       ...(this.expiresAtMs !== undefined ? { expiresAtMs: this.expiresAtMs } : {}),

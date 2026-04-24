@@ -7,8 +7,25 @@ import type {
 } from "@opencoreagents/core";
 import type Redis from "ioredis";
 
-function sessionIndexKey(agentId: string, sessionId: string): string {
-  return `run:agent-session:${agentId}:${sessionId}`;
+function isolationScope(projectId: string, tenantId?: string): string {
+  return tenantId && tenantId.trim()
+    ? `tenant:${tenantId.trim()}:project:${projectId}`
+    : `project:${projectId}`;
+}
+
+function sessionIndexKey(
+  projectId: string,
+  agentId: string,
+  sessionId: string,
+  tenantId?: string,
+): string {
+  return `run:agent-session:${isolationScope(projectId, tenantId)}:${agentId}:${sessionId}`;
+}
+
+function matchesIsolationScope(run: Run, projectId: string, tenantId?: string): boolean {
+  if (run.projectId !== projectId) return false;
+  if (tenantId !== undefined) return run.tenantId === tenantId;
+  return run.tenantId === undefined;
 }
 
 function runRecencyScore(run: Run): number {
@@ -33,8 +50,12 @@ export class RedisRunStore implements RunStore {
   async save(run: Run): Promise<void> {
     const key = `run:data:${run.runId}`;
     const tx = this.redis.multi().set(key, JSON.stringify(run)).sadd(`run:agent:${run.agentId}`, run.runId);
-    if (run.sessionId) {
-      tx.zadd(sessionIndexKey(run.agentId, run.sessionId), runRecencyScore(run), run.runId);
+    if (run.sessionId && run.projectId) {
+      tx.zadd(
+        sessionIndexKey(run.projectId, run.agentId, run.sessionId, run.tenantId),
+        runRecencyScore(run),
+        run.runId,
+      );
     }
     await tx.exec();
   }
@@ -60,8 +81,12 @@ export class RedisRunStore implements RunStore {
       return false;
     }
     const tx = this.redis.multi().set(key, JSON.stringify(run)).sadd(agentKey, run.runId);
-    if (run.sessionId) {
-      tx.zadd(sessionIndexKey(run.agentId, run.sessionId), runRecencyScore(run), run.runId);
+    if (run.sessionId && run.projectId) {
+      tx.zadd(
+        sessionIndexKey(run.projectId, run.agentId, run.sessionId, run.tenantId),
+        runRecencyScore(run),
+        run.runId,
+      );
     }
     const execResult = await tx.exec();
     return execResult != null;
@@ -78,8 +103,16 @@ export class RedisRunStore implements RunStore {
     const tx = this.redis.multi().del(`run:data:${runId}`);
     if (existing) {
       tx.srem(`run:agent:${existing.agentId}`, runId);
-      if (existing.sessionId) {
-        tx.zrem(sessionIndexKey(existing.agentId, existing.sessionId), runId);
+      if (existing.sessionId && existing.projectId) {
+        tx.zrem(
+          sessionIndexKey(
+            existing.projectId,
+            existing.agentId,
+            existing.sessionId,
+            existing.tenantId,
+          ),
+          runId,
+        );
       }
     }
     await tx.exec();
@@ -98,6 +131,7 @@ export class RedisRunStore implements RunStore {
   }
 
   async listByAgentAndSession(
+    projectId: string,
     agentId: string,
     sessionId: string,
     opts?: RunStoreListByAgentAndSessionOptions,
@@ -106,7 +140,7 @@ export class RedisRunStore implements RunStore {
     const limit = Math.max(1, opts?.limit ?? 50);
     const offset = parseCursor(opts?.cursor);
     const stop = offset + limit;
-    const key = sessionIndexKey(agentId, sessionId);
+    const key = sessionIndexKey(projectId, agentId, sessionId, opts?.tenantId);
     const ids =
       order === "asc"
         ? await this.redis.zrange(key, offset, stop)
@@ -115,6 +149,7 @@ export class RedisRunStore implements RunStore {
     for (const id of ids) {
       const run = await this.load(id);
       if (!run) continue;
+      if (!matchesIsolationScope(run, projectId, opts?.tenantId)) continue;
       if (run.sessionId !== sessionId) continue;
       if (opts?.status !== undefined && run.status !== opts.status) continue;
       runs.push(run);

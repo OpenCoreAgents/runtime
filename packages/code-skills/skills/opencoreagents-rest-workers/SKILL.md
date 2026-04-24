@@ -35,9 +35,9 @@ Same stack as the public monorepo [OpenCoreAgents/runtime](https://github.com/Op
 | **POST** | `/agents/:fromAgentId/send` | Inter-agent **`MessageBus.send`** (same idea as **`system_send_message`**). Needs **`runtime`** + **`messageBus`** on **`AgentRuntime`** (**501** if missing). Optional **`sendMessageTargetPolicy`** can **403**. |
 | **POST** | `/agents/:agentId/run` | Start a run — body **`message`** (required), optional **`sessionId`**, **`projectId`**, **`wait`**. Inline → **`Agent.run`**. Queue → **202** + **`jobId`** / **`statusUrl`**, or block with **`wait`** + **`queueEvents`**. |
 | **POST** | `/agents/:agentId/resume` | Resume a **`wait`** — **`runId`**, **`sessionId`**, **`resumeInput`** `{ type, content }`, optional **`projectId`**, **`wait`**. Inline needs **`runStore`** on **`AgentRuntime`**. |
-| **GET** | `/runs/:runId` | Run snapshot from **`runStore`** — **`?sessionId=`** required; tenant vs **`run.projectId`** when set (**403** mismatch). |
-| **GET** | `/runs/:runId/history` | Full **`Run.history`** — same **`sessionId`** / tenant rules as **`GET /runs/:runId`**. |
-| **GET** | `/agents/:agentId/runs` | List runs (**`RunStore.listByAgent`**) — needs **`runStore`**; optional **`status`**, **`sessionId`**, **`limit`**. |
+| **GET** | `/runs/:runId` | Run snapshot from **`runStore`** — **`?sessionId=`** required; exact **`projectId`** match and optional **`?tenantId=`** for tenant-scoped runs (**403** mismatch). |
+| **GET** | `/runs/:runId/history` | Full **`Run.history`** — same **`sessionId`** / project / tenant rules as **`GET /runs/:runId`**. |
+| **GET** | `/agents/:agentId/runs` | List runs — needs **`runStore`**; optional **`status`**, **`sessionId`**, **`tenantId`**, **`limit`**. Uses **`listByAgentAndSession(projectId, agentId, sessionId, { tenantId?, ... })`** when **`sessionId`** is supplied. |
 | **GET** | `/jobs/:jobId` | BullMQ job status + run summary when done — **only** if **`dispatch`** is configured. |
 
 **Execution modes** (how run/resume run):
@@ -48,7 +48,7 @@ Same stack as the public monorepo [OpenCoreAgents/runtime](https://github.com/Op
 | **Queue** | **`dispatch: { engine, queueEvents?, jobWaitTimeoutMs? }`** | Run/resume **enqueue**; default **202** + **`jobId`**. **`wait`** needs **`queueEvents`**. **`isBullmqJobWaitTimeoutError`** → **504** vs **502**. |
 | **Both** | **`runtime` + `dispatch`** | **`dispatch`** wins for **`POST` run/resume**; **`runtime`** still powers memory/send routes when mounted. |
 
-**Multi-tenant resolution** (when **`projectId`** is omitted from router options): **`X-Project-Id`** header → **`?projectId=`** → **`body.projectId`** on POSTs. **`allowedProjectIds`**, **`resolveProjectId(req)`**, **`resolveApiKey`** + **`getRuntimeRestRouterProjectId`** for per-tenant secrets — see **`packages/rest-api/README.md`**.
+**Multi-tenant resolution** (when **`projectId`** is omitted from router options): **`X-Project-Id`** header → **`?projectId=`** → **`body.projectId`** on POSTs. Optional run **`tenantId`** resolves from **`X-Tenant-Id`** → **`?tenantId=`** → **`body.tenantId`**; set **`requiredTenant: true`** to require it on run routes. **`allowedProjectIds`**, **`resolveProjectId(req)`**, **`resolveApiKey`** + **`getRuntimeRestRouterProjectId`** / **`getRuntimeRestRouterTenantId`** for scoped secrets — see **`packages/rest-api/README.md`**.
 
 **Engine-level multi-tenancy:** the router only picks the effective **`projectId`** on the wire. How **`projectId`** scopes **definitions**, **memory**, **runs**, **`RunStore`** rows, **`MessageBus`** keys, and **dynamic-definition** store data lives in **`docs/core/15-multi-tenancy.md`**—read it when combining **`rest-api`** with **shared Redis**, **workers**, or **`dynamicDefinitionsStore`**, not only for “HTTP auth” questions.
 

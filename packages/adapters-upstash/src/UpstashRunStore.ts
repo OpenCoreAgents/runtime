@@ -6,8 +6,25 @@ import type {
   RunStoreListResult,
 } from "@opencoreagents/core";
 
-function sessionIndexKey(agentId: string, sessionId: string): string {
-  return `run:agent-session:${agentId}:${sessionId}`;
+function isolationScope(projectId: string, tenantId?: string): string {
+  return tenantId && tenantId.trim()
+    ? `tenant:${tenantId.trim()}:project:${projectId}`
+    : `project:${projectId}`;
+}
+
+function sessionIndexKey(
+  projectId: string,
+  agentId: string,
+  sessionId: string,
+  tenantId?: string,
+): string {
+  return `run:agent-session:${isolationScope(projectId, tenantId)}:${agentId}:${sessionId}`;
+}
+
+function matchesIsolationScope(run: Run, projectId: string, tenantId?: string): boolean {
+  if (run.projectId !== projectId) return false;
+  if (tenantId !== undefined) return run.tenantId === tenantId;
+  return run.tenantId === undefined;
 }
 
 function runRecencyScore(run: Run): number {
@@ -39,8 +56,12 @@ local status = string.match(raw, '"status":"([^"]*)"')
 if not status or status ~= expected then return 0 end
 redis.call('SET', KEYS[1], ARGV[2])
 redis.call('SADD', 'run:agent:' .. ARGV[3], ARGV[4])
-if ARGV[5] ~= '' then
-  redis.call('ZADD', 'run:agent-session:' .. ARGV[3] .. ':' .. ARGV[5], ARGV[6], ARGV[4])
+if ARGV[5] ~= '' and ARGV[6] ~= '' then
+  local scope = 'project:' .. ARGV[6]
+  if ARGV[7] ~= '' then
+    scope = 'tenant:' .. ARGV[7] .. ':project:' .. ARGV[6]
+  end
+  redis.call('ZADD', 'run:agent-session:' .. scope .. ':' .. ARGV[3] .. ':' .. ARGV[5], ARGV[8], ARGV[4])
 end
 return 1
 `;
@@ -70,10 +91,10 @@ return 1
     const key = `run:data:${run.runId}`;
     await this.cmd(["SET", key, JSON.stringify(run)]);
     await this.cmd(["SADD", `run:agent:${run.agentId}`, run.runId]);
-    if (run.sessionId) {
+    if (run.sessionId && run.projectId) {
       await this.cmd([
         "ZADD",
-        sessionIndexKey(run.agentId, run.sessionId),
+        sessionIndexKey(run.projectId, run.agentId, run.sessionId, run.tenantId),
         runRecencyScore(run),
         run.runId,
       ]);
@@ -92,6 +113,8 @@ return 1
       run.agentId,
       run.runId,
       run.sessionId ?? "",
+      run.projectId ?? "",
+      run.tenantId ?? "",
       runRecencyScore(run),
     ]);
     return n === 1 || n === true;
@@ -109,8 +132,12 @@ return 1
     await this.cmd(["DEL", `run:data:${runId}`]);
     if (existing) {
       await this.cmd(["SREM", `run:agent:${existing.agentId}`, runId]);
-      if (existing.sessionId) {
-        await this.cmd(["ZREM", sessionIndexKey(existing.agentId, existing.sessionId), runId]);
+      if (existing.sessionId && existing.projectId) {
+        await this.cmd([
+          "ZREM",
+          sessionIndexKey(existing.projectId, existing.agentId, existing.sessionId, existing.tenantId),
+          runId,
+        ]);
       }
     }
   }
@@ -133,6 +160,7 @@ return 1
   }
 
   async listByAgentAndSession(
+    projectId: string,
     agentId: string,
     sessionId: string,
     opts?: RunStoreListByAgentAndSessionOptions,
@@ -142,7 +170,12 @@ return 1
     const offset = parseCursor(opts?.cursor);
     const stop = offset + limit;
     const cmd = order === "asc" ? "ZRANGE" : "ZREVRANGE";
-    const raw = await this.cmd([cmd, sessionIndexKey(agentId, sessionId), offset, stop]);
+    const raw = await this.cmd([
+      cmd,
+      sessionIndexKey(projectId, agentId, sessionId, opts?.tenantId),
+      offset,
+      stop,
+    ]);
     const ids = Array.isArray(raw)
       ? (raw as string[])
       : typeof raw === "string"
@@ -152,6 +185,7 @@ return 1
     for (const id of ids) {
       const run = await this.load(id);
       if (!run) continue;
+      if (!matchesIsolationScope(run, projectId, opts?.tenantId)) continue;
       if (run.sessionId !== sessionId) continue;
       if (opts?.status !== undefined && run.status !== opts.status) continue;
       runs.push(run);

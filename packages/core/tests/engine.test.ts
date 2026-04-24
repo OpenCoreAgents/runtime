@@ -835,7 +835,7 @@ describe("engine", () => {
     ).rejects.toMatchObject({ code: "RUN_INVALID_STATE" });
   });
 
-  it("resume stamps projectId from session when stored run omits it", async () => {
+  it("resume rejects stored runs that omit projectId", async () => {
     const store = new InMemoryRunStore();
     const mem = new InMemoryMemoryAdapter();
     await store.save({
@@ -861,8 +861,49 @@ describe("engine", () => {
     });
     const session = new Session({ id: "s1", projectId: "p-stamp" });
     const agent = await Agent.load("a-leg", rt, { session });
-    await agent.resume("legacy-proj", { type: "text", content: "go" });
-    const after = await store.load("legacy-proj");
-    expect(after?.projectId).toBe("p-stamp");
+    await expect(
+      agent.resume("legacy-proj", { type: "text", content: "go" }),
+    ).rejects.toMatchObject({ code: "RUN_INVALID_STATE" });
+  });
+
+  it("resume requires matching tenantId when stored run is tenant-scoped", async () => {
+    const store = new InMemoryRunStore();
+    const mem = new InMemoryMemoryAdapter();
+    await store.save({
+      runId: "tenant-run",
+      agentId: "a-tenant",
+      sessionId: "s1",
+      projectId: "p1",
+      tenantId: "t1",
+      status: "waiting",
+      history: [],
+      state: { iteration: 0, pending: null, parseAttempts: 0, userInput: "x" },
+    });
+    const rt = new AgentRuntime({
+      llmAdapter: new QueueLLM([JSON.stringify({ type: "result", content: "done" })]),
+      memoryAdapter: mem,
+      runStore: store,
+      maxIterations: 10,
+    });
+    await Agent.define({
+      id: "a-tenant",
+      projectId: "p1",
+      systemPrompt: "x",
+      tools: [],
+      llm: { provider: "openai", model: "gpt-4o" },
+    });
+
+    const unscoped = await Agent.load("a-tenant", rt, {
+      session: new Session({ id: "s1", projectId: "p1" }),
+    });
+    await expect(
+      unscoped.resume("tenant-run", { type: "text", content: "go" }),
+    ).rejects.toMatchObject({ code: "RUN_INVALID_STATE" });
+
+    const scoped = await Agent.load("a-tenant", rt, {
+      session: new Session({ id: "s1", projectId: "p1", tenantId: "t1" }),
+    });
+    const done = await scoped.resume("tenant-run", { type: "text", content: "go" });
+    expect(done.status).toBe("completed");
   });
 });

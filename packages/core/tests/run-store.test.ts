@@ -6,6 +6,7 @@ const baseRun = (over: Partial<Run> = {}): Run => ({
   runId: "r1",
   agentId: "a1",
   sessionId: "s1",
+  projectId: "p1",
   status: "waiting",
   history: [],
   state: { iteration: 0, pending: null, parseAttempts: 0, userInput: "" },
@@ -49,21 +50,36 @@ describe("InMemoryRunStore saveIfStatus", () => {
       }),
     );
 
-    const firstPage = await store.listByAgentAndSession("a1", "s1", { limit: 1 });
+    const firstPage = await store.listByAgentAndSession("p1", "a1", "s1", { limit: 1 });
     expect(firstPage.runs.map((run) => run.runId)).toEqual(["r-new"]);
     expect(firstPage.nextCursor).toBe("1");
 
-    const secondPage = await store.listByAgentAndSession("a1", "s1", {
+    const secondPage = await store.listByAgentAndSession("p1", "a1", "s1", {
       limit: 1,
       cursor: firstPage.nextCursor,
     });
     expect(secondPage.runs.map((run) => run.runId)).toEqual(["r-old"]);
     expect(secondPage.nextCursor).toBeUndefined();
 
-    const waitingOnly = await store.listByAgentAndSession("a1", "s1", {
+    const waitingOnly = await store.listByAgentAndSession("p1", "a1", "s1", {
       status: "waiting",
       order: "asc",
     });
     expect(waitingOnly.runs.map((run) => run.runId)).toEqual(["r-new"]);
+  });
+
+  it("keeps tenant-scoped session queries isolated inside the project", async () => {
+    const store = new InMemoryRunStore();
+    await store.save(baseRun({ runId: "r-project" }));
+    await store.save(baseRun({ runId: "r-tenant", tenantId: "t1" }));
+    await store.save(baseRun({ runId: "r-other-project", projectId: "p2" }));
+
+    const projectScoped = await store.listByAgentAndSession("p1", "a1", "s1");
+    expect(projectScoped.runs.map((run) => run.runId)).toEqual(["r-project"]);
+
+    const tenantScoped = await store.listByAgentAndSession("p1", "a1", "s1", {
+      tenantId: "t1",
+    });
+    expect(tenantScoped.runs.map((run) => run.runId)).toEqual(["r-tenant"]);
   });
 });

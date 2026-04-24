@@ -80,8 +80,8 @@ async function main(): Promise<void> {
       sessionId: `sess-${conversationKey}`,
       projectId: PROJECT_ID,
     }),
-    findWaitingRunId: (sessionId, agentId) =>
-      findWaitingRunIdFromRunStore(runStore, sessionId, agentId),
+    findWaitingRunId: (projectId, sessionId, agentId) =>
+      findWaitingRunIdFromRunStore(runStore, projectId, sessionId, agentId),
     outbound: buildOutbound(mockTelegram),
     idempotency: {
       seen: (id) => seen.has(id),

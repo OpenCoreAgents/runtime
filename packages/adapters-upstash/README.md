@@ -18,9 +18,11 @@ Use this package when you want **serverless- or edge-friendly** `fetch`-only cal
 ```ts
 interface RunStore {
   listByAgentAndSession(
+    projectId: string,
     agentId: string,
     sessionId: string,
     opts?: {
+      tenantId?: string;
       status?: RunStatus;
       limit?: number;
       cursor?: string;
@@ -30,7 +32,7 @@ interface RunStore {
 }
 ```
 
-This is useful for recall-style history reads and waiting-run lookups without scanning every run for the agent.
+This is useful for recall-style history reads and waiting-run lookups without scanning every run for the agent. `projectId` is always part of the lookup scope; `tenantId` optionally narrows the query inside that project.
 
 ## Docs
 

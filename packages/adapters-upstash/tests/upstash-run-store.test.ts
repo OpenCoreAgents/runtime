@@ -99,9 +99,14 @@ describe("UpstashRunStore", () => {
           }
           s.add(runId);
           const sessionId = body[8] as string;
-          const score = Number(body[9]);
-          if (sessionId) {
-            const zkey = `run:agent-session:${agentId}:${sessionId}`;
+          const projectId = body[9] as string;
+          const tenantId = body[10] as string;
+          const score = Number(body[11]);
+          if (sessionId && projectId) {
+            const scope = tenantId
+              ? `tenant:${tenantId}:project:${projectId}`
+              : `project:${projectId}`;
+            const zkey = `run:agent-session:${scope}:${agentId}:${sessionId}`;
             let z = zsets.get(zkey);
             if (!z) {
               z = new Map();
@@ -128,6 +133,7 @@ describe("UpstashRunStore", () => {
       runId: "r1",
       agentId: "a1",
       sessionId: "s1",
+      projectId: "p1",
       status: "waiting",
       history: [],
       state: { iteration: 0, pending: null },
@@ -144,14 +150,14 @@ describe("UpstashRunStore", () => {
     const runningOnly = await rs.listByAgent("a1", "running");
     expect(runningOnly).toHaveLength(0);
 
-    const bySession = await rs.listByAgentAndSession("a1", "s1");
+    const bySession = await rs.listByAgentAndSession("p1", "a1", "s1");
     expect(bySession.runs).toHaveLength(1);
     expect(bySession.runs[0]!.runId).toBe("r1");
 
     await rs.delete("r1");
     expect(await rs.load("r1")).toBeNull();
     expect(await rs.listByAgent("a1")).toHaveLength(0);
-    expect((await rs.listByAgentAndSession("a1", "s1")).runs).toHaveLength(0);
+    expect((await rs.listByAgentAndSession("p1", "a1", "s1")).runs).toHaveLength(0);
   });
 
   it("saveIfStatus updates only when stored status matches", async () => {
@@ -160,6 +166,7 @@ describe("UpstashRunStore", () => {
       runId: "r2",
       agentId: "a1",
       sessionId: "s1",
+      projectId: "p1",
       status: "waiting",
       history: [],
       state: { iteration: 0, pending: null },
@@ -179,6 +186,7 @@ describe("UpstashRunStore", () => {
       runId: "r-old",
       agentId: "a1",
       sessionId: "s1",
+      projectId: "p1",
       status: "completed",
       history: [
         { type: "result", content: "old", meta: { ts: "2026-01-01T00:00:00.000Z", source: "engine" } },
@@ -189,6 +197,7 @@ describe("UpstashRunStore", () => {
       runId: "r-new",
       agentId: "a1",
       sessionId: "s1",
+      projectId: "p1",
       status: "waiting",
       history: [
         { type: "result", content: "new", meta: { ts: "2026-01-02T00:00:00.000Z", source: "engine" } },
@@ -196,15 +205,44 @@ describe("UpstashRunStore", () => {
       state: { iteration: 0, pending: null },
     });
 
-    const firstPage = await rs.listByAgentAndSession("a1", "s1", { limit: 1 });
+    const firstPage = await rs.listByAgentAndSession("p1", "a1", "s1", { limit: 1 });
     expect(firstPage.runs.map((run) => run.runId)).toEqual(["r-new"]);
     expect(firstPage.nextCursor).toBe("1");
 
-    const secondPage = await rs.listByAgentAndSession("a1", "s1", {
+    const secondPage = await rs.listByAgentAndSession("p1", "a1", "s1", {
       limit: 1,
       cursor: firstPage.nextCursor,
     });
     expect(secondPage.runs.map((run) => run.runId)).toEqual(["r-old"]);
     expect(secondPage.nextCursor).toBeUndefined();
+  });
+
+  it("keeps tenant-scoped runs isolated inside the same project", async () => {
+    const rs = new UpstashRunStore("https://redis.example", "token");
+    await rs.save({
+      runId: "r-public",
+      agentId: "a1",
+      sessionId: "s1",
+      projectId: "p1",
+      status: "waiting",
+      history: [],
+      state: { iteration: 0, pending: null },
+    });
+    await rs.save({
+      runId: "r-tenant",
+      agentId: "a1",
+      sessionId: "s1",
+      projectId: "p1",
+      tenantId: "t1",
+      status: "waiting",
+      history: [],
+      state: { iteration: 0, pending: null },
+    });
+
+    const projectScoped = await rs.listByAgentAndSession("p1", "a1", "s1");
+    expect(projectScoped.runs.map((run) => run.runId)).toEqual(["r-public"]);
+
+    const tenantScoped = await rs.listByAgentAndSession("p1", "a1", "s1", { tenantId: "t1" });
+    expect(tenantScoped.runs.map((run) => run.runId)).toEqual(["r-tenant"]);
   });
 });

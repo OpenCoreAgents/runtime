@@ -102,9 +102,19 @@ describe("runInspect", () => {
       history: [],
       state: { iteration: 0, pending: null },
     };
+    const rOtherProjectSameSession: Run = {
+      runId: "other-project",
+      agentId: "chat",
+      sessionId: "sess-x",
+      projectId: "p2",
+      status: "completed",
+      history: [],
+      state: { iteration: 0, pending: null },
+    };
     await store.save(rChat);
     await store.save(rPlanner);
     await store.save(rOtherSession);
+    await store.save(rOtherProjectSameSession);
 
     const runs = await loadRunsForSession(store, {
       sessionId: "sess-x",
@@ -112,5 +122,43 @@ describe("runInspect", () => {
       agentIds: ["chat", "planner"],
     });
     expect(runs.map((r) => r.runId).sort()).toEqual(["c1", "p1"]);
+  });
+
+  it("loadRunsForSession isolates tenant-scoped runs inside the project", async () => {
+    const store = new InMemoryRunStore();
+    await store.save({
+      runId: "project-run",
+      agentId: "chat",
+      sessionId: "sess-x",
+      projectId: "p1",
+      status: "completed",
+      history: [],
+      state: { iteration: 0, pending: null },
+    });
+    await store.save({
+      runId: "tenant-run",
+      agentId: "chat",
+      sessionId: "sess-x",
+      projectId: "p1",
+      tenantId: "t1",
+      status: "completed",
+      history: [],
+      state: { iteration: 0, pending: null },
+    });
+
+    const projectOnly = await loadRunsForSession(store, {
+      sessionId: "sess-x",
+      projectId: "p1",
+      agentIds: ["chat"],
+    });
+    expect(projectOnly.map((r) => r.runId)).toEqual(["project-run"]);
+
+    const tenantOnly = await loadRunsForSession(store, {
+      sessionId: "sess-x",
+      projectId: "p1",
+      tenantId: "t1",
+      agentIds: ["chat"],
+    });
+    expect(tenantOnly.map((r) => r.runId)).toEqual(["tenant-run"]);
   });
 });

@@ -1,6 +1,7 @@
 export interface SessionOptions {
   id: string;
   projectId: string;
+  tenantId?: string;
   endUserId?: string;
   /**
    * Arbitrary host-resolved context (JWT claims, form intake, BFF headers, etc.). Copied to

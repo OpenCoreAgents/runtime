@@ -60,6 +60,7 @@ function appendResult(run: Run, content: string): void {
 function toolContext(deps: EngineDeps, run: Run): ToolContext {
   const ctx: ToolContext & Record<string, unknown> = {
     projectId: deps.session.projectId,
+    tenantId: deps.session.tenantId,
     agentId: deps.agent.id,
     runId: run.runId,
     sessionId: deps.session.id,
@@ -101,6 +102,7 @@ export function createRun(
   projectId?: string,
   /** When set, used instead of a random id (e.g. Planner sub-agent correlation). */
   explicitRunId?: string,
+  tenantId?: string,
 ): Run {
   const run: Run = {
     runId:
@@ -120,6 +122,9 @@ export function createRun(
   };
   if (projectId !== undefined && projectId !== "") {
     run.projectId = projectId;
+  }
+  if (tenantId !== undefined && tenantId !== "") {
+    run.tenantId = tenantId;
   }
   return run;
 }

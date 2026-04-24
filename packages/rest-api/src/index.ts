@@ -11,7 +11,9 @@ export {
   createOptionalRuntimeRestApiKeyMiddleware,
   createRuntimeRestRouter,
   defaultRuntimeRestResolveProjectId,
+  defaultRuntimeRestResolveTenantId,
   getRuntimeRestRouterProjectId,
+  getRuntimeRestRouterTenantId,
   type RuntimeRestDispatchOptions,
   type RuntimeRestPluginOptions,
 } from "./runtimeRestRouter.js";

@@ -210,7 +210,14 @@ export class RunBuilder implements PromiseLike<Run> {
       | undefined;
 
     if (typeof this.init === "string") {
-      run = createRun(this.agent.id, this.session.id, this.init, this.session.projectId);
+      run = createRun(
+        this.agent.id,
+        this.session.id,
+        this.init,
+        this.session.projectId,
+        undefined,
+        this.session.tenantId,
+      );
     } else if (isNewRunWithOptionalId(this.init)) {
       run = createRun(
         this.agent.id,
@@ -218,6 +225,7 @@ export class RunBuilder implements PromiseLike<Run> {
         this.init.userInput,
         this.session.projectId,
         this.init.runId,
+        this.session.tenantId,
       );
     } else if (isContinueInit(this.init)) {
       if (!cfg.runStore) {
@@ -247,16 +255,19 @@ export class RunBuilder implements PromiseLike<Run> {
           `Run ${this.init.runId} belongs to a different session`,
         );
       }
-      if (
-        loaded.projectId != null &&
-        loaded.projectId !== this.session.projectId
-      ) {
+      if (loaded.projectId !== this.session.projectId) {
         throw new RunInvalidStateError(
           `Run ${this.init.runId} belongs to a different project`,
         );
       }
-      if (loaded.projectId == null) {
-        loaded.projectId = this.session.projectId;
+      if (
+        this.session.tenantId !== undefined
+          ? loaded.tenantId !== this.session.tenantId
+          : loaded.tenantId !== undefined
+      ) {
+        throw new RunInvalidStateError(
+          `Run ${this.init.runId} belongs to a different tenant`,
+        );
       }
       const cont = String(this.init.continueUserInput ?? "").trim();
       if (!cont) {
@@ -312,16 +323,19 @@ export class RunBuilder implements PromiseLike<Run> {
           `Run ${this.init.runId} belongs to a different session`,
         );
       }
-      if (
-        loaded.projectId != null &&
-        loaded.projectId !== this.session.projectId
-      ) {
+      if (loaded.projectId !== this.session.projectId) {
         throw new RunInvalidStateError(
           `Run ${this.init.runId} belongs to a different project`,
         );
       }
-      if (loaded.projectId == null) {
-        loaded.projectId = this.session.projectId;
+      if (
+        this.session.tenantId !== undefined
+          ? loaded.tenantId !== this.session.tenantId
+          : loaded.tenantId !== undefined
+      ) {
+        throw new RunInvalidStateError(
+          `Run ${this.init.runId} belongs to a different tenant`,
+        );
       }
       run = loaded;
       run.status = "running";

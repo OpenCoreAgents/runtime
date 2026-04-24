@@ -20,10 +20,11 @@ export interface Run {
   runId: string;
   agentId: string;
   sessionId?: string;
+  /** Optional sub-scope inside `projectId`; when set, reads/resumes must present the same tenant. */
+  tenantId?: string;
   /**
-   * Tenant that owns this run — set when created via {@link createRun} / {@link Agent.run}.
-   * Used by HTTP layers (e.g. `GET /runs`) to reject cross-tenant reads when present.
-   * Older persisted runs may omit this until the next resume.
+   * Project that owns this run — set when created via {@link createRun} / {@link Agent.run}.
+   * Used by HTTP and store indexes to reject cross-project reads.
    */
   projectId?: string;
   status: RunStatus;
