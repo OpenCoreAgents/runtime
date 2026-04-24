@@ -138,6 +138,41 @@ const run = await agent.run("Say hello.");
 console.log(run.status, run.history);
 ```
 
+### Minimal tool + skill example
+
+```typescript
+import { Agent, Skill, Tool } from "@opencoreagents/core";
+
+await Tool.define({
+  id: "tool_lookup_order",
+  projectId: "demo",
+  description: "Look up an order status by id.",
+  inputSchema: {
+    type: "object",
+    properties: { orderId: { type: "string" } },
+    required: ["orderId"],
+  },
+  execute: async ({ orderId }: { orderId: string }) => {
+    return `Order ${orderId}: in transit`;
+  },
+});
+
+await Skill.define({
+  id: "skill_support_ops",
+  projectId: "demo",
+  description: "Customer support operations helpers.",
+  tools: ["tool_lookup_order"],
+});
+
+await Agent.define({
+  id: "support_agent",
+  projectId: "demo",
+  systemPrompt: "You help support users with concise and accurate answers.",
+  skills: ["skill_support_ops"],
+  llm: { provider: "openai", model: "gpt-4o-mini" },
+});
+```
+
 For production memory/scale details, use:
 
 - [cluster deployment reference](docs/reference/core/16-cluster-deployment.md)
