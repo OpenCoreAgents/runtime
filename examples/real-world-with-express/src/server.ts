@@ -1,7 +1,7 @@
 /**
  * Express **host** in front of **AgentRuntime**: one process-global runtime, JSON API, optional OpenAI or Anthropic.
  *
- * ## Routes in *this* example (shape is **not** `docs/planning/plan-rest.md`)
+ * ## Routes in *this* example (shape is **not** `docs/roadmap/plan-rest.md`)
  *
  * Use **`@opencoreagents/rest-api`** + **`createRuntimeRestRouter`** when you want the documented contract
  * (`GET /agents`, `POST /agents/:id/run`, `GET /runs/:id/history`, `POST /agents/:from/send`, …). This file is a
@@ -33,7 +33,7 @@
  *   **`GET /runs/:runId`** (`historyStepCount`, no inlined resume timeline). This example does **not** mount that router.
  *
  * “Real” host touches (not in the engine): **CORS**, **security headers**, **`public/`**, **X-Request-Id**, **404** JSON,
- * **graceful shutdown**. Still not multi-tenant authZ — see `docs/core/08-scope-and-security.md`.
+ * **graceful shutdown**. Still not multi-tenant authZ — see `docs/reference/core/11-scope-and-security.md`.
  */
 import path from "node:path";
 import { fileURLToPath } from "node:url";

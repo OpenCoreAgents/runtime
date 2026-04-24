@@ -4,4 +4,4 @@ File/RAG **tools** and **skills** (chunking, catalog, retrieval) built on **`@op
 
 ## Related docs
 
-[`docs/core/17-rag-pipeline.md`](../../docs/core/17-rag-pipeline.md).
+[`docs/reference/core/18-rag-pipeline.md`](../../docs/reference/core/18-rag-pipeline.md).

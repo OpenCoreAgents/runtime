@@ -20,7 +20,7 @@ export interface RunStoreListResult {
  * In a cluster, use a Redis- or DB-backed implementation so any worker
  * can resume a run started on a different node.
  *
- * See docs/core/19-cluster-deployment.md §3.
+ * See docs/reference/core/16-cluster-deployment.md §3.
  */
 export interface RunStore {
   save(run: Run): Promise<void>;

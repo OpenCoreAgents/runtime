@@ -11,4 +11,4 @@
 | [security.md](./security.md) | API keys, `REST_API_KEY`, Redis hardening, HTTP tools |
 | [chat-runs-and-planner.md](./chat-runs-and-planner.md) | No “chat” in core; **continue** (same `runId`), `sessionId`, non-blocking `invoke_planner` |
 
-Repo overview: [../README.md](../README.md). Plan REST contract: [`docs/planning/plan-rest.md`](../../../docs/planning/plan-rest.md) (monorepo).
+Repo overview: [../README.md](../README.md). Plan REST contract: [`docs/roadmap/plan-rest.md`](../../../docs/roadmap/plan-rest.md) (monorepo).

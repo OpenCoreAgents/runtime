@@ -151,5 +151,5 @@ Memory/run/message-bus key semantics are aligned with `@opencoreagents/adapters-
 
 ## Related Docs
 
-- [Adapters Infrastructure](../../docs/core/06-adapters-infrastructure.md)
-- [Cluster Deployment](../../docs/core/19-cluster-deployment.md)
+- [Adapters Infrastructure](../../docs/reference/core/13-adapters-infrastructure.md)
+- [Cluster Deployment](../../docs/reference/core/16-cluster-deployment.md)

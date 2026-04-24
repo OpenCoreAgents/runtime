@@ -457,7 +457,7 @@ function statusUrl(req: Request, jobId: string): string {
 
 /**
  * Express **`Router`** with JSON routes for agents, runs, and optional BullMQ jobs
- * (URL contract in **`docs/planning/plan-rest.md`**).
+ * (URL contract in **`docs/roadmap/plan-rest.md`**).
  * Mount with **`app.use(createRuntimeRestRouter({ … }))`** (or under a prefix like **`/api`**).
  *
  * **Execution:** provide **`runtime`** for **inline** runs, **`GET /agents/:agentId/memory`** ( **`MemoryAdapter.query`** ), and **`POST /agents/:fromAgentId/send`** when **`runtime.config.messageBus`** is set (**501** otherwise), **`dispatch`** for **BullMQ** enqueue (like **`dynamic-runtime-rest`**), or **both** (dispatch wins for **`POST` run/resume** — memory + send routes still follow **`runtime`**).

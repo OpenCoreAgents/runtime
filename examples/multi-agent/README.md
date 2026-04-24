@@ -5,7 +5,7 @@ Two small demos in one script:
 1. **Fire-and-forget** — one agent emits a **`system_send_message`** **`event`**; another agent id is only an **inbox** you **`waitFor`** in application code.
 2. **Request–reply** — agent A sends a **`request`** with a **`correlationId`**; a background handler simulates agent B and **`bus.send`**s a **`reply`**; the main script **`waitFor`**s the reply on A’s inbox.
 
-Uses a **deterministic mock LLM** (no `OPENAI_API_KEY`). **`InProcessMessageBus`** is **single-process only** — for Redis-backed delivery across workers, see [`docs/core/09-communication-multiagent.md`](../../docs/core/09-communication-multiagent.md) and [`docs/core/19-cluster-deployment.md`](../../docs/core/19-cluster-deployment.md).
+Uses a **deterministic mock LLM** (no `OPENAI_API_KEY`). **`InProcessMessageBus`** is **single-process only** — for Redis-backed delivery across workers, see [`docs/reference/core/14-communication-multiagent.md`](../../docs/reference/core/14-communication-multiagent.md) and [`docs/reference/core/16-cluster-deployment.md`](../../docs/reference/core/16-cluster-deployment.md).
 
 Full runnable code: [`src/main.ts`](./src/main.ts) (two demos), scripted steps: [`src/scriptedLlmQueues.ts`](./src/scriptedLlmQueues.ts).
 
@@ -91,5 +91,5 @@ pnpm start
 
 ## Next steps
 
-- Enforce allowed targets with **`AgentRuntime({ sendMessageTargetPolicy: … })`** — see [`docs/core/08-scope-and-security.md`](../../docs/core/08-scope-and-security.md).
+- Enforce allowed targets with **`AgentRuntime({ sendMessageTargetPolicy: … })`** — see [`docs/reference/core/11-scope-and-security.md`](../../docs/reference/core/11-scope-and-security.md).
 - Replace the mock LLM with **`OpenAILLMAdapter`** and give agents real **`systemPrompt`** instructions to use **`system_send_message`** when appropriate.

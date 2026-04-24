@@ -5,7 +5,7 @@ description: Use @opencoreagents/rag (catalog, ingest, file tools, skills) and r
 
 # OpenCore Agents — RAG (`@opencoreagents/rag`)
 
-> **Bundled docs:** **`docs/`** next to this file (`docs/core/...`); **`packages/rag/README.md`** lives under the sibling **`packages/`** folder. API: `skillDocsDirectory("opencoreagents-rag-dynamic")`.
+> **Bundled docs:** **`docs/`** next to this file (`docs/reference/core/...`); **`packages/rag/README.md`** lives under the sibling **`packages/`** folder. API: `skillDocsDirectory("opencoreagents-rag-dynamic")`.
 
 Use when the user needs **file ingestion**, **vector search**, **per-project catalogs**, or **skills** `rag` / `rag-reader`.
 
@@ -18,7 +18,7 @@ Use when the user needs **file ingestion**, **vector search**, **per-project cat
 
 ## Fragments from `examples/rag`
 
-Catalog entries are **`RagSourceDefinition`**: stable **`id`**, **`description`** (what the list tool shows), and **`source`** (path relative to **`fileReadRoot`** or an allowed URL — see bundled `docs/core/17-rag-pipeline.md`).
+Catalog entries are **`RagSourceDefinition`**: stable **`id`**, **`description`** (what the list tool shows), and **`source`** (path relative to **`fileReadRoot`** or an allowed URL — see bundled `docs/reference/core/18-rag-pipeline.md`).
 
 ```typescript
 // Adapted from examples/rag/src/fileSources.ts
@@ -149,8 +149,8 @@ export const SUPPORT_RAG_SOURCES: RagSourceDefinition[] = [
 
 ## Docs & full examples
 
-- Pipeline & patterns: `docs/core/17-rag-pipeline.md`
-- Definitions / sandboxing: `docs/core/07-definition-syntax.md`
+- Pipeline & patterns: `docs/reference/core/18-rag-pipeline.md`
+- Definitions / sandboxing: `docs/reference/core/06-definition-syntax.md`
 - Package README: `packages/rag/README.md`
 - Runnable sources (monorepo clone only): `examples/rag/`, `examples/rag-contact-support/`
 
@@ -162,6 +162,6 @@ export const SUPPORT_RAG_SOURCES: RagSourceDefinition[] = [
 ## Gotchas
 
 - **Demo adapters** vs **production** vector backends—call out when an example uses in-memory or permissive settings.
-- **`fileReadRoot`** / session overrides for sandboxing—see `docs/core/07-definition-syntax.md` and `packages/rag/README.md`.
+- **`fileReadRoot`** / session overrides for sandboxing—see `docs/reference/core/06-definition-syntax.md` and `packages/rag/README.md`.
 
-For the full monorepo and every `docs/core/` topic, enable the **`opencoreagents-workspace`** skill alongside this one.
+For the full monorepo and every `docs/reference/core/` topic, enable the **`opencoreagents-workspace`** skill alongside this one.

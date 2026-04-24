@@ -5,7 +5,7 @@ description: Express REST for agents/runs (@opencoreagents/rest-api), BullMQ asy
 
 # OpenCore Agents — REST API & workers
 
-> **Bundled docs:** **`docs/core/15-multi-tenancy.md`** (engine tenancy / scopes); **`docs/core/21-dynamic-runtime-rest.md`** (dynamic store + workers); **`packages/rest-api/README.md`**, **`packages/core/README.md`**. **`skillDocsDirectory("opencoreagents-rest-workers")`**, **`skillPackagesDirectory("opencoreagents-rest-workers")`**.
+> **Bundled docs:** **`docs/reference/core/12-multi-tenancy.md`** (engine tenancy / scopes); **`docs/reference/core/21-dynamic-runtime-rest.md`** (dynamic store + workers); **`packages/rest-api/README.md`**, **`packages/core/README.md`**. **`skillDocsDirectory("opencoreagents-rest-workers")`**, **`skillPackagesDirectory("opencoreagents-rest-workers")`**.
 
 Use for **HTTP APIs over the engine**, **BullMQ-backed run/resume**, and **Redis + worker** setups—not for in-process-only demos unless the user asks for HTTP.
 
@@ -50,7 +50,7 @@ Same stack as the public monorepo [OpenCoreAgents/runtime](https://github.com/Op
 
 **Multi-tenant resolution** (when **`projectId`** is omitted from router options): **`X-Project-Id`** header → **`?projectId=`** → **`body.projectId`** on POSTs. Optional run **`tenantId`** resolves from **`X-Tenant-Id`** → **`?tenantId=`** → **`body.tenantId`**; set **`requiredTenant: true`** to require it on run routes. **`allowedProjectIds`**, **`resolveProjectId(req)`**, **`resolveApiKey`** + **`getRuntimeRestRouterProjectId`** / **`getRuntimeRestRouterTenantId`** for scoped secrets — see **`packages/rest-api/README.md`**.
 
-**Engine-level multi-tenancy:** the router only picks the effective **`projectId`** on the wire. How **`projectId`** scopes **definitions**, **memory**, **runs**, **`RunStore`** rows, **`MessageBus`** keys, and **dynamic-definition** store data lives in **`docs/core/15-multi-tenancy.md`**—read it when combining **`rest-api`** with **shared Redis**, **workers**, or **`dynamicDefinitionsStore`**, not only for “HTTP auth” questions.
+**Engine-level multi-tenancy:** the router only picks the effective **`projectId`** on the wire. How **`projectId`** scopes **definitions**, **memory**, **runs**, **`RunStore`** rows, **`MessageBus`** keys, and **dynamic-definition** store data lives in **`docs/reference/core/12-multi-tenancy.md`**—read it when combining **`rest-api`** with **shared Redis**, **workers**, or **`dynamicDefinitionsStore`**, not only for “HTTP auth” questions.
 
 **Useful exports:** **`mapEngineErrorToHttp`**, **`RUNTIME_REST_ENGINE_ERROR_CODES`**, **`isBullmqJobWaitTimeoutError`**, **`buildRuntimeRestOpenApiSpec`**, **`swagger`** option (**`/openapi.json`**, **`/docs`** — often **without** API key; lock down in production).
 
@@ -80,7 +80,7 @@ app.use(
 
 - **`dispatchEngineJob(runtime, payload)`** is implemented in **`@opencoreagents/core`** and **re-exported** from **`@opencoreagents/adapters-bullmq`**.
 - Worker should build **`AgentRuntime`** with the same adapters you need in production (**Redis** memory/run store if multiple workers).
-- **Dynamic agents:** set **`dynamicDefinitionsStore`** (e.g. **`RedisDynamicDefinitionsStore`**) on **`AgentRuntime`** so **`runtime.dispatch`** / **`dispatchEngineJob`** hydrates from Redis **per job**—details in **`docs/core/21-dynamic-runtime-rest.md`**.
+- **Dynamic agents:** set **`dynamicDefinitionsStore`** (e.g. **`RedisDynamicDefinitionsStore`**) on **`AgentRuntime`** so **`runtime.dispatch`** / **`dispatchEngineJob`** hydrates from Redis **per job**—details in **`docs/reference/core/21-dynamic-runtime-rest.md`**.
 
 ## Dynamic definitions (mental model)
 

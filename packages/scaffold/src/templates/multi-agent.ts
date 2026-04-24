@@ -47,7 +47,7 @@ export async function loadWorker(runtime: AgentRuntime, sessionOpts: SessionOpti
 
 const messageBus = `import type { AgentMessage, MessageBus } from "@opencoreagents/core";
 
-/** Stub — replace with Redis / in-process queue (see docs/core/09-communication-multiagent.md). */
+/** Stub — replace with Redis / in-process queue (see docs/reference/core/14-communication-multiagent.md). */
 export function createInProcessMessageBus(): MessageBus {
   return {
     async send(_msg: Omit<AgentMessage, "id">) {

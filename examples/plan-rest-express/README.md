@@ -1,6 +1,6 @@
 # `plan-rest-express` — REST plugin after `Agent.define`
 
-Uses [`@opencoreagents/rest-api`](../../packages/rest-api/) so you **define agents in code**, then **`app.use(createRuntimeRestRouter({ … }))`** for the contract in [`docs/planning/plan-rest.md`](../../docs/planning/plan-rest.md): **`GET /agents`**, **`POST /agents/:id/run`**, **`POST …/resume`**, **`GET /runs/:id`**, **`GET /runs/:id/history`**, **`GET /agents/:id/runs`**, **`GET …/memory`**, optional **`swagger`**. This sample uses a **fixed `projectId`** (no **`messageBus`** — **`POST /agents/:from/send`** would return **501**). For **several tenants**, omit **`projectId`** and pass **`X-Project-Id`** / **`?projectId=`** / **`body.projectId`** — see the [package README](../../packages/rest-api/README.md).
+Uses [`@opencoreagents/rest-api`](../../packages/rest-api/) so you **define agents in code**, then **`app.use(createRuntimeRestRouter({ … }))`** for the contract in [`docs/roadmap/plan-rest.md`](../../docs/roadmap/plan-rest.md): **`GET /agents`**, **`POST /agents/:id/run`**, **`POST …/resume`**, **`GET /runs/:id`**, **`GET /runs/:id/history`**, **`GET /agents/:id/runs`**, **`GET …/memory`**, optional **`swagger`**. This sample uses a **fixed `projectId`** (no **`messageBus`** — **`POST /agents/:from/send`** would return **501**). For **several tenants**, omit **`projectId`** and pass **`X-Project-Id`** / **`?projectId=`** / **`body.projectId`** — see the [package README](../../packages/rest-api/README.md).
 
 ## Build
 
@@ -46,4 +46,4 @@ curl -s "http://127.0.0.1:3050/agents/demo-greeter/runs"
 
 Optional: `REST_API_KEY=secret` — then pass `Authorization: Bearer secret` or `X-Api-Key: secret`.
 
-See [`docs/planning/plan-rest.md`](../../docs/planning/plan-rest.md) for async **`dispatch`**, **`swagger`**, multi-tenant notes, and gaps outside the library.
+See [`docs/roadmap/plan-rest.md`](../../docs/roadmap/plan-rest.md) for async **`dispatch`**, **`swagger`**, multi-tenant notes, and gaps outside the library.

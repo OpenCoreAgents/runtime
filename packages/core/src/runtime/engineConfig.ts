@@ -23,7 +23,7 @@ export interface EngineConfig {
   embeddingAdapter?: EmbeddingAdapter;
   /** Required for system_vector_search / system_vector_upsert / system_vector_delete tools. */
   vectorAdapter?: VectorAdapter;
-  /** Required for `wait`/`resume` in cluster deployments. See docs/core/19-cluster-deployment.md. */
+  /** Required for `wait`/`resume` in cluster deployments. See docs/reference/core/16-cluster-deployment.md. */
   runStore?: RunStore;
   /** Required for `system_send_message` tool (multi-agent). */
   messageBus?: MessageBus;

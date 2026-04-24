@@ -23,4 +23,4 @@ All of the above use **TCP Redis** via **`ioredis`** in this repo’s wiring. Th
 ## Further reading
 
 - [`@opencoreagents/adapters-redis`](../../../packages/adapters-redis/README.md) — key layout and facades.
-- [`docs/core/06-adapters-infrastructure.md`](../../../docs/core/06-adapters-infrastructure.md) and [`docs/core/19-cluster-deployment.md`](../../../docs/core/19-cluster-deployment.md) — broader deployment context.
+- [`docs/reference/core/13-adapters-infrastructure.md`](../../../docs/reference/core/13-adapters-infrastructure.md) and [`docs/reference/core/16-cluster-deployment.md`](../../../docs/reference/core/16-cluster-deployment.md) — broader deployment context.

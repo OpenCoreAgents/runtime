@@ -12,7 +12,7 @@
 
 **Host-layer behavior (typical BFF):** **`public/`** via **`express.static`**, **`X-Request-Id`**, minimal **security headers**, **CORS** (reflecting `Origin` for dev), optional **`API_KEY`** bearer auth on **`/v1/*`** (`/health` stays unauthenticated for probes), **404** JSON, **graceful shutdown** on SIGINT/SIGTERM. See [`src/middleware.ts`](./src/middleware.ts) and [`src/shutdown.ts`](./src/shutdown.ts).
 
-Still **not** full production: no per-tenant authZ, no rate limits, **`InMemoryRunStore`** is single-process — see [`docs/core/08-scope-and-security.md`](../../docs/core/08-scope-and-security.md) and [`docs/core/14-consumers.md`](../../docs/core/14-consumers.md). For multiple workers, use **`RedisRunStore`** and align sessions ([`docs/core/19-cluster-deployment.md`](../../docs/core/19-cluster-deployment.md)).
+Still **not** full production: no per-tenant authZ, no rate limits, **`InMemoryRunStore`** is single-process — see [`docs/reference/core/11-scope-and-security.md`](../../docs/reference/core/11-scope-and-security.md) and [`docs/reference/core/15-consumers.md`](../../docs/reference/core/15-consumers.md). For multiple workers, use **`RedisRunStore`** and align sessions ([`docs/reference/core/16-cluster-deployment.md`](../../docs/reference/core/16-cluster-deployment.md)).
 
 ## Setup
 

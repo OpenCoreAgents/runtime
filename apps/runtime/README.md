@@ -1,6 +1,6 @@
 # `@opencoreagents/runtime`
 
-This package is a **reference deployment** of the agent stack: [**plan REST**](../../docs/planning/plan-rest.md) on **Express**, a **BullMQ** worker for engine jobs, and **Redis** for definitions, the queue, and **`RedisRunStore`**.
+This package is a **reference deployment** of the agent stack: [**plan REST**](../../docs/roadmap/plan-rest.md) on **Express**, a **BullMQ** worker for engine jobs, and **Redis** for definitions, the queue, and **`RedisRunStore`**.
 
 ## Features
 

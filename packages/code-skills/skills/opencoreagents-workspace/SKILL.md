@@ -5,7 +5,7 @@ description: Navigate the OpenCore Agents monorepo (@opencoreagents/*), pnpm wor
 
 # OpenCore Agents — monorepo workspace
 
-> **Bundled docs:** **`docs/`** next to this file — `core/`, `planning/` (includes **`agent-engine-overview.md`**, **`mvp.md`**, roadmap, scaffold), plus top-level **`README.md`** and **`getting-started.md`** only. **`packages/`** next to `docs/` holds README stubs so `../../packages/...` links from copied `core/*.md` still resolve. From code: `skillDocsDirectory("opencoreagents-workspace")` → `docs/`; sibling `packages/` is under the same skill folder. Run `pnpm build` in `@opencoreagents/code-skills` to materialize both when working from a clone.
+> **Bundled docs:** **`docs/`** next to this file — `reference/`, `roadmap/`, plus `archive/` and `guides/`, and top-level **`README.md`** / **`getting-started.md`**. **`packages/`** next to `docs/` holds README stubs so `../../packages/...` links from copied docs still resolve. From code: `skillDocsDirectory("opencoreagents-workspace")` → `docs/`; sibling `packages/` is under the same skill folder. Run `pnpm build` in `@opencoreagents/code-skills` to materialize both when working from a clone.
 
 Use this skill when editing or explaining this repository’s **layout**, **build**, or **documentation**—not when you only need one API snippet (use **opencoreagents-engine** or the focused skills).
 
@@ -14,15 +14,15 @@ Use this skill when editing or explaining this repository’s **layout**, **buil
 - **Public runtime repository:** [OpenCoreAgents/runtime](https://github.com/OpenCoreAgents/runtime) — upstream source, issues, and releases for the `@opencoreagents/*` packages.
 - **Package scope:** `@opencoreagents/*` under `packages/*`. **Examples** live under `examples/*` (workspace members, not published like library packages).
 - **Install / CI:** `pnpm install`, then `pnpm turbo run build test lint` from repo root.
-- **Canonical engine docs:** `docs/core/README.md` (index of all core topics).
-- **Product narrative (long read):** `docs/planning/agent-engine-overview.md` — pair with `docs/getting-started.md`.
-- **Planning / roadmap:** `docs/planning/README.md`, `docs/planning/plan.md`, `docs/planning/mvp.md`. **`technical-debt.md` is not bundled** in this pack (it goes stale in old skill installs)—use the live [OpenCoreAgents/runtime](https://github.com/OpenCoreAgents/runtime) tree on `main` for the current gap list.
+- **Canonical engine docs:** `docs/reference/core/README.md` (index of all core topics).
+- **Product narrative (long read):** `docs/roadmap/agent-engine-overview.md` — pair with `docs/getting-started.md`.
+- **Planning / roadmap:** `docs/roadmap/README.md`, `docs/roadmap/plan.md`, `docs/roadmap/mvp.md`. **`technical-debt.md` is not bundled** in this pack (it goes stale in old skill installs)—use the live [OpenCoreAgents/runtime](https://github.com/OpenCoreAgents/runtime) tree on `main` for the current gap list.
 - **Runnable demos:** only in a full clone — `examples/README.md` (not shipped inside this skill pack).
 
 ## Before risky changes
 
-- **Security / tenancy / REST hardening:** read `docs/core/08-scope-and-security.md` and the latest planning docs on [OpenCoreAgents/runtime](https://github.com/OpenCoreAgents/runtime) `main` before telling the user a feature is “production ready.”
-- **REST route contract:** `docs/planning/plan-rest.md` + `packages/rest-api/README.md`.
+- **Security / tenancy / REST hardening:** read `docs/reference/core/11-scope-and-security.md` and the latest planning docs on [OpenCoreAgents/runtime](https://github.com/OpenCoreAgents/runtime) `main` before telling the user a feature is “production ready.”
+- **REST route contract:** `docs/roadmap/plan-rest.md` + `packages/rest-api/README.md`.
 
 ## Package map (short)
 

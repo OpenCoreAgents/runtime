@@ -36,6 +36,6 @@ This is useful for recall-style history reads and waiting-run lookups without sc
 
 ## Docs
 
-- [06-adapters-infrastructure.md](../../docs/core/06-adapters-infrastructure.md) (Upstash REST + vector)
-- [17-rag-pipeline.md](../../docs/core/17-rag-pipeline.md) (vector tools)
-- [19-cluster-deployment.md](../../docs/core/19-cluster-deployment.md)
+- [13-adapters-infrastructure.md](../../docs/reference/core/13-adapters-infrastructure.md) (Upstash REST + vector)
+- [18-rag-pipeline.md](../../docs/reference/core/18-rag-pipeline.md) (vector tools)
+- [16-cluster-deployment.md](../../docs/reference/core/16-cluster-deployment.md)
