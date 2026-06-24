@@ -2,7 +2,7 @@
 
 ## Status
 
-Brainstorm. This is a product-aligned implementation proposal, not a verbatim copy of the external requirements that motivated it.
+Ready for staged implementation. This is a product-aligned implementation proposal, not a verbatim copy of the external requirements that motivated it.
 
 The goal is to adapt the request to OpenCore Agents as it exists today: a small core execution engine with agent and skill allowlists, `ToolRunner`, `RunStore`, browser adapters, runtime hooks, and host-owned production boundaries.
 
@@ -43,6 +43,7 @@ The main architectural change should be a tool-action pipeline inside the engine
 ```text
 model action
   -> resolve allowed tool
+  -> enforce effective allowlist
   -> prepare canonical input
   -> emit/record tool proposed
   -> execution policy decision
@@ -65,6 +66,7 @@ This should be the first implementation step because later policy, approvals, in
 
 Proposed behavior:
 
+- Resolve the tool and enforce the effective allowlist before preparation. Do not prepare input for a tool that is unknown or outside the allowed surface.
 - If `prepareInput` exists, call it exactly once per proposed tool action.
 - Use the returned prepared value for execution policy, approval state, hashing, events, and `tool.execute`.
 - If `prepareInput` does not exist, keep the current `validate` behavior.
@@ -80,6 +82,24 @@ toolRunner.executePrepared(name, preparedInput, context);
 ```
 
 The exact names can change, but the boundary matters: policy, pending action persistence, input hashing, public events, and `tool.execute` must all see the same prepared value.
+
+Use a stable preparation result shape so the first implementation PR does not invent a throwaway mini-contract:
+
+```ts
+type PreparedToolAction =
+  | {
+      ok: true;
+      tool: ToolAdapter;
+      toolName: string;
+      rawInput: unknown;
+      preparedInput: unknown;
+    }
+  | {
+      ok: false;
+      toolName: string;
+      reason: string;
+    };
+```
 
 ### 2. Pre-Tool Execution Policy
 
@@ -149,6 +169,10 @@ The tool-approval shape should include:
 - `expiresAt`
 
 This should live under `run.state.pending` because current docs and adapters already treat `pending` as the waiting-run snapshot.
+
+If `preparedInput` is not safe or practical to persist directly, the host should be able to store an opaque protected reference instead. This matters for large payloads, local paths, signed URLs, secrets, PII, or inputs whose retention policy differs from normal run state. The approval path must still execute the exact prepared action represented by that reference.
+
+Policy-driven tool approval should require a `RunStore` by default. Without durable persistence, a pending approval can be lost across workers, process restarts, browser reloads, or queue handoff. Hosts that explicitly want ephemeral in-process approvals can opt into that weaker mode, but the default should fail fast with a clear error when a policy returns `wait` and no approval-capable store is configured.
 
 ### 5. Action-Level Claiming and Idempotency
 
