@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="OpenCore Agents browser-local runtime example" />
+    <title>Browser-Local Agent Runtime</title>
+  </head>
+  <body>
+    <main class="shell">
+      <section class="card">
+        <p class="eyebrow">OpenCore Agents · Browser proof of concept</p>
+        <h1>Run an agent without a server</h1>
+        <p class="intro">
+          This page executes <code>AgentRuntime</code>, the model adapter, memory, and run history
+          entirely in this browser tab.
+        </p>
+
+        <form id="run-form">
+          <div class="field-row">
+            <div>
+              <label for="adapter">Model adapter</label>
+              <select id="adapter" name="adapter">
+                <option value="deterministic">Deterministic demo</option>
+                <option value="webllm">WebLLM local model</option>
+              </select>
+            </div>
+            <div id="model-field" hidden>
+              <label for="model">WebLLM model</label>
+              <input
+                id="model"
+                name="model"
+                value="SmolLM2-360M-Instruct-q4f16_1-MLC"
+                autocomplete="off"
+              />
+            </div>
+          </div>
+          <p id="model-note" class="model-note" hidden>
+            The first run downloads model assets. Generation remains on this device after loading.
+          </p>
+          <label for="prompt">Message</label>
+          <textarea id="prompt" name="prompt" rows="4">Explain why a private local agent is useful.</textarea>
+          <button id="run-button" type="submit">Run local agent</button>
+          <div id="progress-wrap" class="progress-wrap" hidden>
+            <progress id="progress" max="1" value="0"></progress>
+            <span id="progress-text">Waiting to load a model…</span>
+          </div>
+        </form>
+
+        <section class="result" aria-live="polite">
+          <div class="result-heading">
+            <h2>Result</h2>
+            <span id="status" data-state="idle">Ready</span>
+          </div>
+          <p id="answer">Submit a message to start a browser-only run.</p>
+          <details>
+            <summary>Run history</summary>
+            <pre id="history">[]</pre>
+          </details>
+          <div class="local-data">
+            <span id="local-data-status">Checking local data…</span>
+            <button id="clear-local-data" class="secondary-button" type="button">
+              Clear local data
+            </button>
+          </div>
+        </section>
+      </section>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

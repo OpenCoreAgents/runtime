@@ -4,6 +4,7 @@ import { EngineJobExpiredError } from "../errors/index.js";
 import type { Run } from "../protocol/types.js";
 import type { AgentRuntime } from "../runtime/AgentRuntime.js";
 import type { EngineJobPayload } from "./engineJobPayload.js";
+import { hydrateDynamicDefinitions } from "#dynamic-definitions-loader";
 
 function throwIfJobExpired(payload: EngineJobPayload): void {
   const deadline = payload.expiresAtMs;
@@ -28,17 +29,6 @@ export async function dispatchEngineJob(
   throwIfJobExpired(payload);
   const store = runtime.config.dynamicDefinitionsStore;
   if (store != null) {
-    const { hydrateAgentDefinitionsFromStore } = (await import(
-      /* Optional: install `@opencoreagents/dynamic-definitions` when using `dynamicDefinitionsStore`. */
-      "@opencoreagents/dynamic-definitions"
-    )) as {
-      hydrateAgentDefinitionsFromStore: (
-        store: unknown,
-        projectId: string,
-        agentId: string,
-        options?: { secrets?: Record<string, string> },
-      ) => Promise<void>;
-    };
     const methods =
       typeof store === "object" &&
       store !== null &&
@@ -47,9 +37,17 @@ export async function dispatchEngineJob(
       typeof (store as { methods: unknown }).methods === "object"
         ? (store as { methods: unknown }).methods
         : store;
-    await hydrateAgentDefinitionsFromStore(methods, payload.projectId, payload.agentId, {
-      secrets: runtime.config.dynamicDefinitionsSecrets?.() ?? {},
-    });
+    const secrets = runtime.config.dynamicDefinitionsSecrets?.() ?? {};
+    if (runtime.config.dynamicDefinitionsHydrator) {
+      await runtime.config.dynamicDefinitionsHydrator(
+        methods,
+        payload.projectId,
+        payload.agentId,
+        { secrets },
+      );
+    } else {
+      await hydrateDynamicDefinitions(methods, payload.projectId, payload.agentId, secrets);
+    }
   }
   const session = new Session({
     id: payload.sessionId,

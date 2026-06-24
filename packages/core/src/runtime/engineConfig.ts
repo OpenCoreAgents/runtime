@@ -63,6 +63,17 @@ export interface EngineConfig {
    */
   dynamicDefinitionsStore?: unknown;
   /**
+   * Optional environment-specific hydration implementation for `dynamicDefinitionsStore`.
+   * Node.js uses the built-in lazy loader when omitted. Browser integrations should inject
+   * a hydrator so core remains independent of browser persistence packages.
+   */
+  dynamicDefinitionsHydrator?: (
+    store: unknown,
+    projectId: string,
+    agentId: string,
+    options?: { secrets?: Record<string, string> },
+  ) => Promise<void>;
+  /**
    * **Optional.** Used only when `dynamicDefinitionsStore` is set: supplies **`{{secret:*}}`** values
    * for HTTP tools during hydration. Omit or return **`{}`** if you do not use templated secrets.
    */

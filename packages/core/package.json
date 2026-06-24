@@ -4,11 +4,23 @@
   "private": false,
   "license": "Apache-2.0",
   "type": "module",
+  "imports": {
+    "#runtime-environment": {
+      "browser": "./src/runtimeEnvironment.browser.ts",
+      "default": "./src/runtimeEnvironment.node.ts"
+    },
+    "#dynamic-definitions-loader": {
+      "browser": "./src/dynamicDefinitionsLoader.browser.ts",
+      "default": "./src/dynamicDefinitionsLoader.node.ts"
+    }
+  },
   "main": "dist/index.js",
+  "browser": "dist/browser/index.js",
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
+      "browser": "./dist/browser/index.js",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
     }
@@ -17,7 +29,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsup",
+    "build": "tsup && tsup --config tsup.browser.config.ts",
     "dev": "tsup --watch",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",

@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto";
 import type { EngineDeps, EngineHookRunContext, EngineHooks } from "./types.js";
 import type { Run } from "../protocol/types.js";
 import type { Step } from "../protocol/types.js";
@@ -12,6 +11,7 @@ import {
   RunTimeoutError,
   StepSchemaError,
 } from "../errors/index.js";
+import { createRandomUuid } from "#runtime-environment";
 
 function isoNow(): string {
   return new Date().toISOString();
@@ -108,7 +108,7 @@ export function createRun(
     runId:
       typeof explicitRunId === "string" && explicitRunId.trim() !== ""
         ? explicitRunId.trim()
-        : randomUUID(),
+        : createRandomUuid(),
     agentId,
     sessionId,
     status: "running",

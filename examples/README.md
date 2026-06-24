@@ -1,6 +1,6 @@
 # Examples
 
-**Eleven** runnable sample programs under **`examples/*`**, each a **`pnpm` workspace** package (see root [`pnpm-workspace.yaml`](../pnpm-workspace.yaml)). From the repository root: `pnpm install`, build the workspace packages each example depends on, then `pnpm --filter <package> start` (or the script named in that example’s subsection) or `cd examples/<dir> && pnpm …`.
+**Twelve** runnable sample programs under **`examples/*`**, each a **`pnpm` workspace** package (see root [`pnpm-workspace.yaml`](../pnpm-workspace.yaml)). From the repository root: `pnpm install`, build the workspace packages each example depends on, then `pnpm --filter <package> start` (or the script named in that example’s subsection) or `cd examples/<dir> && pnpm …`.
 
 The tutorial index also points here: [Getting started — further reading](../docs/getting-started.md). **Plan-shaped** HTTP routes (`createRuntimeRestRouter`): [`plan-rest.md`](../docs/roadmap/plan-rest.md) and [`packages/rest-api/README.md`](../packages/rest-api/README.md).
 
@@ -16,6 +16,7 @@ For production or any shared runtime, swap to **`RedisMemoryAdapter`** (`@openco
 
 | If you want to… | Start here |
 |-----------------|------------|
+| Run an agent entirely in a browser with a deterministic adapter and durable IndexedDB state | [`browser-local/`](./browser-local/) |
 | See the **smallest** **`Agent.run()`** loop with a **mock LLM**, no network or keys | [`minimal-run/`](./minimal-run/) |
 | Load **OpenClaw / AgentSkills** **`SKILL.md`** packs with **`@opencoreagents/skill-loader-openclaw`**, **`exec`**, scripted **`node`** demo (no API keys) | [`load-openclaw-skills/`](./load-openclaw-skills/) |
 | Use **OpenAI** with **tools + skills** and **`Tool.define`** in a real provider setup | [`openai-tools-skill/`](./openai-tools-skill/) (needs **`OPENAI_API_KEY`**) |
@@ -42,6 +43,7 @@ For production or any shared runtime, swap to **`RedisMemoryAdapter`** (`@openco
 | Package | Directory | Summary |
 |---------|-----------|---------|
 | `@opencoreagents/example-minimal-run` | [`minimal-run/`](./minimal-run/) | **`Agent.run()`** end-to-end with a **deterministic mock LLM** and **`InMemoryMemoryAdapter`**. No network, no API keys. |
+| `@opencoreagents/example-browser-local` | [`browser-local/`](./browser-local/) | Vite browser demo with a deterministic primary path, durable IndexedDB state, and an optional WebLLM mode; no application server or API key. |
 | `@opencoreagents/example-load-openclaw-skills` | [`load-openclaw-skills/`](./load-openclaw-skills/) | **`loadOpenClawSkills`** + **`registerOpenClawExecTool`**; sample **`skills/*/SKILL.md`** (one gated skip); mock LLM runs **`exec`** (`node -p 42`). No API keys. |
 | `@opencoreagents/example-openai-tools-skill` | [`openai-tools-skill/`](./openai-tools-skill/) | **`OpenAILLMAdapter`** (engine maps native `tool_calls` when `content` is empty), custom **`Tool.define`** (`roll_dice`), **`Skill.define`**, **`Agent.define`**. Requires **`OPENAI_API_KEY`**. |
 | `@opencoreagents/example-console-wait` | [`console-wait/`](./console-wait/) | Interactive **terminal**: mock LLM emits **`wait`**, **`RunBuilder.onWait`** reads stdin (`readline`), then continues in-process. No API keys. |
@@ -52,6 +54,16 @@ For production or any shared runtime, swap to **`RedisMemoryAdapter`** (`@openco
 | `@opencoreagents/example-dynamic-runtime-rest` | [`dynamic-runtime-rest/`](./dynamic-runtime-rest/) | **`RedisDynamicDefinitionsStore`** (`store.Agent`, `store.methods`), BullMQ **`POST /v1/run`**, **`GET /v1/jobs/:id`**. |
 | `@opencoreagents/example-plan-rest-express` | [`plan-rest-express/`](./plan-rest-express/) | Minimal Express app: **`Agent.define`** + **`createRuntimeRestRouter`** (`@opencoreagents/rest-api`); routes per **`docs/roadmap/plan-rest.md`**; mock LLM + **`InMemoryRunStore`**; **Swagger** at **`/docs`**. |
 | `@opencoreagents/example-telegram-mocked` | [`telegram-example-mocked/`](./telegram-example-mocked/) | **Mock** Telegram **`Update`** / **`Message`** → **`NormalizedInboundMessage`** → **`ConversationGateway`** → **`MockTelegramClient`** outbox (no Telegram network or bot token). |
+
+### `browser-local` — `@opencoreagents/example-browser-local`
+
+| | |
+|--|--|
+| **Workspace deps** | `@opencoreagents/core`, `@opencoreagents/browser` |
+| **Scripts** | `pnpm dev` → Vite dev server; `pnpm build`; `pnpm typecheck` |
+| **Build first** | `pnpm turbo run build --filter=@opencoreagents/core --filter=@opencoreagents/browser` |
+| **Run** | `pnpm --filter @opencoreagents/example-browser-local dev` |
+| **Docs** | [browser-local/README.md](./browser-local/README.md) |
 
 ### `minimal-run` — `@opencoreagents/example-minimal-run`
 
