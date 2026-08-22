@@ -323,7 +323,7 @@ describe("ToolRunner", () => {
     );
   });
 
-  it("executePrepared rejects a fabricated action for a tool removed from allowlist", async () => {
+  it("executePrepared rejects an authentic action when allowlist changes after prepare", async () => {
     const tool: ToolAdapter = {
       name: "removed",
       async execute() {
@@ -331,17 +331,38 @@ describe("ToolRunner", () => {
       },
     };
     const runner = new ToolRunner(new Map([["removed", tool]]), new Set(["removed"]));
-    const fabricated = {
-      ok: true as const,
-      tool,
-      toolName: "removed",
-      rawInput: {},
-      preparedInput: {},
-    };
+    const prepared = await runner.prepare("removed", {});
     // Simulate allowlist change after prepare()
     runner["allowlist"].delete("removed");
-    await expect(runner.executePrepared(fabricated, ctxBase())).rejects.toBeInstanceOf(
+    await expect(runner.executePrepared(prepared, ctxBase())).rejects.toBeInstanceOf(
       ToolNotAllowedError,
+    );
+  });
+
+
+  it("executePrepared rejects a manually built action even with a registered, allowed tool", async () => {
+    const registeredTool: ToolAdapter = {
+      name: "registered",
+      prepareInput(rawInput) {
+        return { ok: true, value: { canonical: rawInput } };
+      },
+      async execute() {
+        return { ok: true };
+      },
+    };
+    const runner = new ToolRunner(
+      new Map([[registeredTool.name, registeredTool]]),
+      new Set([registeredTool.name]),
+    );
+    const fabricated = {
+      ok: true as const,
+      tool: registeredTool,
+      toolName: registeredTool.name,
+      rawInput: { malicious: true },
+      preparedInput: { malicious: true },
+    };
+    await expect(runner.executePrepared(fabricated, ctxBase())).rejects.toBeInstanceOf(
+      ToolExecutionError,
     );
   });
 

@@ -48,6 +48,9 @@ export type PreparedToolAction =
     };
 
 export class ToolRunner {
+  /** Internal identity marker for objects produced by {@link prepare}. */
+  private readonly preparedActions = new WeakSet<object>();
+
   constructor(
     private readonly registry: Map<string, ToolAdapter>,
     private readonly allowlist: Set<string>,
@@ -61,69 +64,87 @@ export class ToolRunner {
   async prepare(name: string, rawInput: unknown): Promise<PreparedToolAction> {
     const tool = this.registry.get(name);
     if (!tool) {
-      return {
+      const action: PreparedToolAction = {
         ok: false,
         toolName: name,
         reason: `Unknown tool: ${name}`,
         kind: "unknown",
       };
+      this.preparedActions.add(action);
+      return action;
     }
 
     if (!this.allowlist.has(name)) {
-      return {
+      const action: PreparedToolAction = {
         ok: false,
         toolName: name,
         reason: `Tool not allowed for agent: ${name}`,
         kind: "not_allowed",
       };
+      this.preparedActions.add(action);
+      return action;
     }
 
     if (tool.prepareInput) {
       const preparation = await tool.prepareInput(rawInput);
       if (!preparation.ok) {
-        return {
+        const action: PreparedToolAction = {
           ok: false,
           toolName: name,
           reason: preparationFailureMessage(name, preparation.reason),
           details: preparation.reason,
           kind: "preparation",
         };
+        this.preparedActions.add(action);
+        return action;
       }
-      return {
+      const action: PreparedToolAction = {
         ok: true,
         tool,
         toolName: name,
         rawInput,
         preparedInput: preparation.value,
       };
+      this.preparedActions.add(action);
+      return action;
     }
 
     if (tool.validate) {
       const validation = normalizeValidation(tool.validate(rawInput));
       if (!validation.ok) {
-        return {
+        const action: PreparedToolAction = {
           ok: false,
           toolName: name,
           reason: validationFailureMessage(name, validation.reason),
           details: validation.reason,
           kind: "validation",
         };
+        this.preparedActions.add(action);
+        return action;
       }
     }
 
-    return {
+    const action: PreparedToolAction = {
       ok: true,
       tool,
       toolName: name,
       rawInput,
       preparedInput: rawInput,
     };
+    this.preparedActions.add(action);
+    return action;
   }
 
   async executePrepared(
     prepared: PreparedToolAction,
     context: ToolContext,
   ): Promise<unknown> {
+    if (!this.preparedActions.has(prepared)) {
+      throw new ToolExecutionError(
+        "PreparedToolAction must be produced by the same ToolRunner.prepare() call",
+      );
+    }
+
     if (!prepared.ok) {
       switch (prepared.kind) {
         case "not_allowed":
@@ -137,8 +158,7 @@ export class ToolRunner {
       }
     }
 
-    // Defensive: a PreparedToolAction must come from prepare(). If one is
-    // fabricated or the registry/allowlist changed after prepare(), reject it.
+    // Defensive: registry/allowlist may have changed after prepare().
     if (this.registry.get(prepared.toolName) !== prepared.tool) {
       throw new ToolExecutionError(`Tool is no longer registered: ${prepared.toolName}`);
     }
