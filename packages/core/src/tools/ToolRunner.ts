@@ -43,6 +43,7 @@ export type PreparedToolAction =
       ok: false;
       toolName: string;
       reason: string;
+      details?: string;
       kind: "not_allowed" | "unknown" | "validation" | "preparation";
     };
 
@@ -58,15 +59,6 @@ export class ToolRunner {
   }
 
   async prepare(name: string, rawInput: unknown): Promise<PreparedToolAction> {
-    if (!this.allowlist.has(name)) {
-      return {
-        ok: false,
-        toolName: name,
-        reason: `Tool not allowed for agent: ${name}`,
-        kind: "not_allowed",
-      };
-    }
-
     const tool = this.registry.get(name);
     if (!tool) {
       return {
@@ -77,6 +69,15 @@ export class ToolRunner {
       };
     }
 
+    if (!this.allowlist.has(name)) {
+      return {
+        ok: false,
+        toolName: name,
+        reason: `Tool not allowed for agent: ${name}`,
+        kind: "not_allowed",
+      };
+    }
+
     if (tool.prepareInput) {
       const preparation = await tool.prepareInput(rawInput);
       if (!preparation.ok) {
@@ -84,6 +85,7 @@ export class ToolRunner {
           ok: false,
           toolName: name,
           reason: preparationFailureMessage(name, preparation.reason),
+          details: preparation.reason,
           kind: "preparation",
         };
       }
@@ -103,6 +105,7 @@ export class ToolRunner {
           ok: false,
           toolName: name,
           reason: validationFailureMessage(name, validation.reason),
+          details: validation.reason,
           kind: "validation",
         };
       }
@@ -128,10 +131,19 @@ export class ToolRunner {
         case "unknown":
           throw new ToolExecutionError(prepared.reason);
         case "validation":
-          throw new ToolValidationError(prepared.reason);
+          throw new ToolValidationError(prepared.reason, prepared.details);
         case "preparation":
-          throw new ToolPreparationError(prepared.reason);
+          throw new ToolPreparationError(prepared.reason, prepared.details);
       }
+    }
+
+    // Defensive: a PreparedToolAction must come from prepare(). If one is
+    // fabricated or the registry/allowlist changed after prepare(), reject it.
+    if (this.registry.get(prepared.toolName) !== prepared.tool) {
+      throw new ToolExecutionError(`Tool is no longer registered: ${prepared.toolName}`);
+    }
+    if (!this.allowlist.has(prepared.toolName)) {
+      throw new ToolNotAllowedError(`Tool not allowed for agent: ${prepared.toolName}`);
     }
 
     const { tool, toolName, preparedInput } = prepared;

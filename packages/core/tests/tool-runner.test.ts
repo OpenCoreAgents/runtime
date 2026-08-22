@@ -100,6 +100,29 @@ describe("ToolRunner", () => {
     );
     expect(execute).not.toHaveBeenCalled();
   });
+
+  it("preserves ToolValidationError.details from the original validation reason", async () => {
+    const tool: ToolAdapter = {
+      name: "details",
+      validate() {
+        return { ok: false, reason: "original reason" };
+      },
+      async execute() {
+        return { ok: true };
+      },
+    };
+    const runner = new ToolRunner(new Map([["details", tool]]), new Set(["details"]));
+    try {
+      await runner.execute("details", {}, ctxBase());
+      expect.fail("should have thrown");
+    } catch (e) {
+      expect(e).toBeInstanceOf(ToolValidationError);
+      const err = e as ToolValidationError;
+      expect(err.message).toContain("original reason");
+      expect(err.details).toBe("original reason");
+    }
+  });
+
   it("prepareInput transforms raw input and execute receives the prepared value", async () => {
     const execute = vi.fn().mockResolvedValue({ ok: true });
     const tool: ToolAdapter = {
@@ -209,6 +232,7 @@ describe("ToolRunner", () => {
       ok: false,
       toolName: "prep-only",
       reason: "Preparation failed for tool: prep-only: bad",
+      details: "bad",
       kind: "preparation",
     });
   });
@@ -262,6 +286,63 @@ describe("ToolRunner", () => {
     const out = await runner.execute("both", { x: 1 }, ctxBase());
     expect(out).toEqual({ ok: true });
     expect(execute).toHaveBeenCalledWith({ prepared: { x: 1 } }, ctxBase());
+  });
+
+
+  it("resolves tool before allowlist so unknown tool returns ToolExecutionError", async () => {
+    const runner = new ToolRunner(new Map(), new Set(["allowed"]));
+    const prepared = await runner.prepare("allowed", {});
+    expect(prepared).toEqual({
+      ok: false,
+      toolName: "allowed",
+      reason: "Unknown tool: allowed",
+      kind: "unknown",
+    });
+    await expect(runner.executePrepared(prepared, ctxBase())).rejects.toBeInstanceOf(
+      ToolExecutionError,
+    );
+  });
+
+  it("executePrepared rejects a fabricated action that bypasses registry", async () => {
+    const tool: ToolAdapter = {
+      name: "fabricated",
+      async execute() {
+        return { ok: true };
+      },
+    };
+    const runner = new ToolRunner(new Map(), new Set(["fabricated"]));
+    const fabricated = {
+      ok: true as const,
+      tool,
+      toolName: "fabricated",
+      rawInput: {},
+      preparedInput: {},
+    };
+    await expect(runner.executePrepared(fabricated, ctxBase())).rejects.toBeInstanceOf(
+      ToolExecutionError,
+    );
+  });
+
+  it("executePrepared rejects a fabricated action for a tool removed from allowlist", async () => {
+    const tool: ToolAdapter = {
+      name: "removed",
+      async execute() {
+        return { ok: true };
+      },
+    };
+    const runner = new ToolRunner(new Map([["removed", tool]]), new Set(["removed"]));
+    const fabricated = {
+      ok: true as const,
+      tool,
+      toolName: "removed",
+      rawInput: {},
+      preparedInput: {},
+    };
+    // Simulate allowlist change after prepare()
+    runner["allowlist"].delete("removed");
+    await expect(runner.executePrepared(fabricated, ctxBase())).rejects.toBeInstanceOf(
+      ToolNotAllowedError,
+    );
   });
 
 });
