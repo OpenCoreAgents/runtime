@@ -8,6 +8,7 @@ import { parseStep } from "./parseStep.js";
 import { observationForToolFailure } from "./toolFailureObservation.js";
 import {
   ExecutionPolicyError,
+  ExecutionWaitError,
   MaxIterationsError,
   RunCancelledError,
   RunTimeoutError,
@@ -15,9 +16,71 @@ import {
 } from "../errors/index.js";
 import { createRandomUuid } from "#runtime-environment";
 import type { ExecutionPolicyInput } from "./executionPolicy.js";
+import type {
+  ToolActionEvent,
+  ToolActionEventContext,
+  ToolActionEventType,
+} from "./toolActionEvents.js";
+import { buildToolActionEvent } from "./toolActionEvents.js";
+import { emitPublicRunEvent } from "./publicEvents.js";
+import { EngineError } from "../errors/index.js";
+
+/** Runtime identity + envelope assembly for public run events. */
+export async function emitRun(
+  deps: EngineDeps,
+  run: Run,
+  event: import("./publicEvents.js").PublicRunEventPayload,
+): Promise<void> {
+  await emitPublicRunEvent(
+    deps,
+    {
+      runId: run.runId,
+      agentId: run.agentId,
+      sessionId: deps.session.id || undefined,
+      projectId: deps.session.projectId || undefined,
+      tenantId: deps.session.tenantId,
+    },
+    event,
+  );
+}
 
 function isoNow(): string {
   return new Date().toISOString();
+}
+
+/**
+ * Emits a minimal tool-action lifecycle event to the runtime-configured sink.
+ * `input`/`output` are dropped unless `toolEventsIncludeInputOutput` opts in.
+ */
+export function emitToolActionEvent(
+  deps: EngineDeps,
+  meta: EngineHookRunContext,
+  event: {
+    type: ToolActionEventType;
+    tool: string;
+    input?: unknown;
+    output?: unknown;
+    reason?: string;
+    code?: string;
+    error?: string;
+  },
+): void {
+  if (!deps.toolEventSink) return;
+  const base: ToolActionEventContext = {
+    ...meta,
+    ts: isoNow(),
+    tool: event.tool,
+  };
+  const { input, output, ...rest } = event;
+  const built = buildToolActionEvent(
+    base,
+    { ...rest, input, output },
+    {
+      includeInput: Boolean(deps.toolEventsIncludeInputOutput),
+      includeOutput: Boolean(deps.toolEventsIncludeInputOutput),
+    },
+  );
+  deps.toolEventSink(built as ToolActionEvent);
 }
 
 function appendThought(run: Run, content: string): void {
@@ -36,7 +99,7 @@ function appendAction(run: Run, step: Extract<Step, { type: "action" }>): void {
   });
 }
 
-function appendObservation(run: Run, content: unknown): void {
+export function appendObservation(run: Run, content: unknown): void {
   run.history.push({
     type: "observation",
     content,
@@ -60,7 +123,7 @@ function appendResult(run: Run, content: string): void {
   });
 }
 
-function toolContext(deps: EngineDeps, run: Run): ToolContext {
+export function toolContext(deps: EngineDeps, run: Run): ToolContext {
   const ctx: ToolContext & Record<string, unknown> = {
     projectId: deps.session.projectId,
     tenantId: deps.session.tenantId,
@@ -85,7 +148,7 @@ function toolContext(deps: EngineDeps, run: Run): ToolContext {
   return ctx;
 }
 
-function hookRunCtx(deps: EngineDeps, run: Run): EngineHookRunContext {
+export function hookRunCtx(deps: EngineDeps, run: Run): EngineHookRunContext {
   return {
     runId: run.runId,
     agentId: deps.agent.id,
@@ -94,7 +157,7 @@ function hookRunCtx(deps: EngineDeps, run: Run): EngineHookRunContext {
   };
 }
 
-async function evaluateExecutionPolicy(
+export async function evaluateExecutionPolicy(
   deps: EngineDeps,
   run: Run,
   prepared: Extract<PreparedToolAction, { ok: true }>,
@@ -109,10 +172,70 @@ async function evaluateExecutionPolicy(
     securityContext: deps.securityContext,
     hostContext: deps.hostContext,
   };
-  const decision = await deps.executionPolicy(input);
+    const decision = await deps.executionPolicy(input);
   if (decision.decision === "deny") {
     throw new ExecutionPolicyError(decision.reason, decision.details);
   }
+  if (decision.decision === "wait") {
+    throw new ExecutionWaitError(
+      "Execution waiting for approval",
+      decision.reason,
+      decision.details,
+      decision.ttlMs,
+    );
+  }
+}
+
+/**
+ * Builds a `PendingToolApproval` from an `ExecutionWaitError` and the
+ * prepared action that triggered the wait. The `actionId` is stable,
+ * derived from `runId` + a deterministic hash of the prepared input.
+ */
+function buildPendingToolApproval(
+  deps: EngineDeps,
+  run: Run,
+  prepared: Extract<PreparedToolAction, { ok: true }>,
+  err: ExecutionWaitError,
+): import("../protocol/types.js").PendingToolApproval {
+  const now = Date.now();
+  const defaultTtl = 300_000; // 5 minutes
+  const ttlMs = typeof err.ttlMs === "number" && err.ttlMs > 0 ? err.ttlMs : defaultTtl;
+
+  // Stable action id: runId + deterministic hash of preparedInput.
+  const inputHash = stableStringHash(JSON.stringify(prepared.preparedInput));
+  const actionId = `${run.runId}_${inputHash}`;
+  const nowIso = isoNow();
+
+  const scopes = (deps.securityContext.scopes ?? []).slice().sort();
+
+  return {
+    kind: "tool_approval",
+    actionId,
+    toolId: prepared.toolName,
+    preparedInput: prepared.preparedInput,
+    inputHash,
+    reason: err.reason,
+    details: err.details,
+    preparedBy: {
+      toolName: prepared.toolName,
+      agentId: deps.agent.id,
+      scopesAtProposal: scopes.join(","),
+      preparedAt: nowIso,
+      iterationAtPreparation: run.state.iteration,
+    },
+    createdAt: nowIso,
+    expiresAt: new Date(now + ttlMs).toISOString(),
+    attempts: 0,
+  };
+}
+
+/** Deterministic FNV-1a string hash — stable across Node.js and browsers. */
+export function stableStringHash(s: string): string {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) {
+    h = Math.imul(h ^ s.charCodeAt(i), 16777619) >>> 0;
+  }
+  return h.toString(36);
 }
 
 /**
@@ -197,6 +320,11 @@ export async function executeRun(run: Run, deps: EngineDeps): Promise<Run> {
   appendContinueInputsFromMessages(run, deps.resumeMessages);
   const { limits } = deps;
   let firstBuild = true;
+
+  const isResume = Boolean(deps.resumeMessages?.length);
+  await emitRun(deps, run, isResume ? { type: "run_resumed" } : { type: "run_started" });
+
+  try {
 
   while (run.state.iteration < limits.maxIterations) {
     if (Date.now() - deps.startedAtMs > limits.runTimeoutMs) {
@@ -287,29 +415,120 @@ export async function executeRun(run: Run, deps: EngineDeps): Promise<Run> {
         appendAction(run, step);
         hooks?.onAction?.(step, meta);
         let obs: unknown;
+        // Prepared before the try so the approval path in `catch` can access
+        // the exact prepared action that triggered the policy wait.
+        const prepared = await deps.toolRunner.prepare(step.tool, step.input);
         try {
-          const prepared = await deps.toolRunner.prepare(step.tool, step.input);
           if (prepared.ok) {
+            emitToolActionEvent(deps, meta, {
+              type: "tool_proposed",
+              tool: prepared.toolName,
+              input: prepared.preparedInput,
+            });
+            await emitRun(deps, run, { type: "tool_proposed", tool: prepared.toolName });
             await evaluateExecutionPolicy(deps, run, prepared);
+            emitToolActionEvent(deps, meta, {
+              type: "tool_started",
+              tool: prepared.toolName,
+            });
+            await emitRun(deps, run, { type: "tool_started", tool: prepared.toolName });
+            const t0 = Date.now();
+            obs = await deps.toolRunner.executePrepared(prepared, toolContext(deps, run));
+            emitToolActionEvent(deps, meta, {
+              type: "tool_completed",
+              tool: prepared.toolName,
+              output: obs,
+            });
+            await emitRun(deps, run, {
+              type: "tool_completed",
+              tool: prepared.toolName,
+              durationMs: Date.now() - t0,
+            });
+          } else {
+            // Unknown / disallowed / validation / preparation failure — executePrepared
+            // throws the matching error, caught below and reported as `tool_failed`.
+            obs = await deps.toolRunner.executePrepared(prepared, toolContext(deps, run));
           }
-          obs = await deps.toolRunner.executePrepared(prepared, toolContext(deps, run));
         } catch (e) {
+          if (e instanceof ExecutionWaitError && prepared.ok) {
+            // Policy requested approval — set pending state and return to caller.
+            const pending = buildPendingToolApproval(deps, run, prepared, e);
+            run.status = "waiting";
+            run.state.pending = pending;
+            emitToolActionEvent(deps, meta, {
+              type: "tool_awaiting_approval",
+              tool: prepared.toolName,
+              reason: e.reason ?? "approval_required",
+            });
+            await emitRun(deps, run, {
+              type: "tool_awaiting_approval",
+              tool: prepared.toolName,
+              actionId: pending.actionId,
+              reason: e.reason,
+              expiresAt: pending.expiresAt,
+            });
+            await emitRun(deps, run, {
+              type: "run_waiting",
+              pendingKind: "tool_approval",
+              reason: pending.reason,
+              actionId: pending.actionId,
+            });
+            return run;
+          }
+          if (e instanceof ExecutionPolicyError) {
+            emitToolActionEvent(deps, meta, {
+              type: "tool_denied",
+              tool: step.tool,
+              reason: e.message,
+              code: e.code,
+            });
+            await emitRun(deps, run, {
+              type: "tool_denied",
+              tool: step.tool,
+              code: e.code,
+              reason: e.message,
+            });
+          } else {
+            const mapped = observationForToolFailure(e);
+            emitToolActionEvent(deps, meta, {
+              type: "tool_failed",
+              tool: step.tool,
+              error: mapped.error,
+              code: mapped.code,
+            });
+            await emitRun(deps, run, {
+              type: "tool_failed",
+              tool: step.tool,
+              code: mapped.code,
+              error: mapped.error,
+            });
+          }
           obs = observationForToolFailure(e);
         }
         appendObservation(run, obs);
         hooks?.onObservation?.(obs, meta);
         break;
       }
-      case "wait": {
+  case "wait": {
         appendWait(run, step);
         run.status = "waiting";
-        run.state.pending = { reason: step.reason, details: step.details };
+        run.state.pending = {
+          kind: "user_input",
+          reason: step.reason,
+          details: step.details,
+        };
         hooks?.onWait?.(step, meta);
+        await emitRun(deps, run, {
+          type: "run_waiting",
+          pendingKind: "user_input",
+          reason: step.reason,
+        });
         return run;
       }
       case "result": {
         appendResult(run, step.content);
         run.status = "completed";
+        await emitRun(deps, run, { type: "run_completed" });
         return run;
       }
       default: {
@@ -323,4 +542,21 @@ export async function executeRun(run: Run, deps: EngineDeps): Promise<Run> {
 
   run.status = "failed";
   throw new MaxIterationsError();
+  } catch (e) {
+    const cancelled =
+      e instanceof RunCancelledError || deps.signal?.aborted === true;
+    if (cancelled) {
+      await emitRun(deps, run, {
+        type: "run_cancelled",
+        reason: e instanceof Error ? e.message : undefined,
+      });
+    } else {
+      await emitRun(deps, run, {
+        type: "run_failed",
+        code: e instanceof EngineError ? e.code : undefined,
+        error: e instanceof Error ? e.message : String(e),
+      });
+    }
+    throw e;
+  }
 }

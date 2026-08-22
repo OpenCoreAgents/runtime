@@ -6,13 +6,23 @@ import type { SecurityContext } from "../security/types.js";
 
 /**
  * Decision returned by an {@link ExecutionPolicy}.
- *
- * PR 2 supports only `allow` and `deny`. Future PRs will add `wait` for
- * pending human/tool approval.
  */
 export type ExecutionPolicyDecision =
   | { decision: "allow" }
-  | { decision: "deny"; reason?: string; details?: unknown };
+  | { decision: "deny"; reason?: string; details?: unknown }
+  | {
+      decision: "wait";
+      reason?: string;
+      details?: unknown;
+      /**
+       * Suggested duration in milliseconds before the pending action is
+       * considered expired. The host MAY use this to drive a UI countdown
+       * or auto-reject after the window passes. The engine does not
+       * automatically expire runs; it only sets `expiresAt` on the pending
+       * state.
+       */
+      ttlMs?: number;
+    };
 
 /**
  * Inputs provided to every execution policy evaluation.

@@ -42,6 +42,21 @@ export class ExecutionPolicyError extends EngineError {
     this.details = details;
   }
 }
+export class ExecutionWaitError extends EngineError {
+  readonly code = "EXECUTION_WAIT";
+  readonly reason?: string;
+  readonly details?: unknown;
+  readonly ttlMs?: number;
+  constructor(message?: string, reason?: string, details?: unknown, ttlMs?: number) {
+    super(message ?? "Execution paused for approval");
+    this.reason = reason;
+    this.details = details;
+    this.ttlMs = ttlMs;
+  }
+}
+export class ExecutionNotAllowedError extends EngineError {
+  readonly code = "EXECUTION_NOT_ALLOWED";
+}
 export class ToolTimeoutError extends EngineError {
   readonly code = "TOOL_TIMEOUT";
 }

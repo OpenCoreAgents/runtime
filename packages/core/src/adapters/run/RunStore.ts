@@ -39,4 +39,27 @@ export interface RunStore {
     sessionId: string,
     opts?: RunStoreListByAgentAndSessionOptions,
   ): Promise<RunStoreListResult>;
+  /**
+   * Atomically claim a pending tool-action approval.
+   *
+   * Transitions a run in `waiting` state (with `state.pending.kind === "tool_approval"`
+   * and matching `actionId`) to a claimed state, preventing concurrent approval from
+   * executing the same tool twice.
+   *
+   * - The run must exist, be in `waiting` status, and the pending action must match `actionId`.
+   * - If already claimed (`pending.claimed === true`), returns `{ ok: false, reason: "already_claimed" }`.
+   * - On success, returns the run with `status === "running"` and `pending.claimed === true`,
+   *   along with a stable `idempotencyKey` derived from `runId + actionId`.
+   *
+   * This is optional on the interface; stores that do not implement it throw
+   * `ExecutionNotAllowedError` at call time.
+   */
+  claimPendingAction?(input: {
+    runId: string;
+    actionId: string;
+    expectedStatus: "waiting";
+  }): Promise<
+    | { ok: true; run: Run; idempotencyKey: string }
+    | { ok: false; reason: "not_found" | "not_waiting" | "action_mismatch" | "already_claimed" }
+  >;
 }

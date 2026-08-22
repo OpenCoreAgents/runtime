@@ -102,6 +102,11 @@ export function buildEngineDeps(
     securityContext: securityContextForAgent(session, agent),
     executionPolicy: cfg.executionPolicy,
     visibilityPolicy: cfg.visibilityPolicy,
+    toolEventSink: cfg.toolEventSink,
+    toolEventsIncludeInputOutput: cfg.toolEventsIncludeInputOutput,
+    eventSinks: cfg.eventSinks,
+    redactor: cfg.redactor,
+    failOnEventSinkError: cfg.failOnEventSinkError,
     hostContext: cfg.hostContext,
     limits: {
       maxIterations: cfg.maxIterations ?? 25,
