@@ -1309,6 +1309,7 @@ describe("engine", () => {
     expect(names).toContain("vis_visible_tool");
     expect(names).not.toContain("vis_hidden_tool");
   });
+
   it("visibility policy can never add tools outside the agent allowlist", async () => {
     const execute = vi.fn().mockResolvedValue({ ok: true });
     await Tool.define({
@@ -1360,6 +1361,7 @@ describe("engine", () => {
     const seen = visibilityPolicy.mock.calls.map(([input]) => input.tool.name);
     expect(seen).toEqual(["vis_domain_tool"]);
   });
+
   it("visibility policy merges with execution policy so hidden tools stay blocked end-to-end", async () => {
     const hiddenToolId = "vis_shared_tool";
     const execute = vi.fn().mockResolvedValue({ ok: true });
@@ -1418,6 +1420,7 @@ describe("engine", () => {
     expect(content.success).toBe(false);
     expect(content.code).toBe("EXECUTION_POLICY_DENIED");
   });
+
   it("model-proposed hidden tool name is still rejected before execution", async () => {
     const execute = vi.fn().mockResolvedValue({ ok: true });
     await Tool.define({

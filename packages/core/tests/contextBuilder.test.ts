@@ -133,27 +133,27 @@ describe("ContextBuilder", () => {
   });
 
   it("applies visibility policy after the effective allowlist and caps candidates", async () => {
-    const mkExecute = () => async () => ({ ok: true });
+    const execute = async () => ({ ok: true });
     await Tool.define({
       id: "vis_a",
       scope: "global",
       description: "A",
       inputSchema: { type: "object", properties: {} },
-      execute: mkExecute(),
+      execute,
     });
     await Tool.define({
       id: "vis_b",
       scope: "global",
       description: "B",
       inputSchema: { type: "object", properties: {} },
-      execute: mkExecute(),
+      execute,
     });
     await Tool.define({
       id: "vis_c",
       scope: "global",
       description: "C (outside effective allowlist)",
       inputSchema: { type: "object", properties: {} },
-      execute: mkExecute(),
+      execute,
     });
 
     const run: Run = {

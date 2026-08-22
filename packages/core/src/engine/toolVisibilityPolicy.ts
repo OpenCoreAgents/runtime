@@ -25,6 +25,10 @@ export interface ToolVisibilityPolicyInput {
  */
 export interface ToolVisibilityPolicyResult {
   visible: boolean;
+  /**
+   * Informational only — currently not consumed by core. Reserved for future
+   * diagnostics/events (e.g. "hidden because project is in read-only mode").
+   */
   reason?: string;
 }
 
@@ -33,6 +37,11 @@ export interface ToolVisibilityPolicyResult {
  *
  * Runs after the effective tool allowlist is computed and can only hide tools
  * from the LLM — it may never add tools outside the candidate set.
+ *
+ * **Fail-loud contract:** the policy runs during `ContextBuilder.build()` (per
+ * engine iteration, outside the tool action try/catch). If the policy throws or
+ * rejects, the run fails rather than silently exposing tools — keep policies
+ * cheap and purely synchronous-if-possible.
  */
 export type ToolVisibilityPolicy = (
   input: ToolVisibilityPolicyInput,
