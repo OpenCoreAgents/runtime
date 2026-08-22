@@ -261,11 +261,8 @@ export async function executeRun(run: Run, deps: EngineDeps): Promise<Run> {
         hooks?.onAction?.(step, meta);
         let obs: unknown;
         try {
-          obs = await deps.toolRunner.execute(
-            step.tool,
-            step.input,
-            toolContext(deps, run),
-          );
+          const prepared = await deps.toolRunner.prepare(step.tool, step.input);
+          obs = await deps.toolRunner.executePrepared(prepared, toolContext(deps, run));
         } catch (e) {
           obs = observationForToolFailure(e);
         }
