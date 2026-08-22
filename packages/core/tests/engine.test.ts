@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import {
   Agent,
   AgentRuntime,
@@ -16,7 +16,11 @@ import {
   clearAllRegistriesForTests,
   registerToolHandler,
 } from "../src/index.js";
-import type { AgentDefinitionPersisted } from "../src/types.js";
+import type {
+  AgentDefinitionPersisted,
+  ExecutionPolicy,
+  ExecutionPolicyInput,
+} from "../src/types.js";
 import type { LLMAdapter, LLMRequest, LLMResponse } from "../src/adapters/llm/LLMAdapter.js";
 
 class QueueLLM implements LLMAdapter {
@@ -958,4 +962,290 @@ describe("engine", () => {
     const done = await scoped.resume("tenant-run", { type: "text", content: "go" });
     expect(done.status).toBe("completed");
   });
+
+  it("execution policy allow runs the tool", async () => {
+    const execute = vi.fn().mockResolvedValue({ ok: true, allowed: true });
+    await Tool.define({
+      id: "policy_allowed_tool",
+      scope: "global",
+      description: "Allowed by policy",
+      inputSchema: { type: "object", properties: {} },
+      execute,
+    });
+
+    const mem = new InMemoryMemoryAdapter();
+    const llm = new QueueLLM([
+      JSON.stringify({
+        type: "action",
+        tool: "policy_allowed_tool",
+        input: {},
+      }),
+      JSON.stringify({ type: "result", content: "done" }),
+    ]);
+    const policy: ExecutionPolicy = vi.fn().mockReturnValue({ decision: "allow" });
+    const rt = new AgentRuntime({
+      llmAdapter: llm,
+      memoryAdapter: mem,
+      maxIterations: 10,
+      executionPolicy: policy,
+    });
+
+    await Agent.define({
+      id: "a-policy-allow",
+      projectId: "p1",
+      systemPrompt: "Test.",
+      tools: ["policy_allowed_tool"],
+      llm: { provider: "openai", model: "gpt-4o" },
+    });
+
+    const session = new Session({ id: "s1", projectId: "p1" });
+    const agent = await Agent.load("a-policy-allow", rt, { session });
+    const run = await agent.run("go");
+
+    expect(run.status).toBe("completed");
+    expect(execute).toHaveBeenCalled();
+    const obs = run.history.find((h) => h.type === "observation");
+    expect(obs?.content).toEqual({ ok: true, allowed: true });
+  });
+
+  it("execution policy deny skips execution and appends a safe failure observation", async () => {
+    const execute = vi.fn().mockResolvedValue({ ok: true });
+    await Tool.define({
+      id: "policy_denied_tool",
+      scope: "global",
+      description: "Denied by policy",
+      inputSchema: { type: "object", properties: {} },
+      execute,
+    });
+
+    const mem = new InMemoryMemoryAdapter();
+    const llm = new QueueLLM([
+      JSON.stringify({
+        type: "action",
+        tool: "policy_denied_tool",
+        input: {},
+      }),
+      JSON.stringify({ type: "result", content: "done" }),
+    ]);
+    const policy: ExecutionPolicy = vi.fn().mockReturnValue({
+      decision: "deny",
+      reason: "sensitive tool blocked",
+    });
+    const rt = new AgentRuntime({
+      llmAdapter: llm,
+      memoryAdapter: mem,
+      maxIterations: 10,
+      executionPolicy: policy,
+    });
+
+    await Agent.define({
+      id: "a-policy-deny",
+      projectId: "p1",
+      systemPrompt: "Test.",
+      tools: ["policy_denied_tool"],
+      llm: { provider: "openai", model: "gpt-4o" },
+    });
+
+    const session = new Session({ id: "s1", projectId: "p1" });
+    const agent = await Agent.load("a-policy-deny", rt, { session });
+    const run = await agent.run("go");
+
+    expect(run.status).toBe("completed");
+    expect(execute).not.toHaveBeenCalled();
+    const obs = run.history.find((h) => h.type === "observation");
+    expect(obs?.type).toBe("observation");
+    const content = obs?.content as { success?: boolean; error?: string; code?: string };
+    expect(content.success).toBe(false);
+    expect(content.code).toBe("EXECUTION_POLICY_DENIED");
+    expect(content.error).toMatch(/sensitive tool blocked/);
+  });
+
+
 });
+
+  it("execution policy receives prepared input after prepareInput transformation", async () => {
+    const execute = vi.fn().mockResolvedValue({ ok: true });
+    await Tool.define({
+      id: "policy_prepared_tool",
+      scope: "global",
+      description: "Canonicalizes input",
+      inputSchema: { type: "object", properties: {} },
+    });
+    registerToolHandler({
+      name: "policy_prepared_tool",
+      description: "Canonicalizes input",
+      prepareInput(rawInput) {
+        const value = typeof rawInput === "string" ? { text: rawInput.trim() } : rawInput;
+        return { ok: true, value };
+      },
+      execute,
+    });
+
+    let capturedInput: unknown;
+    const policy: ExecutionPolicy = vi.fn((input: ExecutionPolicyInput) => {
+      capturedInput = input.preparedInput;
+      return { decision: "allow" };
+    });
+
+    const mem = new InMemoryMemoryAdapter();
+    const llm = new QueueLLM([
+      JSON.stringify({
+        type: "action",
+        tool: "policy_prepared_tool",
+        input: "  raw value  ",
+      }),
+      JSON.stringify({ type: "result", content: "done" }),
+    ]);
+    const rt = new AgentRuntime({
+      llmAdapter: llm,
+      memoryAdapter: mem,
+      maxIterations: 10,
+      executionPolicy: policy,
+    });
+
+    await Agent.define({
+      id: "a-policy-prepared",
+      projectId: "p1",
+      systemPrompt: "Test.",
+      tools: ["policy_prepared_tool"],
+      llm: { provider: "openai", model: "gpt-4o" },
+    });
+
+    const session = new Session({ id: "s1", projectId: "p1" });
+    const agent = await Agent.load("a-policy-prepared", rt, { session });
+    await agent.run("go");
+
+    expect(capturedInput).toEqual({ text: "raw value" });
+    expect(execute).toHaveBeenCalledWith({ text: "raw value" }, expect.any(Object));
+  });
+
+  it("execution policy is not called for unknown tools", async () => {
+    const policy: ExecutionPolicy = vi.fn().mockReturnValue({ decision: "allow" });
+    const mem = new InMemoryMemoryAdapter();
+    const llm = new QueueLLM([
+      JSON.stringify({
+        type: "action",
+        tool: "unknown_policy_tool",
+        input: {},
+      }),
+      JSON.stringify({ type: "result", content: "done" }),
+    ]);
+    const rt = new AgentRuntime({
+      llmAdapter: llm,
+      memoryAdapter: mem,
+      maxIterations: 10,
+      executionPolicy: policy,
+    });
+
+    await Agent.define({
+      id: "a-policy-unknown",
+      projectId: "p1",
+      systemPrompt: "Test.",
+      tools: [],
+      llm: { provider: "openai", model: "gpt-4o" },
+    });
+
+    const session = new Session({ id: "s1", projectId: "p1" });
+    const agent = await Agent.load("a-policy-unknown", rt, { session });
+    const run = await agent.run("go");
+
+    expect(run.status).toBe("completed");
+    expect(policy).not.toHaveBeenCalled();
+    const obs = run.history.find((h) => h.type === "observation");
+    const content = obs?.content as { success?: boolean; code?: string };
+    expect(content.success).toBe(false);
+    expect(content.code).toBe("TOOL_EXECUTION_ERROR");
+  });
+
+  it("execution policy is not called for disallowed tools", async () => {
+    const execute = vi.fn().mockResolvedValue({ ok: true });
+    await Tool.define({
+      id: "policy_disallowed_tool",
+      scope: "global",
+      description: "Not in agent allowlist",
+      inputSchema: { type: "object", properties: {} },
+      execute,
+    });
+
+    const policy: ExecutionPolicy = vi.fn().mockReturnValue({ decision: "allow" });
+    const mem = new InMemoryMemoryAdapter();
+    const llm = new QueueLLM([
+      JSON.stringify({
+        type: "action",
+        tool: "policy_disallowed_tool",
+        input: {},
+      }),
+      JSON.stringify({ type: "result", content: "done" }),
+    ]);
+    const rt = new AgentRuntime({
+      llmAdapter: llm,
+      memoryAdapter: mem,
+      maxIterations: 10,
+      executionPolicy: policy,
+    });
+
+    await Agent.define({
+      id: "a-policy-disallowed",
+      projectId: "p1",
+      systemPrompt: "Test.",
+      tools: [],
+      llm: { provider: "openai", model: "gpt-4o" },
+    });
+
+    const session = new Session({ id: "s1", projectId: "p1" });
+    const agent = await Agent.load("a-policy-disallowed", rt, { session });
+    const run = await agent.run("go");
+
+    expect(run.status).toBe("completed");
+    expect(policy).not.toHaveBeenCalled();
+    expect(execute).not.toHaveBeenCalled();
+    const obs = run.history.find((h) => h.type === "observation");
+    const content = obs?.content as { success?: boolean; code?: string };
+    expect(content.success).toBe(false);
+    expect(content.code).toBe("TOOL_NOT_ALLOWED");
+  });
+
+  it("omitting execution policy keeps existing behavior", async () => {
+    const execute = vi.fn().mockResolvedValue({ ok: true });
+    await Tool.define({
+      id: "policy_default_tool",
+      scope: "global",
+      description: "No policy configured",
+      inputSchema: { type: "object", properties: {} },
+      execute,
+    });
+
+    const mem = new InMemoryMemoryAdapter();
+    const llm = new QueueLLM([
+      JSON.stringify({
+        type: "action",
+        tool: "policy_default_tool",
+        input: {},
+      }),
+      JSON.stringify({ type: "result", content: "done" }),
+    ]);
+    const rt = new AgentRuntime({
+      llmAdapter: llm,
+      memoryAdapter: mem,
+      maxIterations: 10,
+    });
+
+    await Agent.define({
+      id: "a-policy-default",
+      projectId: "p1",
+      systemPrompt: "Test.",
+      tools: ["policy_default_tool"],
+      llm: { provider: "openai", model: "gpt-4o" },
+    });
+
+    const session = new Session({ id: "s1", projectId: "p1" });
+    const agent = await Agent.load("a-policy-default", rt, { session });
+    const run = await agent.run("go");
+
+    expect(run.status).toBe("completed");
+    expect(execute).toHaveBeenCalled();
+    const obs = run.history.find((h) => h.type === "observation");
+    expect(obs?.content).toEqual({ ok: true });
+  });
+
+
