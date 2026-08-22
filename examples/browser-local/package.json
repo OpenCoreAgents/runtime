@@ -1,0 +1,22 @@
+{
+  "name": "@opencoreagents/example-browser-local",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Browser-only AgentRuntime demo with deterministic execution and IndexedDB persistence.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@mlc-ai/web-llm": "^0.2.84",
+    "@opencoreagents/browser": "workspace:*",
+    "@opencoreagents/core": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.3",
+    "vite": "^5.4.14"
+  }
+}

@@ -28,6 +28,7 @@ export type {
 export type {
   ToolAdapter,
   ToolContext,
+  ToolInputPreparation,
   ObservationContent,
 } from "./adapters/tool/ToolAdapter.js";
 

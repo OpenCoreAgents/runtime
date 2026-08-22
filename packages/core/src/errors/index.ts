@@ -26,6 +26,14 @@ export class ToolValidationError extends EngineError {
     this.details = details;
   }
 }
+export class ToolPreparationError extends EngineError {
+  readonly code = "TOOL_PREPARATION_ERROR";
+  readonly details?: string;
+  constructor(message?: string, details?: string) {
+    super(message);
+    this.details = details;
+  }
+}
 export class ToolTimeoutError extends EngineError {
   readonly code = "TOOL_TIMEOUT";
 }

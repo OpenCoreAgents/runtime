@@ -38,11 +38,21 @@ export type ToolValidationResult =
       reason?: string;
     };
 
+export type ToolInputPreparation =
+  | { ok: true; value: unknown }
+  | { ok: false; reason: string };
+
 export interface ToolAdapter {
   name: string;
   description?: string;
+  /**
+   * Canonicalizes raw model input before validation, policy, approval, hashing, events,
+   * and execution. When present, the returned `value` is the only input passed to
+   * {@link execute}. Tools without `prepareInput` keep using {@link validate}.
+   */
+  prepareInput?(rawInput: unknown): ToolInputPreparation | Promise<ToolInputPreparation>;
+  validate?(rawInput: unknown): ToolValidationResult;
   execute(input: unknown, context: ToolContext): Promise<unknown>;
-  validate?(input: unknown): ToolValidationResult;
 }
 
 export interface ObservationContent {

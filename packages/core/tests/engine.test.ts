@@ -14,6 +14,7 @@ import {
   InMemoryMemoryAdapter,
   InMemoryRunStore,
   clearAllRegistriesForTests,
+  registerToolHandler,
 } from "../src/index.js";
 import type { AgentDefinitionPersisted } from "../src/types.js";
 import type { LLMAdapter, LLMRequest, LLMResponse } from "../src/adapters/llm/LLMAdapter.js";
@@ -768,6 +769,57 @@ describe("engine", () => {
     expect(content.success).toBe(false);
     expect(content.code).toBe("TOOL_TIMEOUT");
     expect(content.error).toMatch(/timed out/i);
+  });
+
+  it("engine passes preparedInput (not raw input) to tool execute", async () => {
+    await Tool.define({
+      id: "canonical_engine_tool",
+      scope: "global",
+      description: "Canonicalizes raw input",
+      inputSchema: { type: "object", properties: {} },
+    });
+    registerToolHandler({
+      name: "canonical_engine_tool",
+      description: "Canonicalizes raw input",
+      prepareInput(rawInput) {
+        const value = typeof rawInput === "string" ? { text: rawInput.trim() } : rawInput;
+        return { ok: true, value };
+      },
+      async execute(input) {
+        return { received: input };
+      },
+    });
+
+    const mem = new InMemoryMemoryAdapter();
+    const llm = new QueueLLM([
+      JSON.stringify({
+        type: "action",
+        tool: "canonical_engine_tool",
+        input: "  raw value  ",
+      }),
+      JSON.stringify({ type: "result", content: "done" }),
+    ]);
+    const rt = new AgentRuntime({
+      llmAdapter: llm,
+      memoryAdapter: mem,
+      maxIterations: 10,
+    });
+
+    await Agent.define({
+      id: "a-canonical",
+      projectId: "p1",
+      systemPrompt: "Test.",
+      tools: ["canonical_engine_tool"],
+      llm: { provider: "openai", model: "gpt-4o" },
+    });
+
+    const session = new Session({ id: "s-canonical", projectId: "p1" });
+    const agent = await Agent.load("a-canonical", rt, { session });
+    const run = await agent.run("go");
+
+    expect(run.status).toBe("completed");
+    const obs = run.history.find((h) => h.type === "observation");
+    expect(obs?.content).toEqual({ received: { text: "raw value" } });
   });
 
   it("onWait can continue a waiting run in-process", async () => {
