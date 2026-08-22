@@ -70,4 +70,10 @@ export type {
   ExecutionPolicyDecision,
 } from "./engine/executionPolicy.js";
 
+export type {
+  ToolVisibilityPolicy,
+  ToolVisibilityPolicyInput,
+  ToolVisibilityPolicyResult,
+} from "./engine/toolVisibilityPolicy.js";
+
 export type { UsageContext, UsageSnapshot } from "./engine/watchUsage.js";

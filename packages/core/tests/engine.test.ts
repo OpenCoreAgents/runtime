@@ -20,6 +20,7 @@ import type {
   AgentDefinitionPersisted,
   ExecutionPolicy,
   ExecutionPolicyInput,
+  ToolVisibilityPolicy,
 } from "../src/types.js";
 import type { LLMAdapter, LLMRequest, LLMResponse } from "../src/adapters/llm/LLMAdapter.js";
 
@@ -27,6 +28,20 @@ class QueueLLM implements LLMAdapter {
   constructor(private readonly queue: string[]) {}
   private i = 0;
   async generate(_req: LLMRequest): Promise<LLMResponse> {
+    const content =
+      this.queue[this.i++] ??
+      JSON.stringify({ type: "result", content: "fallback" });
+    return { content };
+  }
+}
+
+/** Like QueueLLM, but records every LLMRequest for assertions (e.g. the tool catalog sent to the model). */
+class CapturingLLM implements LLMAdapter {
+  requests: LLMRequest[] = [];
+  constructor(private readonly queue: string[]) {}
+  private i = 0;
+  async generate(req: LLMRequest): Promise<LLMResponse> {
+    this.requests.push(req);
     const content =
       this.queue[this.i++] ??
       JSON.stringify({ type: "result", content: "fallback" });
@@ -1060,9 +1075,6 @@ describe("engine", () => {
     expect(content.error).toMatch(/sensitive tool blocked/);
   });
 
-
-});
-
   it("execution policy receives prepared input after prepareInput transformation", async () => {
     const execute = vi.fn().mockResolvedValue({ ok: true });
     await Tool.define({
@@ -1248,4 +1260,210 @@ describe("engine", () => {
     expect(obs?.content).toEqual({ ok: true });
   });
 
+  it("visibility policy hides tools from the LLM catalog", async () => {
+    const execute = vi.fn().mockResolvedValue({ ok: true });
+    await Tool.define({
+      id: "vis_visible_tool",
+      scope: "global",
+      description: "Visible to the model",
+      inputSchema: { type: "object", properties: {} },
+      execute,
+    });
+    await Tool.define({
+      id: "vis_hidden_tool",
+      scope: "global",
+      description: "Hidden from the model",
+      inputSchema: { type: "object", properties: {} },
+      execute,
+    });
 
+    const mem = new InMemoryMemoryAdapter();
+    const llm = new CapturingLLM([
+      JSON.stringify({ type: "result", content: "done" }),
+    ]);
+    const visibilityPolicy: ToolVisibilityPolicy = vi.fn(({ tool }) => ({
+      visible: tool.name !== "vis_hidden_tool",
+    }));
+    const rt = new AgentRuntime({
+      llmAdapter: llm,
+      memoryAdapter: mem,
+      maxIterations: 10,
+      visibilityPolicy,
+    });
+
+    await Agent.define({
+      id: "a-visibility",
+      projectId: "p1",
+      systemPrompt: "Test.",
+      tools: ["vis_visible_tool", "vis_hidden_tool"],
+      llm: { provider: "openai", model: "gpt-4o" },
+    });
+
+    const session = new Session({ id: "s1", projectId: "p1" });
+    const agent = await Agent.load("a-visibility", rt, { session });
+    const run = await agent.run("go");
+
+    expect(run.status).toBe("completed");
+    const sentTools = llm.requests[0]!.tools ?? [];
+    const names = sentTools.map((t) => t.name);
+    expect(names).toContain("vis_visible_tool");
+    expect(names).not.toContain("vis_hidden_tool");
+  });
+  it("visibility policy can never add tools outside the agent allowlist", async () => {
+    const execute = vi.fn().mockResolvedValue({ ok: true });
+    await Tool.define({
+      id: "vis_domain_tool",
+      scope: "global",
+      description: "On the agent allowlist",
+      inputSchema: { type: "object", properties: {} },
+      execute,
+    });
+    await Tool.define({
+      id: "vis_outside_tool",
+      scope: "global",
+      description: "Not on the agent allowlist",
+      inputSchema: { type: "object", properties: {} },
+      execute,
+    });
+
+    const mem = new InMemoryMemoryAdapter();
+    const llm = new CapturingLLM([
+      JSON.stringify({ type: "result", content: "done" }),
+    ]);
+    // Eagerly says "visible" to everything — core must still cap it at the allowlist.
+    const visibilityPolicy: ToolVisibilityPolicy = vi
+      .fn()
+      .mockReturnValue({ visible: true });
+    const rt = new AgentRuntime({
+      llmAdapter: llm,
+      memoryAdapter: mem,
+      maxIterations: 10,
+      visibilityPolicy,
+    });
+
+    await Agent.define({
+      id: "a-visibility-limit",
+      projectId: "p1",
+      systemPrompt: "Test.",
+      tools: ["vis_domain_tool"],
+      llm: { provider: "openai", model: "gpt-4o" },
+    });
+
+    const session = new Session({ id: "s1", projectId: "p1" });
+    const agent = await Agent.load("a-visibility-limit", rt, { session });
+    const run = await agent.run("go");
+
+    expect(run.status).toBe("completed");
+    const sentTools = llm.requests[0]!.tools ?? [];
+    expect(sentTools.map((t) => t.name)).toEqual(["vis_domain_tool"]);
+    // The policy was only consulted for candidates inside the allowlist.
+    const seen = visibilityPolicy.mock.calls.map(([input]) => input.tool.name);
+    expect(seen).toEqual(["vis_domain_tool"]);
+  });
+  it("visibility policy merges with execution policy so hidden tools stay blocked end-to-end", async () => {
+    const hiddenToolId = "vis_shared_tool";
+    const execute = vi.fn().mockResolvedValue({ ok: true });
+    await Tool.define({
+      id: hiddenToolId,
+      scope: "global",
+      description: "Sensitive",
+      inputSchema: { type: "object", properties: {} },
+      execute,
+    });
+
+    // One host decision shared by both policies — inputs stay compatible.
+    const isSensitive = (toolName: string) => toolName === hiddenToolId;
+    const visibilityPolicy: ToolVisibilityPolicy = vi.fn(({ tool }) => ({
+      visible: !isSensitive(tool.name),
+    }));
+    const executionPolicy: ExecutionPolicy = vi.fn(({ tool }) =>
+      isSensitive(tool.name)
+        ? { decision: "deny", reason: "sensitive tool blocked" }
+        : { decision: "allow" },
+    );
+
+    const mem = new InMemoryMemoryAdapter();
+    const llm = new CapturingLLM([
+      JSON.stringify({ type: "action", tool: hiddenToolId, input: {} }),
+      JSON.stringify({ type: "result", content: "done" }),
+    ]);
+    const rt = new AgentRuntime({
+      llmAdapter: llm,
+      memoryAdapter: mem,
+      maxIterations: 10,
+      visibilityPolicy,
+      executionPolicy,
+    });
+
+    await Agent.define({
+      id: "a-visibility-shared",
+      projectId: "p1",
+      systemPrompt: "Test.",
+      tools: [hiddenToolId],
+      llm: { provider: "openai", model: "gpt-4o" },
+    });
+
+    const session = new Session({ id: "s1", projectId: "p1" });
+    const agent = await Agent.load("a-visibility-shared", rt, { session });
+    const run = await agent.run("go");
+
+    expect(run.status).toBe("completed");
+    // Hidden from the catalog…
+    const names = (llm.requests[0]!.tools ?? []).map((t) => t.name);
+    expect(names).not.toContain(hiddenToolId);
+    // …denied at execution, and never executed.
+    expect(execute).not.toHaveBeenCalled();
+    const obs = run.history.find((h) => h.type === "observation");
+    const content = obs?.content as { success?: boolean; code?: string };
+    expect(content.success).toBe(false);
+    expect(content.code).toBe("EXECUTION_POLICY_DENIED");
+  });
+  it("model-proposed hidden tool name is still rejected before execution", async () => {
+    const execute = vi.fn().mockResolvedValue({ ok: true });
+    await Tool.define({
+      id: "vis_real_tool",
+      scope: "global",
+      description: "Visible",
+      inputSchema: { type: "object", properties: {} },
+      execute,
+    });
+
+    const mem = new InMemoryMemoryAdapter();
+    const llm = new CapturingLLM([
+      JSON.stringify({
+        type: "action",
+        tool: "vis_never_registered_tool",
+        input: {},
+      }),
+      JSON.stringify({ type: "result", content: "done" }),
+    ]);
+    const visibilityPolicy: ToolVisibilityPolicy = vi
+      .fn()
+      .mockReturnValue({ visible: true });
+    const rt = new AgentRuntime({
+      llmAdapter: llm,
+      memoryAdapter: mem,
+      maxIterations: 10,
+      visibilityPolicy,
+    });
+
+    await Agent.define({
+      id: "a-visibility-unknown",
+      projectId: "p1",
+      systemPrompt: "Test.",
+      tools: ["vis_real_tool"],
+      llm: { provider: "openai", model: "gpt-4o" },
+    });
+
+    const session = new Session({ id: "s1", projectId: "p1" });
+    const agent = await Agent.load("a-visibility-unknown", rt, { session });
+    const run = await agent.run("go");
+
+    expect(run.status).toBe("completed");
+    expect(execute).not.toHaveBeenCalled();
+    const obs = run.history.find((h) => h.type === "observation");
+    const content = obs?.content as { success?: boolean; code?: string };
+    expect(content.success).toBe(false);
+    expect(content.code).toBe("TOOL_EXECUTION_ERROR");
+  });
+});

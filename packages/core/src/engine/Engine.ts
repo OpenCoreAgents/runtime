@@ -220,6 +220,9 @@ export async function executeRun(run: Run, deps: EngineDeps): Promise<Run> {
       memoryAdapter: deps.memoryAdapter,
       securityContext: deps.securityContext,
       toolRegistry: deps.toolRegistry,
+      effectiveToolAllowlist: deps.effectiveToolAllowlist,
+      visibilityPolicy: deps.visibilityPolicy,
+      hostContext: deps.hostContext,
       resumeMessages:
         firstBuild && deps.resumeMessages?.length ? deps.resumeMessages : undefined,
       recoveryMessages,

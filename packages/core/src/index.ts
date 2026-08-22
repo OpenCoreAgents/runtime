@@ -71,6 +71,11 @@ export type {
   ExecutionPolicyInput,
   ExecutionPolicyDecision,
 } from "./engine/executionPolicy.js";
+export type {
+  ToolVisibilityPolicy,
+  ToolVisibilityPolicyInput,
+  ToolVisibilityPolicyResult,
+} from "./engine/toolVisibilityPolicy.js";
 export type { RagFileSourceEntry } from "./ragCatalogTypes.js";
 export { validateRagFileCatalog } from "./ragCatalogTypes.js";
 export { engineRuntimeDefaults } from "./runtime/engineConfig.js";
