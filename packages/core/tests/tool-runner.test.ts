@@ -177,6 +177,53 @@ describe("ToolRunner", () => {
     expect(execute).not.toHaveBeenCalled();
   });
 
+  it("prepareInput is called exactly once per execute", async () => {
+    const prepareInput = vi.fn().mockReturnValue({ ok: true, value: {} });
+    const execute = vi.fn().mockResolvedValue({ ok: true });
+    const tool: ToolAdapter = {
+      name: "once",
+      prepareInput,
+      execute,
+    };
+    const runner = new ToolRunner(new Map([["once", tool]]), new Set(["once"]));
+    await runner.execute("once", { x: 1 }, ctxBase());
+    expect(prepareInput).toHaveBeenCalledTimes(1);
+    expect(prepareInput).toHaveBeenCalledWith({ x: 1 });
+    expect(execute).toHaveBeenCalledTimes(1);
+  });
+
+  it("prepareInput that throws is converted to ToolPreparationError and does not execute", async () => {
+    const execute = vi.fn().mockResolvedValue({ ok: true });
+    const tool: ToolAdapter = {
+      name: "prep-throw",
+      prepareInput() {
+        throw new Error("boom");
+      },
+      execute,
+    };
+    const runner = new ToolRunner(new Map([["prep-throw", tool]]), new Set(["prep-throw"]));
+    await expect(runner.execute("prep-throw", {}, ctxBase())).rejects.toBeInstanceOf(
+      ToolPreparationError,
+    );
+    expect(execute).not.toHaveBeenCalled();
+  });
+
+  it("prepareInput that returns a rejected promise is converted to ToolPreparationError", async () => {
+    const execute = vi.fn().mockResolvedValue({ ok: true });
+    const tool: ToolAdapter = {
+      name: "prep-reject",
+      prepareInput() {
+        return Promise.reject(new Error("async boom"));
+      },
+      execute,
+    };
+    const runner = new ToolRunner(new Map([["prep-reject", tool]]), new Set(["prep-reject"]));
+    await expect(runner.execute("prep-reject", {}, ctxBase())).rejects.toBeInstanceOf(
+      ToolPreparationError,
+    );
+    expect(execute).not.toHaveBeenCalled();
+  });
+
   it("does not call prepareInput for a disallowed tool", async () => {
     const prepareInput = vi.fn().mockResolvedValue({ ok: true, value: {} });
     const execute = vi.fn().mockResolvedValue({ ok: true });

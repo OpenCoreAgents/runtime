@@ -1,4 +1,8 @@
-import type { ToolAdapter, ToolContext } from "../adapters/tool/ToolAdapter.js";
+import type {
+  ToolAdapter,
+  ToolContext,
+  ToolInputPreparation,
+} from "../adapters/tool/ToolAdapter.js";
 import {
   ToolExecutionError,
   ToolNotAllowedError,
@@ -86,7 +90,21 @@ export class ToolRunner {
     }
 
     if (tool.prepareInput) {
-      const preparation = await tool.prepareInput(rawInput);
+      let preparation: ToolInputPreparation;
+      try {
+        preparation = await tool.prepareInput(rawInput);
+      } catch (e) {
+        const reason = e instanceof Error ? e.message : String(e);
+        const action: PreparedToolAction = {
+          ok: false,
+          toolName: name,
+          reason: preparationFailureMessage(name, reason),
+          details: reason,
+          kind: "preparation",
+        };
+        this.preparedActions.add(action);
+        return action;
+      }
       if (!preparation.ok) {
         const action: PreparedToolAction = {
           ok: false,
