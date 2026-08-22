@@ -430,3 +430,173 @@ PR 1: canonical tool input preparation
 - Add tests for transform, defaulting, coercion, failure, and legacy validate behavior.
 - Do not add policy yet.
 ```
+
+## Staged PR Plan
+
+Use this section as the working checklist for implementation. Keep each PR narrow enough that reviewers can validate one boundary at a time.
+
+### PR 1: Canonical Tool Input Preparation
+
+Status: in progress / nearly ready.
+
+Scope:
+
+- Add `ToolAdapter.prepareInput`.
+- Add `ToolInputPreparation`.
+- Add a stable `PreparedToolAction` result shape.
+- Split `ToolRunner` into preparation and prepared execution APIs.
+- Keep `ToolRunner.execute(...)` as a backward-compatible convenience wrapper.
+- Resolve the tool and enforce the effective allowlist before preparation.
+- Ensure `tool.execute(...)` receives the prepared input.
+- Do not add execution policy, visibility policy, approvals, public events, or redaction in this PR.
+
+Required checks:
+
+- Existing legacy tools with `validate` still work.
+- Legacy validation failures do not execute the tool.
+- `prepareInput` can transform, default, and coerce input.
+- Failed preparation does not execute the tool.
+- Unknown or disallowed tools are rejected before `prepareInput`.
+- Async `prepareInput` is awaited.
+- Tool execution timeouts still behave as before.
+- `ToolRunner.execute(...)` remains backward compatible.
+
+Remaining checks before merge:
+
+- Add an explicit test proving `prepareInput` is called exactly once per proposed action.
+- Add an engine-level integration test proving the LLM action path uses `prepareInput` and appends an observation from the prepared input.
+- Add a test for `prepareInput` throwing or rejecting, proving the tool does not execute and the failure becomes a safe tool failure observation.
+- Decide whether unrelated `.gitignore` additions belong in this PR. If they are not required for canonical tool input, move them to a separate cleanup PR or mention them explicitly in the PR description.
+
+Suggested PR description:
+
+```text
+Adds canonical tool input preparation.
+
+This introduces ToolAdapter.prepareInput and separates ToolRunner preparation from prepared execution, so future policy, approval, hashing, and event work can use one canonical input value.
+
+This PR does not add execution policy, visibility policy, approval state, public events, or redaction.
+```
+
+### PR 2: Execution Policy Allow/Deny
+
+Scope:
+
+- Add a runtime-level execution policy hook.
+- Support only `allow` and `deny` decisions.
+- Run the policy after input preparation and validation.
+- Run the policy before `tool.execute`.
+- Pass the prepared input to policy, not raw model input.
+- Keep behavior unchanged when no policy is configured.
+- Do not add `wait`, pending actions, approval APIs, or visibility policy in this PR unless needed for shared type design.
+
+Policy input should include:
+
+- `agent`
+- `session`
+- `run`
+- `tool`
+- `preparedInput`
+- `securityContext`
+- optional `hostContext`
+
+Acceptance criteria:
+
+- `allow` executes the tool.
+- `deny` does not execute the tool.
+- `deny` appends or returns a safe structured failure observation.
+- Policy receives the same prepared value that would be passed to `tool.execute`.
+- Existing static allowlist behavior remains backward compatible.
+- Existing runs without a policy behave as they do today.
+
+Tests:
+
+- Policy `allow` executes.
+- Policy `deny` does not execute.
+- Denied action produces a safe observation.
+- Policy sees prepared input after `prepareInput` transformation.
+- Policy is not called for unknown or disallowed tools before preparation.
+- No configured policy keeps current behavior.
+
+### PR 3: Tool Visibility Policy
+
+Scope:
+
+- Add a host-provided visibility policy for the prompt tool catalog.
+- Apply it after the existing effective allowlist is computed.
+- Never allow the policy to add tools outside the candidate set.
+- Keep execution-side allowlist checks in `ToolRunner`.
+
+Acceptance criteria:
+
+- Hidden tools are not sent to the LLM.
+- A malformed/model-proposed hidden tool is still rejected before execution.
+- Existing static allowlist behavior remains backward compatible.
+- Visibility and execution policy inputs stay compatible enough that hosts can share authorization logic.
+
+### PR 4: Minimal Tool-Action Events
+
+Scope:
+
+- Add event points around the tool-action pipeline.
+- Start with minimal tool-action events before attempting the full public run event model.
+
+Initial events:
+
+- `tool_proposed`
+- `tool_denied`
+- `tool_started`
+- `tool_completed`
+- `tool_failed`
+
+If PR 5 is ready soon after, add `tool_awaiting_approval` there with the policy-driven wait path.
+
+Acceptance criteria:
+
+- Events are JSON-serializable.
+- Events use prepared input where input is included.
+- Events do not expose raw tool input/output by default unless explicitly configured.
+- Existing `EngineHooks` remain available.
+
+### PR 5: Policy Wait and Pending Tool Action
+
+Scope:
+
+- Add execution policy decision `wait`.
+- Add discriminated `run.state.pending` shapes for `model_wait` and `tool_approval`.
+- Persist enough state to resume the exact prepared action.
+- Require `RunStore` by default for policy-driven approvals.
+- Allow ephemeral in-process approval only through an explicit opt-in.
+- Do not implement full approve/reject/cancel API surface until claim semantics are designed.
+
+Acceptance criteria:
+
+- `wait` does not execute the tool.
+- `wait` transitions the run to `waiting`.
+- Pending action includes `actionId`, `toolName`, prepared input or protected reference, `inputHash`, reason, timestamps, and optional policy version.
+- Missing approval-capable persistence fails fast with a clear error unless ephemeral mode is explicitly enabled.
+
+### PR 6: Pending Action Claim and Approval APIs
+
+Scope:
+
+- Add action-level claim semantics.
+- Generate and pass a stable idempotency key through `ToolContext`.
+- Add standalone helpers for approve, reject, and cancel.
+- Add `AgentRuntime` convenience methods only if the helper surface stays ergonomic.
+
+Acceptance criteria:
+
+- Concurrent approval executes at most once at the OpenCore boundary.
+- Duplicate approval gets a stale or already-claimed error.
+- Approved execution uses the exact prepared action.
+- Approval re-runs authorization against current policy and host context.
+- Wrong session, project, tenant, or agent cannot approve.
+
+Default approval mode:
+
+```ts
+mode?: "execute_and_continue" | "execute_only";
+```
+
+Default should be `execute_and_continue`.
