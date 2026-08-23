@@ -229,7 +229,16 @@ function buildPendingToolApproval(
   };
 }
 
-/** Deterministic FNV-1a string hash — stable across Node.js and browsers. */
+/**
+ * Deterministic FNV-1a string hash — stable across Node.js and browsers.
+ *
+ * NOTE: this is used as a tamper-evidence / accidental-drift check, not as
+ * a cryptographically secure integrity guarantee. The primary guarantee that
+ * the approved prepared input is the same one proposed by the model comes from
+ * the WeakSet-authenticated PreparedToolAction and the registry/allowlist
+ * checks in ToolRunner.executePrepared. If you need adversarial integrity,
+ * replace this with SHA-256 (e.g. `crypto.subtle.digest`).
+ */
 export function stableStringHash(s: string): string {
   let h = 2166136261;
   for (let i = 0; i < s.length; i++) {
