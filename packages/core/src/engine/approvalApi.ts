@@ -304,80 +304,80 @@ export async function approvePendingAction(
           reason: e.message,
           code: e.code,
         });
-    deps.hooks?.onObservation?.(obs, meta);
-    await emitRun(deps, run, {
-      type: "tool_denied",
-      tool: pending.toolId,
-      code: e.code,
-      reason: e instanceof ExecutionPolicyError ? e.message : undefined,
-      cause: "policy",
-    });
-    const deniedRun = await persistFinal(store, run, async () =>
-      executeOnly ? run : await continueAndEmitResume(deps, run),
-    );
-    return {
-      run: deniedRun,
-      executed: false,
-      deniedCode: e.code,
-      idempotencyKey: claim.idempotencyKey,
-    };
-  }
+        deps.hooks?.onObservation?.(obs, meta);
+        await emitRun(deps, run, {
+          type: "tool_denied",
+          tool: pending.toolId,
+          code: e.code,
+          reason: e instanceof ExecutionPolicyError ? e.message : undefined,
+          cause: "policy",
+        });
+        const deniedRun = await persistFinal(store, run, async () =>
+          executeOnly ? run : await continueAndEmitResume(deps, run),
+        );
+        return {
+          run: deniedRun,
+          executed: false,
+          deniedCode: e.code,
+          idempotencyKey: claim.idempotencyKey,
+        };
+      }
 
-  // Execute the verified prepared action exactly once.
-  emitToolActionEvent(deps, meta, {
-    type: "tool_started",
-    tool: pending.toolId,
-  });
-  await emitRun(deps, run, { type: "tool_started", tool: pending.toolId });
-  const t0 = Date.now();
-  let obs: unknown;
-  let failed = false;
-  try {
-    obs = await deps.toolRunner.executePrepared(prepared, ctx);
-    emitToolActionEvent(deps, meta, {
-      type: "tool_completed",
-      tool: pending.toolId,
-      output: obs,
-    });
-    await emitRun(deps, run, {
-      type: "tool_completed",
-      tool: pending.toolId,
-      durationMs: Date.now() - t0,
-    });
-  } catch (e) {
-    failed = true;
-    const mapped = observationForToolFailure(e);
-    obs = mapped;
-    emitToolActionEvent(deps, meta, {
-      type: "tool_failed",
-      tool: pending.toolId,
-      error: mapped.error,
-      code: mapped.code,
-    });
-    await emitRun(deps, run, {
-      type: "tool_failed",
-      tool: pending.toolId,
-      code: mapped.code,
-      error: mapped.error,
-    });
-  }
+      // Execute the verified prepared action exactly once.
+      emitToolActionEvent(deps, meta, {
+        type: "tool_started",
+        tool: pending.toolId,
+      });
+      await emitRun(deps, run, { type: "tool_started", tool: pending.toolId });
+      const t0 = Date.now();
+      let obs: unknown;
+      let failed = false;
+      try {
+        obs = await deps.toolRunner.executePrepared(prepared, ctx);
+        emitToolActionEvent(deps, meta, {
+          type: "tool_completed",
+          tool: pending.toolId,
+          output: obs,
+        });
+        await emitRun(deps, run, {
+          type: "tool_completed",
+          tool: pending.toolId,
+          durationMs: Date.now() - t0,
+        });
+      } catch (e) {
+        failed = true;
+        const mapped = observationForToolFailure(e);
+        obs = mapped;
+        emitToolActionEvent(deps, meta, {
+          type: "tool_failed",
+          tool: pending.toolId,
+          error: mapped.error,
+          code: mapped.code,
+        });
+        await emitRun(deps, run, {
+          type: "tool_failed",
+          tool: pending.toolId,
+          code: mapped.code,
+          error: mapped.error,
+        });
+      }
 
-  // Resolve pending + append observation.
-  run.state.pending = null;
-  appendObservation(run, obs);
-  deps.hooks?.onObservation?.(obs, meta);
+      // Resolve pending + append observation.
+      run.state.pending = null;
+      appendObservation(run, obs);
+      deps.hooks?.onObservation?.(obs, meta);
 
-  const finalRun = await persistFinal(store, run, () =>
-    executeOnly || failed
-      ? Promise.resolve(run)
-      : continueAndEmitResume(deps, run),
-  );
+      const finalRun = await persistFinal(store, run, () =>
+        executeOnly || failed
+          ? Promise.resolve(run)
+          : continueAndEmitResume(deps, run),
+      );
 
-  return {
-    run: finalRun,
-    executed: !failed,
-    idempotencyKey: claim.idempotencyKey,
-  };
+      return {
+        run: finalRun,
+        executed: !failed,
+        idempotencyKey: claim.idempotencyKey,
+      };
     },
   });
 }
@@ -398,7 +398,6 @@ async function persistFinal(
   return final;
 }
 
-/** Continues the engine loop after an observation (no new user message). */
 /**
  * Continues the engine loop after a pending-action resolution (no new user
  * message). Emits a public `run_resumed` event so consumers can distinguish
