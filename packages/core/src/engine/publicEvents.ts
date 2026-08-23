@@ -47,7 +47,19 @@ export type PublicRunEvent = PublicRunEventBase &
         actionId?: string;
       }
     | { type: "tool_proposed"; tool: string }
-    | { type: "tool_denied"; tool: string; code: string; reason?: string }
+    | {
+        type: "tool_denied";
+        tool: string;
+        code: string;
+        reason?: string;
+        /**
+         * Why the tool was denied:
+         * - `policy`: a policy / execution-policy / registry check refused it.
+         * - `rejected`: a host explicitly rejected a pending action.
+         * Absent for legacy consumers (treat as `policy`).
+         */
+        cause?: "policy" | "rejected";
+      }
     | {
         type: "tool_awaiting_approval";
         tool: string;

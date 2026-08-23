@@ -111,61 +111,100 @@ function requireApprovalStore(runtime: AgentRuntime): {
  * - The tool receives a stable `idempotencyKey` (`runId_actionId`) in its
  *   `ToolContext`.
  */
-export async function approvePendingAction(
-  runtime: AgentRuntime,
-  input: ApprovePendingActionInput,
-): Promise<ApprovePendingActionResult> {
-  const { store } = requireApprovalStore(runtime);
+/**
+ * Shared context handed to a {@link PendingResolver} after the claim mutex has
+ * transferred ownership of the run. Holding the claim means the caller is
+ * guaranteed exclusive write access to `run` and `run.state.pending`.
+ */
+interface ClaimedPendingContext {
+  run: Run;
+  pending: import("../protocol/types.js").PendingToolApproval;
+  claim: { run: Run; idempotencyKey: string };
+  deps: EngineDeps;
+  meta: ReturnType<typeof hookRunCtx>;
+  store: RunStore & {
+    claimPendingAction: NonNullable<RunStore["claimPendingAction"]>;
+  };
+}
 
-  // 1. Pre-claim validation (fail fast, before any store mutation).
-  const preloaded = await store.load(input.runId);
+/**
+ * Resolver callback signature: the only correct way to finalize a pending
+ * tool action. Implementations MUST mutate `ctx.run` (and optionally append
+ * observations / fire public events) and MUST return the result shape for
+ * the public API. No `run.state.pending` mutation is required here — the
+ * caller is expected to clear it as part of resolution.
+ */
+type PendingResolver<TResult> = (ctx: ClaimedPendingContext) => Promise<TResult>;
+
+interface ResolvePendingViaClaimInput<TResult> {
+  runtime: AgentRuntime;
+  ref: PendingActionRef;
+  resolve: PendingResolver<TResult>;
+}
+
+/**
+ * Acquires the {@link claimPendingAction} mutex on a pending tool action and
+ * runs the supplied resolver under the exclusive lock. Performs all
+ * pre-claim validation (status, action match, session binding, expiry) and
+ * maps claim failures to typed errors. The mutex guarantees that only one of
+ * `approvePendingAction` / `rejectPendingAction` / `cancelPendingAction`
+ * (or two concurrent calls of the same kind) can resolve a given pending
+ * action; the loser observes `RunInvalidStateError("...already claimed")`.
+ */
+async function resolvePendingViaClaim<TResult>(
+  input: ResolvePendingViaClaimInput<TResult>,
+): Promise<TResult> {
+  const { store } = requireApprovalStore(input.runtime);
+
+  // Pre-claim validation: fail fast before any store mutation.
+  const preloaded = await store.load(input.ref.runId);
   if (!preloaded) {
-    throw new RunInvalidStateError(`Run not found: ${input.runId}`);
+    throw new RunInvalidStateError(`Run not found: ${input.ref.runId}`);
   }
   if (preloaded.status !== "waiting") {
     throw new RunInvalidStateError(
-      `Run ${input.runId} is not waiting (status: ${preloaded.status})`,
+      `Run ${input.ref.runId} is not waiting (status: ${preloaded.status})`,
     );
   }
   const prePending = preloaded.state.pending;
   if (
     !prePending ||
     prePending.kind !== "tool_approval" ||
-    prePending.actionId !== input.actionId
+    prePending.actionId !== input.ref.actionId
   ) {
     throw new RunInvalidStateError(
-      `Action ${input.actionId} is not the pending action of run ${input.runId}`,
+      `Action ${input.ref.actionId} is not the pending action of run ${input.ref.runId}`,
     );
   }
-  assertRunBoundToSession(preloaded, input.session);
+  assertRunBoundToSession(preloaded, input.ref.session);
   const preExpiresAt = Date.parse(prePending.expiresAt);
   if (Number.isNaN(preExpiresAt) || Date.now() > preExpiresAt) {
     throw new RunInvalidStateError(
-      `Action ${input.actionId} expired at ${prePending.expiresAt}`,
+      `Action ${input.ref.actionId} expired at ${prePending.expiresAt}`,
     );
   }
 
-  // 2. Atomic claim — transitions waiting+actionId → running+claimed.
+  // Atomic claim — transitions waiting+actionId → running+claimed.
   const claim = await store.claimPendingAction({
-    runId: input.runId,
-    actionId: input.actionId,
+    runId: input.ref.runId,
+    actionId: input.ref.actionId,
     expectedStatus: "waiting",
   });
   if (!claim.ok) {
     switch (claim.reason) {
       case "not_found":
-        throw new RunInvalidStateError(`Run not found: ${input.runId}`);
+        throw new RunInvalidStateError(`Run not found: ${input.ref.runId}`);
       case "not_waiting":
         throw new RunInvalidStateError(
-          `Run ${input.runId} is not waiting (already resolved?)`,
+          `Run ${input.ref.runId} is not waiting (already resolved?)`,
         );
       case "action_mismatch":
         throw new RunInvalidStateError(
-          `Action ${input.actionId} is not the pending action of run ${input.runId}`,
+          `Action ${input.ref.actionId} is not the pending action of run ${input.ref.runId}`,
         );
       case "already_claimed":
         throw new RunInvalidStateError(
-          `Action ${input.actionId} was already claimed (duplicate approval)`,
+          `Action ${input.ref.actionId} was already claimed (duplicate or concurrent resolution)`,
         );
     }
   }
@@ -174,88 +213,107 @@ export async function approvePendingAction(
   const pending = run.state.pending;
   if (!pending || pending.kind !== "tool_approval") {
     throw new RunInvalidStateError(
-      `Run ${input.runId} has no tool-approval pending state`,
+      `Run ${input.ref.runId} has no tool-approval pending state`,
     );
   }
 
-  // 2. Re-authorization: explicit session binding (project/session/tenant).
-  assertRunBoundToSession(run, input.session);
+  // Re-check session binding under the lock (defense in depth — the pre-claim
+  // check above already covered this, but a stale store snapshot could have
+  // arrived between load() and claimPendingAction()).
+  assertRunBoundToSession(run, input.ref.session);
 
-  // 3. Expiry.
+  // Expiry re-check under the lock.
   const expiresAt = Date.parse(pending.expiresAt);
   if (Number.isNaN(expiresAt) || Date.now() > expiresAt) {
     throw new RunInvalidStateError(
-      `Action ${input.actionId} expired at ${pending.expiresAt}`,
+      `Action ${input.ref.actionId} expired at ${pending.expiresAt}`,
     );
   }
 
-  // 4. Agent definition + deps for the current runtime configuration.
-  const agentDef = getAgentDefinition(input.session.projectId, run.agentId);
+  // Resolve the runtime + agent definition once and pass it to the resolver.
+  const agentDef = getAgentDefinition(input.ref.session.projectId, run.agentId);
   if (!agentDef) {
     throw new RunInvalidStateError(
-      `Agent definition not found: ${run.agentId} (project ${input.session.projectId})`,
+      `Agent definition not found: ${run.agentId} (project ${input.ref.session.projectId})`,
     );
   }
   const deps: EngineDeps = {
-    ...buildEngineDeps(agentDef, input.session, runtime, {}),
+    ...buildEngineDeps(agentDef, input.ref.session, input.runtime, {}),
     startedAtMs: Date.now(),
   };
   const meta = hookRunCtx(deps, run);
 
-  // 5. Tool must still exist and be allowlisted for the agent.
-  const tool = resolveToolRegistry(input.session.projectId).get(pending.toolId);
-  if (!tool) {
-    throw new ExecutionNotAllowedError(`Tool no longer registered: ${pending.toolId}`);
-  }
+  return input.resolve({ run, pending, claim, deps, meta, store });
+}
 
-  // 6. Re-prepare and verify the exact prepared action via inputHash — never
-  // re-parse raw model output, and refuse on drift (WeakSet-authenticated
-  // PreparedToolAction means we must go through prepare()).
-  const prepared = await deps.toolRunner.prepare(pending.toolId, pending.preparedInput);
-  if (!prepared.ok) {
-    throw new ExecutionNotAllowedError(
-      `Tool ${pending.toolId} is no longer executable: ${prepared.reason}`,
-    );
-  }
-  if (prepared.ok) {
-    const freshHash = stableStringHash(JSON.stringify(prepared.preparedInput));
-    if (freshHash !== pending.inputHash) {
-      throw new ExecutionNotAllowedError(
-        `Prepared input for ${pending.toolId} drifted since proposal; refusing to execute`,
+export async function approvePendingAction(
+  runtime: AgentRuntime,
+  input: ApprovePendingActionInput,
+): Promise<ApprovePendingActionResult> {
+  return resolvePendingViaClaim<ApprovePendingActionResult>({
+    runtime,
+    ref: input,
+    resolve: async ({ run, pending, claim, deps, meta, store }) => {
+      // Tool must still exist and be allowlisted for the agent.
+      const tool = resolveToolRegistry(input.session.projectId).get(pending.toolId);
+      if (!tool) {
+        throw new ExecutionNotAllowedError(
+          `Tool no longer registered: ${pending.toolId}`,
+        );
+      }
+
+      // Re-prepare and verify the exact prepared action via inputHash — never
+      // re-parse raw model output, and refuse on drift (WeakSet-authenticated
+      // PreparedToolAction means we must go through prepare()).
+      const prepared = await deps.toolRunner.prepare(
+        pending.toolId,
+        pending.preparedInput,
       );
-    }
-  }
+      if (!prepared.ok) {
+        throw new ExecutionNotAllowedError(
+          `Tool ${pending.toolId} is no longer executable: ${prepared.reason}`,
+        );
+      }
+      const freshHash = stableStringHash(JSON.stringify(prepared.preparedInput));
+      if (freshHash !== pending.inputHash) {
+        throw new ExecutionNotAllowedError(
+          `Prepared input for ${pending.toolId} drifted since proposal; refusing to execute`,
+        );
+      }
 
-  const executeOnly = input.mode === "execute_only";
-  const ctx = { ...toolContext(deps, run), idempotencyKey: claim.idempotencyKey };
+      const executeOnly = input.mode === "execute_only";
+      const ctx = {
+        ...toolContext(deps, run),
+        idempotencyKey: claim.idempotencyKey,
+      };
 
-  // 7. Re-run the execution policy with the CURRENT security context.
-  try {
-    await evaluateExecutionPolicy(deps, run, prepared);
-  } catch (e) {
-    const isDeny = e instanceof ExecutionPolicyError;
-    // A second `wait` at approval time still means "not allowed to execute".
-    if (!isDeny && !(e instanceof ExecutionWaitError)) throw e;
-    // Policy refused even after explicit approval — no side effect. Append a
-    // safe observation so the model can react, then continue or stop.
-    run.state.pending = null;
-    const obs = observationForToolFailure(e);
-    appendObservation(run, obs);
-    emitToolActionEvent(deps, meta, {
-      type: "tool_denied",
-      tool: pending.toolId,
-      reason: e.message,
-      code: e.code,
-    });
+      // Re-run the execution policy with the CURRENT security context.
+      try {
+        await evaluateExecutionPolicy(deps, run, prepared);
+      } catch (e) {
+        const isDeny = e instanceof ExecutionPolicyError;
+        // A second `wait` at approval time still means "not allowed to execute".
+        if (!isDeny && !(e instanceof ExecutionWaitError)) throw e;
+        // Policy refused even after explicit approval — no side effect.
+        run.state.pending = null;
+        const obs = observationForToolFailure(e);
+        appendObservation(run, obs);
+        emitToolActionEvent(deps, meta, {
+          type: "tool_denied",
+          tool: pending.toolId,
+          reason: e.message,
+          code: e.code,
+        });
     deps.hooks?.onObservation?.(obs, meta);
     await emitRun(deps, run, {
       type: "tool_denied",
       tool: pending.toolId,
       code: e.code,
       reason: e instanceof ExecutionPolicyError ? e.message : undefined,
+      cause: "policy",
     });
     const deniedRun = await persistFinal(store, run, async () =>
-      executeOnly ? run : continueLoop(run, deps),
+      executeOnly ? run : await continueAndEmitResume(deps, run),
     );
     return {
       run: deniedRun,
@@ -265,8 +323,11 @@ export async function approvePendingAction(
     };
   }
 
-  // 8. Execute the verified prepared action exactly once.
-  emitToolActionEvent(deps, meta, { type: "tool_started", tool: pending.toolId });
+  // Execute the verified prepared action exactly once.
+  emitToolActionEvent(deps, meta, {
+    type: "tool_started",
+    tool: pending.toolId,
+  });
   await emitRun(deps, run, { type: "tool_started", tool: pending.toolId });
   const t0 = Date.now();
   let obs: unknown;
@@ -301,13 +362,15 @@ export async function approvePendingAction(
     });
   }
 
-  // 9. Resolve pending + append observation.
+  // Resolve pending + append observation.
   run.state.pending = null;
   appendObservation(run, obs);
   deps.hooks?.onObservation?.(obs, meta);
 
   const finalRun = await persistFinal(store, run, () =>
-    executeOnly || failed ? Promise.resolve(run) : continueLoop(run, deps),
+    executeOnly || failed
+      ? Promise.resolve(run)
+      : continueAndEmitResume(deps, run),
   );
 
   return {
@@ -315,6 +378,8 @@ export async function approvePendingAction(
     executed: !failed,
     idempotencyKey: claim.idempotencyKey,
   };
+    },
+  });
 }
 
 /**
@@ -334,7 +399,16 @@ async function persistFinal(
 }
 
 /** Continues the engine loop after an observation (no new user message). */
-async function continueLoop(run: Run, deps: EngineDeps): Promise<Run> {
+/**
+ * Continues the engine loop after a pending-action resolution (no new user
+ * message). Emits a public `run_resumed` event so consumers can distinguish
+ * re-entry from a fresh run.
+ */
+async function continueAndEmitResume(
+  deps: EngineDeps,
+  run: Run,
+): Promise<Run> {
+  await emitRun(deps, run, { type: "run_resumed" });
   return executeRun(run, { ...deps, startedAtMs: Date.now() });
 }
 
@@ -349,54 +423,52 @@ export interface RejectPendingActionResult {
 /**
  * Rejects a pending tool action **without executing it**. Appends a
  * structured observation and continues the engine loop so the model can
- * react to the rejection. CAS-protected from `waiting`; a concurrent
- * approve/reject/cancel wins and this call throws.
+ * react to the rejection. Routed through {@link resolvePendingViaClaim} so a
+ * concurrent approve/reject/cancel observes `already_claimed` and the run
+ * is never overwritten.
  */
 export async function rejectPendingAction(
   runtime: AgentRuntime,
   input: RejectPendingActionInput,
 ): Promise<RejectPendingActionResult> {
-  const { store } = requireApprovalStore(runtime);
-  const run = await loadWaitingRunWithAction(store, input);
-  assertRunBoundToSession(run, input.session);
+  return resolvePendingViaClaim<RejectPendingActionResult>({
+    runtime,
+    ref: input,
+    resolve: async ({ run, pending, deps, meta, store }) => {
+      const reason = input.reason ?? "Action rejected by host";
 
-  const reason = input.reason ?? "Action rejected by host";
-  const rejectedToolId =
-    run.state.pending && run.state.pending.kind === "tool_approval"
-      ? run.state.pending.toolId
-      : "unknown";
-  if (run.state.pending && run.state.pending.kind === "tool_approval") {
-    run.state.pending.rejectionReason = reason;
-  }
-  run.state.pending = null;
-  run.status = "running";
+      pending.rejectionReason = reason;
+      run.state.pending = null;
+      run.status = "running";
 
-  const obs = { success: false as const, error: reason, code: "ACTION_REJECTED" };
-  appendObservation(run, obs);
+      const obs = {
+        success: false as const,
+        error: reason,
+        code: "ACTION_REJECTED",
+      };
+      appendObservation(run, obs);
 
-  // Best-effort events need deps; build them only when hooks/sinks exist.
-  const agentDef = getAgentDefinition(input.session.projectId, run.agentId);
-  if (agentDef) {
-    const deps: EngineDeps = {
-      ...buildEngineDeps(agentDef, input.session, runtime, {}),
-      startedAtMs: Date.now(),
-    };
-    emitToolActionEvent(deps, hookRunCtx(deps, run), {
-      type: "tool_denied",
-      tool: rejectedToolId,
-      reason,
-      code: "ACTION_REJECTED",
-    });
-    deps.hooks?.onObservation?.(obs, hookRunCtx(deps, run));
-    const final = await continueLoop(run, deps);
-    const casOk = await store.saveIfStatus(final, "running");
-    if (!casOk) await store.save(final);
-    return { run: final };
-  }
+      emitToolActionEvent(deps, meta, {
+        type: "tool_denied",
+        tool: pending.toolId,
+        reason,
+        code: "ACTION_REJECTED",
+      });
+      deps.hooks?.onObservation?.(obs, meta);
+      await emitRun(deps, run, {
+        type: "tool_denied",
+        tool: pending.toolId,
+        code: "ACTION_REJECTED",
+        reason,
+        cause: "rejected",
+      });
 
-  const casOk = await store.saveIfStatus(run, "running");
-  if (!casOk) throw new RunInvalidStateError(`Run ${run.runId} changed concurrently`);
-  return { run };
+      const finalRun = await persistFinal(store, run, () =>
+        continueAndEmitResume(deps, run),
+      );
+      return { run: finalRun };
+    },
+  });
 }
 
 export interface CancelPendingActionInput extends PendingActionRef {
@@ -411,47 +483,35 @@ export interface CancelPendingActionResult {
  * Cancels the pending action and terminally fails the run — the tool never
  * executes. Public event consumers see `run_cancelled` semantics via
  * `failedReason` (`RUN_CANCELLED`), matching the existing cancellation story.
+ * Routed through {@link resolvePendingViaClaim} so a concurrent
+ * approve/reject/cancel observes `already_claimed`.
  */
 export async function cancelPendingAction(
   runtime: AgentRuntime,
   input: CancelPendingActionInput,
 ): Promise<CancelPendingActionResult> {
-  const { store } = requireApprovalStore(runtime);
-  const run = await loadWaitingRunWithAction(store, input);
-  assertRunBoundToSession(run, input.session);
+  return resolvePendingViaClaim<CancelPendingActionResult>({
+    runtime,
+    ref: input,
+    resolve: async ({ run, pending, deps, store }) => {
+      const reason = input.reason ?? "Run cancelled by host";
 
-  const reason = input.reason ?? "Run cancelled by host";
-  if (run.state.pending && run.state.pending.kind === "tool_approval") {
-    run.state.pending.rejectionReason = reason;
-  }
-  run.state.pending = null;
-  run.status = "failed";
-  run.state.failedReason = `[RUN_CANCELLED] ${reason}`;
+      pending.rejectionReason = reason;
+      run.state.pending = null;
+      run.status = "failed";
+      run.state.failedReason = `[RUN_CANCELLED] ${reason}`;
 
-  const casOk = await store.saveIfStatus(run, "running");
-  if (!casOk) await store.save(run);
-  return { run };
+      await emitRun(deps, run, {
+        type: "run_cancelled",
+        reason,
+      });
+
+      const finalRun = await persistFinal(store, run, () => run);
+      return { run: finalRun };
+    },
+  });
 }
 
-async function loadWaitingRunWithAction(
-  store: RunStore,
-  ref: PendingActionRef,
-): Promise<Run> {
-  const run = await store.load(ref.runId);
-  if (!run) throw new RunInvalidStateError(`Run not found: ${ref.runId}`);
-  if (run.status !== "waiting") {
-    throw new RunInvalidStateError(
-      `Run ${ref.runId} is not waiting (status: ${run.status})`,
-    );
-  }
-  const pending = run.state.pending;
-  if (!pending || pending.kind !== "tool_approval" || pending.actionId !== ref.actionId) {
-    throw new RunInvalidStateError(
-      `Action ${ref.actionId} is not the pending action of run ${ref.runId}`,
-    );
-  }
-  return run;
-}
 
 
 

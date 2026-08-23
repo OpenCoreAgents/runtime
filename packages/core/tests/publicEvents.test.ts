@@ -204,6 +204,7 @@ describe("public run events", () => {
     expect(events.map((e) => e.type)).toEqual([
       "tool_started",
       "tool_completed",
+      "run_resumed",
       "run_started",
       "run_completed",
     ]);
