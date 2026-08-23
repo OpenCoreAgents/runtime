@@ -6,6 +6,7 @@ import type { RunStore } from "../adapters/run/RunStore.js";
 import type { MessageBus } from "../bus/MessageBus.js";
 import type { SendMessageTargetPolicy } from "../tools/sendMessagePolicy.js";
 import type { ExecutionPolicy } from "../engine/executionPolicy.js";
+import type { ToolVisibilityPolicy } from "../engine/toolVisibilityPolicy.js";
 import type { EngineHooks } from "../engine/types.js";
 
 export interface EngineConfig {
@@ -15,6 +16,11 @@ export interface EngineConfig {
    * action and appends a safe failure observation.
    */
   executionPolicy?: ExecutionPolicy;
+  /**
+   * Optional host-provided filter for the prompt tool catalog. Runs after the
+   * effective tool allowlist is computed and can only hide tools from the LLM.
+   */
+  visibilityPolicy?: ToolVisibilityPolicy;
   /**
    * Arbitrary host-resolved context passed to {@link executionPolicy} as
    * `hostContext`. Prefer JSON-serializable values so workers/queues can

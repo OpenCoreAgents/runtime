@@ -97,9 +97,11 @@ export function buildEngineDeps(
     ragFileCatalog: runtime.ragCatalogForProject(session.projectId),
     toolRunner: runner,
     toolRegistry,
+    effectiveToolAllowlist: allow,
     contextBuilder: cb,
     securityContext: securityContextForAgent(session, agent),
     executionPolicy: cfg.executionPolicy,
+    visibilityPolicy: cfg.visibilityPolicy,
     hostContext: cfg.hostContext,
     limits: {
       maxIterations: cfg.maxIterations ?? 25,

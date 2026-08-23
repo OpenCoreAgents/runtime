@@ -12,6 +12,7 @@ import type { MessageBus } from "../bus/MessageBus.js";
 import type { SendMessageTargetPolicy } from "../tools/sendMessagePolicy.js";
 import type { RagFileSourceEntry } from "../ragCatalogTypes.js";
 import type { ExecutionPolicy } from "./executionPolicy.js";
+import type { ToolVisibilityPolicy } from "./toolVisibilityPolicy.js";
 
 export type { ContextBuilderInput, BuiltContext } from "../context/types.js";
 
@@ -33,6 +34,8 @@ export interface EngineDeps {
   ragFileCatalog?: ReadonlyArray<RagFileSourceEntry>;
   toolRunner: import("../tools/ToolRunner.js").ToolRunner;
   toolRegistry: Map<string, ToolAdapter>;
+  /** Effective tool allowlist: agent + skills ∩ runtime `allowedToolIds`. */
+  effectiveToolAllowlist: ReadonlySet<string>;
   contextBuilder: {
     build(input: ContextBuilderInput): Promise<BuiltContext>;
   };
@@ -42,6 +45,11 @@ export interface EngineDeps {
    * and validation, but before `tool.execute`.
    */
   executionPolicy?: ExecutionPolicy;
+  /**
+   * Optional host-provided filter for the prompt tool catalog. Runs after the
+   * effective tool allowlist is computed and can only hide tools from the LLM.
+   */
+  visibilityPolicy?: ToolVisibilityPolicy;
   /**
    * Arbitrary host-resolved context passed to {@link executionPolicy} as
    * `hostContext`.

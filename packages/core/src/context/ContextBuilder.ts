@@ -1,21 +1,46 @@
 import type { LLMRequest } from "../adapters/llm/LLMAdapter.js";
 import type { ContextBuilderInput, BuiltContext } from "./types.js";
 import { getSkillDefinition, getToolDefinition } from "../define/registry.js";
+import type { ToolVisibilityPolicyInput } from "../engine/toolVisibilityPolicy.js";
 
-function toolCatalogForAgent(
-  projectId: string,
-  agent: import("../define/types.js").AgentDefinition,
-  registry: Map<string, import("../adapters/tool/ToolAdapter.js").ToolAdapter>,
-): LLMRequest["tools"] {
-  const allow = new Set(agent.tools ?? []);
-  for (const sid of agent.skills ?? []) {
-    const sk = getSkillDefinition(projectId, sid);
-    if (sk) for (const tid of sk.tools) allow.add(tid);
+async function toolCatalogForAgent(
+  input: ContextBuilderInput,
+): Promise<LLMRequest["tools"]> {
+  const { agent, session, run, securityContext, toolRegistry, hostContext } = input;
+  const projectId = session.projectId;
+
+  // Determine the candidate set: effective allowlist when provided, otherwise
+  // agent.tools + skill tools (legacy fallback for direct ContextBuilder use).
+  let candidateNames: Iterable<string>;
+  if (input.effectiveToolAllowlist) {
+    candidateNames = input.effectiveToolAllowlist;
+  } else {
+    const allow = new Set(agent.tools ?? []);
+    for (const sid of agent.skills ?? []) {
+      const sk = getSkillDefinition(projectId, sid);
+      if (sk) for (const tid of sk.tools) allow.add(tid);
+    }
+    candidateNames = allow;
   }
+
   const out: NonNullable<LLMRequest["tools"]> = [];
-  for (const name of allow) {
-    const t = registry.get(name);
+  for (const name of candidateNames) {
+    const t = toolRegistry.get(name);
     if (!t) continue;
+
+    if (input.visibilityPolicy) {
+      const policyInput: ToolVisibilityPolicyInput = {
+        agent,
+        session,
+        run,
+        tool: t,
+        securityContext,
+        hostContext,
+      };
+      const decision = await input.visibilityPolicy(policyInput);
+      if (!decision.visible) continue;
+    }
+
     const def = getToolDefinition(projectId, name);
     out.push({
       name: t.name,
@@ -34,8 +59,7 @@ function toolCatalogForAgent(
  */
 export class ContextBuilder {
   async build(input: ContextBuilderInput): Promise<BuiltContext> {
-    const { agent, run, session, toolRegistry, resumeMessages, recoveryMessages } = input;
-    const projectId = session.projectId;
+    const { agent, run, resumeMessages, recoveryMessages } = input;
 
     const system =
       `${agent.systemPrompt}\n\n` +
@@ -132,7 +156,7 @@ export class ContextBuilder {
       for (const r of recoveryMessages) messages.push(r);
     }
 
-    const tools = toolCatalogForAgent(projectId, agent, toolRegistry);
+    const tools = await toolCatalogForAgent(input);
 
     return {
       messages,
