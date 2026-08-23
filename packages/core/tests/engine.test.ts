@@ -20,6 +20,7 @@ import type {
   AgentDefinitionPersisted,
   ExecutionPolicy,
   ExecutionPolicyInput,
+  ToolActionEvent,
   ToolVisibilityPolicy,
 } from "../src/types.js";
 import type { LLMAdapter, LLMRequest, LLMResponse } from "../src/adapters/llm/LLMAdapter.js";
@@ -1468,5 +1469,233 @@ describe("engine", () => {
     const content = obs?.content as { success?: boolean; code?: string };
     expect(content.success).toBe(false);
     expect(content.code).toBe("TOOL_EXECUTION_ERROR");
+  });
+  it("emits proposed -> started -> completed tool events without raw input/output by default", async () => {
+    const execute = vi.fn().mockResolvedValue({ ok: true, value: 42 });
+    await Tool.define({
+      id: "evt_ok",
+      scope: "global",
+      description: "Event target",
+      inputSchema: { type: "object", properties: {} },
+      execute,
+    });
+
+    const events: ToolActionEvent[] = [];
+    const onObservation = vi.fn();
+    const mem = new InMemoryMemoryAdapter();
+    const llm = new QueueLLM([
+      JSON.stringify({ type: "action", tool: "evt_ok", input: { raw: true } }),
+      JSON.stringify({ type: "result", content: "done" }),
+    ]);
+    const rt = new AgentRuntime({
+      llmAdapter: llm,
+      memoryAdapter: mem,
+      maxIterations: 10,
+      toolEventSink: (e) => events.push(e),
+      defaultEngineHooks: { onObservation },
+    });
+
+    await Agent.define({
+      id: "a-tool-events-ok",
+      projectId: "p1",
+      systemPrompt: "Test.",
+      tools: ["evt_ok"],
+      llm: { provider: "openai", model: "gpt-4o" },
+    });
+
+    const session = new Session({ id: "s1", projectId: "p1" });
+    const agent = await Agent.load("a-tool-events-ok", rt, { session });
+    const run = await agent.run("go");
+
+    expect(run.status).toBe("completed");
+    const types = events.map((e) => e.type);
+    expect(types).toEqual(["tool_proposed", "tool_started", "tool_completed"]);
+    const proposed = events[0]!;
+    expect(proposed.runId).toBe(run.runId);
+    expect(proposed.agentId).toBe("a-tool-events-ok");
+    expect(proposed.projectId).toBe("p1");
+    expect(proposed.sessionId).toBe("s1");
+    expect(proposed.tool).toBe("evt_ok");
+    expect("input" in proposed).toBe(false);
+    expect("output" in events[2]!).toBe(false);
+    // Events are JSON-serializable.
+    expect(JSON.stringify(events)).toBeTruthy();
+    // Existing hooks are untouched — the observation hook still fires.
+    expect(onObservation).toHaveBeenCalledTimes(1);
+  });
+  it("includes prepared input and output when toolEventsIncludeInputOutput is set", async () => {
+    const execute = vi.fn().mockResolvedValue({ ok: true });
+    let captured: unknown;
+    await Tool.define({
+      id: "evt_prep",
+      scope: "global",
+      description: "Prepares input",
+      inputSchema: { type: "object", properties: {} },
+      prepareInput: async (raw: unknown) => ({
+        ok: true,
+        value: { text: String((raw as { text?: string }).text ?? "").trim() },
+      }),
+      execute: async (input: unknown) => {
+        captured = input;
+        return { ok: true };
+      },
+    });
+
+    const events: ToolActionEvent[] = [];
+    const mem = new InMemoryMemoryAdapter();
+    const llm = new QueueLLM([
+      JSON.stringify({
+        type: "action",
+        tool: "evt_prep",
+        input: { text: "  hello  " },
+      }),
+      JSON.stringify({ type: "result", content: "done" }),
+    ]);
+    const rt = new AgentRuntime({
+      llmAdapter: llm,
+      memoryAdapter: mem,
+      maxIterations: 10,
+      toolEventSink: (e) => events.push(e),
+      toolEventsIncludeInputOutput: true,
+    });
+
+    await Agent.define({
+      id: "a-tool-events-input",
+      projectId: "p1",
+      systemPrompt: "Test.",
+      tools: ["evt_prep"],
+      llm: { provider: "openai", model: "gpt-4o" },
+    });
+
+    const session = new Session({ id: "s1", projectId: "p1" });
+    const agent = await Agent.load("a-tool-events-input", rt, { session });
+    const run = await agent.run("go");
+
+    expect(run.status).toBe("completed");
+    const proposed = events[0] as ToolActionEvent & { type: "tool_proposed" };
+    const completed = events[2] as ToolActionEvent & { type: "tool_completed" };
+    expect(proposed.input).toEqual({ text: "hello" });
+    expect(completed.output).toEqual({ ok: true });
+    expect(captured).toEqual({ text: "hello" });
+  });
+  it("emits tool_denied when the execution policy denies and never starts the tool", async () => {
+    const execute = vi.fn().mockResolvedValue({ ok: true });
+    await Tool.define({
+      id: "evt_denied",
+      scope: "global",
+      description: "Denied",
+      inputSchema: { type: "object", properties: {} },
+      execute,
+    });
+
+    const events: ToolActionEvent[] = [];
+    const mem = new InMemoryMemoryAdapter();
+    const llm = new QueueLLM([
+      JSON.stringify({ type: "action", tool: "evt_denied", input: {} }),
+      JSON.stringify({ type: "result", content: "done" }),
+    ]);
+    const rt = new AgentRuntime({
+      llmAdapter: llm,
+      memoryAdapter: mem,
+      maxIterations: 10,
+      executionPolicy: () => ({ decision: "deny", reason: "nope" }),
+      toolEventSink: (e) => events.push(e),
+    });
+
+    await Agent.define({
+      id: "a-tool-events-denied",
+      projectId: "p1",
+      systemPrompt: "Test.",
+      tools: ["evt_denied"],
+      llm: { provider: "openai", model: "gpt-4o" },
+    });
+
+    const session = new Session({ id: "s1", projectId: "p1" });
+    const agent = await Agent.load("a-tool-events-denied", rt, { session });
+    const run = await agent.run("go");
+
+    expect(run.status).toBe("completed");
+    expect(events.map((e) => e.type)).toEqual(["tool_proposed", "tool_denied"]);
+    const denied = events[1] as ToolActionEvent & { type: "tool_denied" };
+    expect(denied.code).toBe("EXECUTION_POLICY_DENIED");
+    expect(execute).not.toHaveBeenCalled();
+  });
+
+  it("emits tool_failed when tool execution throws", async () => {
+    const execute = vi.fn().mockRejectedValue(new Error("boom"));
+    await Tool.define({
+      id: "evt_boom",
+      scope: "global",
+      description: "Boom",
+      inputSchema: { type: "object", properties: {} },
+      execute,
+    });
+
+    const events: ToolActionEvent[] = [];
+    const mem = new InMemoryMemoryAdapter();
+    const llm = new QueueLLM([
+      JSON.stringify({ type: "action", tool: "evt_boom", input: {} }),
+      JSON.stringify({ type: "result", content: "done" }),
+    ]);
+    const rt = new AgentRuntime({
+      llmAdapter: llm,
+      memoryAdapter: mem,
+      maxIterations: 10,
+      toolEventSink: (e) => events.push(e),
+    });
+
+    await Agent.define({
+      id: "a-tool-events-failed",
+      projectId: "p1",
+      systemPrompt: "Test.",
+      tools: ["evt_boom"],
+      llm: { provider: "openai", model: "gpt-4o" },
+    });
+
+    const session = new Session({ id: "s1", projectId: "p1" });
+    const agent = await Agent.load("a-tool-events-failed", rt, { session });
+    const run = await agent.run("go");
+
+    expect(run.status).toBe("completed");
+    expect(events.map((e) => e.type)).toEqual([
+      "tool_proposed",
+      "tool_started",
+      "tool_failed",
+    ]);
+    const failed = events[2] as ToolActionEvent & { type: "tool_failed" };
+    expect(failed.code).toBe("TOOL_EXECUTION_ERROR");
+  });
+
+  it("emits tool_failed for a model-proposed action for an unknown tool", async () => {
+    const events: ToolActionEvent[] = [];
+    const mem = new InMemoryMemoryAdapter();
+    const llm = new QueueLLM([
+      JSON.stringify({ type: "action", tool: "evt_unknown", input: {} }),
+      JSON.stringify({ type: "result", content: "done" }),
+    ]);
+    const rt = new AgentRuntime({
+      llmAdapter: llm,
+      memoryAdapter: mem,
+      maxIterations: 10,
+      toolEventSink: (e) => events.push(e),
+    });
+
+    await Agent.define({
+      id: "a-tool-events-unknown",
+      projectId: "p1",
+      systemPrompt: "Test.",
+      tools: [],
+      llm: { provider: "openai", model: "gpt-4o" },
+    });
+
+    const session = new Session({ id: "s1", projectId: "p1" });
+    const agent = await Agent.load("a-tool-events-unknown", rt, { session });
+    const run = await agent.run("go");
+
+    expect(run.status).toBe("completed");
+    expect(events.map((e) => e.type)).toEqual(["tool_failed"]);
+    const failed = events[0] as ToolActionEvent & { type: "tool_failed" };
+    expect(failed.tool).toBe("evt_unknown");
+    expect(failed.code).toBe("TOOL_EXECUTION_ERROR");
   });
 });

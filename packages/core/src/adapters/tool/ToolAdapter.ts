@@ -29,6 +29,12 @@ export interface ToolContext {
   sendMessageTargetPolicy?: SendMessageTargetPolicy;
   /** Per-project RAG catalog when registered for `session.projectId` (`@opencoreagents/rag` / `AgentRuntime`). */
   ragFileCatalog?: ReadonlyArray<RagFileSourceEntry>;
+  /**
+   * Stable key (`runId_actionId`) present when the execution came from an
+   * approved pending action. Tools with side effects should use it to make
+   * retries/duplicate approvals idempotent downstream.
+   */
+  idempotencyKey?: string;
 }
 
 export type ToolValidationResult =

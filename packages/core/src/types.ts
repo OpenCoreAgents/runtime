@@ -4,6 +4,9 @@ export type {
   Run,
   ProtocolMessage,
   RunEnvelope,
+  PendingState,
+  PendingToolApproval,
+  PreparedActionMeta,
 } from "./protocol/types.js";
 
 export type {
@@ -75,5 +78,12 @@ export type {
   ToolVisibilityPolicyInput,
   ToolVisibilityPolicyResult,
 } from "./engine/toolVisibilityPolicy.js";
+
+export type {
+  ToolActionEvent,
+  ToolActionEventContext,
+  ToolActionEventSink,
+  ToolActionEventType,
+} from "./engine/toolActionEvents.js";
 
 export type { UsageContext, UsageSnapshot } from "./engine/watchUsage.js";

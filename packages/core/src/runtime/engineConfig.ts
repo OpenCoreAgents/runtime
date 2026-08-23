@@ -7,6 +7,8 @@ import type { MessageBus } from "../bus/MessageBus.js";
 import type { SendMessageTargetPolicy } from "../tools/sendMessagePolicy.js";
 import type { ExecutionPolicy } from "../engine/executionPolicy.js";
 import type { ToolVisibilityPolicy } from "../engine/toolVisibilityPolicy.js";
+import type { ToolActionEventSink } from "../engine/toolActionEvents.js";
+import type { Redactor, RunEventSink } from "../engine/publicEvents.js";
 import type { EngineHooks } from "../engine/types.js";
 
 export interface EngineConfig {
@@ -21,6 +23,28 @@ export interface EngineConfig {
    * effective tool allowlist is computed and can only hide tools from the LLM.
    */
   visibilityPolicy?: ToolVisibilityPolicy;
+  /**
+   * Optional sink for minimal tool-action lifecycle events
+   * (`tool_proposed` / `tool_denied` / `tool_started` / `tool_completed` / `tool_failed`).
+   * Independent of low-level {@link EngineHooks}.
+   */
+  toolEventSink?: ToolActionEventSink;
+  /**
+   * When true, `tool_proposed` / `tool_completed` events include the prepared
+   * tool input / output. Off by default — raw input and output stay out of the
+   * public event stream unless the host explicitly opts in.
+   */
+  toolEventsIncludeInputOutput?: boolean;
+  /**
+   * Public run-event sinks (versioned, redactable envelope). See
+   * `engine/publicEvents.ts`. Sink failures never fail the run unless
+   * {@link failOnEventSinkError} is set.
+   */
+  eventSinks?: RunEventSink[];
+  /** Host redaction hook applied to public events before delivery. */
+  redactor?: Redactor;
+  /** When true, a throwing event sink propagates its error (default false). */
+  failOnEventSinkError?: boolean;
   /**
    * Arbitrary host-resolved context passed to {@link executionPolicy} as
    * `hostContext`. Prefer JSON-serializable values so workers/queues can
