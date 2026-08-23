@@ -11,6 +11,7 @@ import type { AgentDefinition } from "../define/types.js";
 import type { MessageBus } from "../bus/MessageBus.js";
 import type { SendMessageTargetPolicy } from "../tools/sendMessagePolicy.js";
 import type { RagFileSourceEntry } from "../ragCatalogTypes.js";
+import type { ExecutionPolicy } from "./executionPolicy.js";
 
 export type { ContextBuilderInput, BuiltContext } from "../context/types.js";
 
@@ -36,6 +37,16 @@ export interface EngineDeps {
     build(input: ContextBuilderInput): Promise<BuiltContext>;
   };
   securityContext: SecurityContext;
+  /**
+   * Optional runtime-level execution policy. Runs after tool input preparation
+   * and validation, but before `tool.execute`.
+   */
+  executionPolicy?: ExecutionPolicy;
+  /**
+   * Arbitrary host-resolved context passed to {@link executionPolicy} as
+   * `hostContext`.
+   */
+  hostContext?: unknown;
   limits: {
     maxIterations: number;
     maxParseRecovery: number;

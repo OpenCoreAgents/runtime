@@ -5,9 +5,22 @@ import type { VectorAdapter } from "../adapters/vector/VectorAdapter.js";
 import type { RunStore } from "../adapters/run/RunStore.js";
 import type { MessageBus } from "../bus/MessageBus.js";
 import type { SendMessageTargetPolicy } from "../tools/sendMessagePolicy.js";
+import type { ExecutionPolicy } from "../engine/executionPolicy.js";
 import type { EngineHooks } from "../engine/types.js";
 
 export interface EngineConfig {
+  /**
+   * Optional runtime-level execution policy. Runs after tool input preparation
+   * and validation, but before `tool.execute`. Returning `deny` aborts the
+   * action and appends a safe failure observation.
+   */
+  executionPolicy?: ExecutionPolicy;
+  /**
+   * Arbitrary host-resolved context passed to {@link executionPolicy} as
+   * `hostContext`. Prefer JSON-serializable values so workers/queues can
+   * reproduce the same policy inputs.
+   */
+  hostContext?: unknown;
   /**
    * Default LLM when `agent.llm.provider` has no entry in `llmAdaptersByProvider`.
    * Omit only if `llmAdaptersByProvider` covers every provider you use.

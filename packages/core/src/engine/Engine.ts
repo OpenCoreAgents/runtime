@@ -2,16 +2,19 @@ import type { EngineDeps, EngineHookRunContext, EngineHooks } from "./types.js";
 import type { Run } from "../protocol/types.js";
 import type { Step } from "../protocol/types.js";
 import type { ToolContext } from "../adapters/tool/ToolAdapter.js";
+import type { PreparedToolAction } from "../tools/ToolRunner.js";
 import { normalizeLlmStepContent } from "./normalizeLlmStepContent.js";
 import { parseStep } from "./parseStep.js";
 import { observationForToolFailure } from "./toolFailureObservation.js";
 import {
+  ExecutionPolicyError,
   MaxIterationsError,
   RunCancelledError,
   RunTimeoutError,
   StepSchemaError,
 } from "../errors/index.js";
 import { createRandomUuid } from "#runtime-environment";
+import type { ExecutionPolicyInput } from "./executionPolicy.js";
 
 function isoNow(): string {
   return new Date().toISOString();
@@ -89,6 +92,27 @@ function hookRunCtx(deps: EngineDeps, run: Run): EngineHookRunContext {
     projectId: run.projectId ?? deps.session.projectId,
     sessionId: run.sessionId ?? deps.session.id,
   };
+}
+
+async function evaluateExecutionPolicy(
+  deps: EngineDeps,
+  run: Run,
+  prepared: Extract<PreparedToolAction, { ok: true }>,
+): Promise<void> {
+  if (!deps.executionPolicy) return;
+  const input: ExecutionPolicyInput = {
+    agent: deps.agent,
+    session: deps.session,
+    run,
+    tool: prepared.tool,
+    preparedInput: prepared.preparedInput,
+    securityContext: deps.securityContext,
+    hostContext: deps.hostContext,
+  };
+  const decision = await deps.executionPolicy(input);
+  if (decision.decision === "deny") {
+    throw new ExecutionPolicyError(decision.reason, decision.details);
+  }
 }
 
 /**
@@ -262,6 +286,9 @@ export async function executeRun(run: Run, deps: EngineDeps): Promise<Run> {
         let obs: unknown;
         try {
           const prepared = await deps.toolRunner.prepare(step.tool, step.input);
+          if (prepared.ok) {
+            await evaluateExecutionPolicy(deps, run, prepared);
+          }
           obs = await deps.toolRunner.executePrepared(prepared, toolContext(deps, run));
         } catch (e) {
           obs = observationForToolFailure(e);
