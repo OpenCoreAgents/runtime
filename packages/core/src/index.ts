@@ -6,7 +6,7 @@ export { Session } from "./define/Session.js";
 export { RunBuilder } from "./define/RunBuilder.js";
 export { ContextBuilder } from "./context/ContextBuilder.js";
 export { BASE_PROMPT, BASE_PROMPT_WITH_SHORT_ANSWERS } from "./prompts/basePrompts.js";
-export { ToolRunner, type ToolRunnerOptions } from "./tools/ToolRunner.js";
+export { ToolRunner, type ToolRunnerOptions, type PreparedToolAction } from "./tools/ToolRunner.js";
 export {
   CORE_SYSTEM_TOOL_IDS,
   type CoreSystemToolId,
@@ -50,6 +50,10 @@ export {
   ToolNotAllowedError,
   ToolExecutionError,
   ToolValidationError,
+  ToolPreparationError,
+  ExecutionPolicyError,
+  ExecutionWaitError,
+  ExecutionNotAllowedError,
   ToolTimeoutError,
   MaxIterationsError,
   RunTimeoutError,
@@ -64,6 +68,47 @@ export {
 
 export { AgentRuntime } from "./runtime/AgentRuntime.js";
 export type { EngineConfig, ResolvedEngineConfig } from "./runtime/engineConfig.js";
+export type {
+  ExecutionPolicy,
+  ExecutionPolicyInput,
+  ExecutionPolicyDecision,
+} from "./engine/executionPolicy.js";
+export type {
+  ToolVisibilityPolicy,
+  ToolVisibilityPolicyInput,
+  ToolVisibilityPolicyResult,
+} from "./engine/toolVisibilityPolicy.js";
+export type {
+  ToolActionEvent,
+  ToolActionEventContext,
+  ToolActionEventSink,
+  ToolActionEventType,
+} from "./engine/toolActionEvents.js";
+export { PUBLIC_RUN_EVENT_SCHEMA_VERSION } from "./engine/publicEvents.js";
+export type {
+  PublicRunEvent,
+  PublicRunEventBase,
+  PublicRunEventPayload,
+  PublicRunEventType,
+  RunEventSink,
+  Redactor,
+  RedactionContext,
+  RedactionKind,
+} from "./engine/publicEvents.js";
+export {
+  approvePendingAction,
+  rejectPendingAction,
+  cancelPendingAction,
+} from "./engine/approvalApi.js";
+export type {
+  ApprovePendingActionInput,
+  ApprovePendingActionResult,
+  RejectPendingActionInput,
+  RejectPendingActionResult,
+  CancelPendingActionInput,
+  CancelPendingActionResult,
+  PendingActionRef,
+} from "./engine/approvalApi.js";
 export type { RagFileSourceEntry } from "./ragCatalogTypes.js";
 export { validateRagFileCatalog } from "./ragCatalogTypes.js";
 export { engineRuntimeDefaults } from "./runtime/engineConfig.js";

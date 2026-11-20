@@ -1,0 +1,55 @@
+{
+  "name": "@opencoreagents/browser",
+  "version": "0.1.1",
+  "private": false,
+  "license": "Apache-2.0",
+  "type": "module",
+  "description": "Browser persistence and optional local-model adapters for OpenCore Agents.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./webllm": {
+      "types": "./dist/webllm.d.ts",
+      "import": "./dist/webllm.js"
+    },
+    "./webllm-worker": {
+      "types": "./dist/webllm-worker.d.ts",
+      "import": "./dist/webllm-worker.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run --config vitest.config.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint": "eslint src/",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@opencoreagents/core": "workspace:*",
+    "@opencoreagents/dynamic-definitions": "workspace:*"
+  },
+  "peerDependencies": {
+    "@mlc-ai/web-llm": "^0.2.84"
+  },
+  "peerDependenciesMeta": {
+    "@mlc-ai/web-llm": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@mlc-ai/web-llm": "^0.2.84",
+    "fake-indexeddb": "^6.2.4",
+    "typescript": "^5.7.3",
+    "vitest": "^3.2.4"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  }
+}

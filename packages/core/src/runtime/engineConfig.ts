@@ -5,9 +5,52 @@ import type { VectorAdapter } from "../adapters/vector/VectorAdapter.js";
 import type { RunStore } from "../adapters/run/RunStore.js";
 import type { MessageBus } from "../bus/MessageBus.js";
 import type { SendMessageTargetPolicy } from "../tools/sendMessagePolicy.js";
+import type { ExecutionPolicy } from "../engine/executionPolicy.js";
+import type { ToolVisibilityPolicy } from "../engine/toolVisibilityPolicy.js";
+import type { ToolActionEventSink } from "../engine/toolActionEvents.js";
+import type { Redactor, RunEventSink } from "../engine/publicEvents.js";
 import type { EngineHooks } from "../engine/types.js";
 
 export interface EngineConfig {
+  /**
+   * Optional runtime-level execution policy. Runs after tool input preparation
+   * and validation, but before `tool.execute`. Returning `deny` aborts the
+   * action and appends a safe failure observation.
+   */
+  executionPolicy?: ExecutionPolicy;
+  /**
+   * Optional host-provided filter for the prompt tool catalog. Runs after the
+   * effective tool allowlist is computed and can only hide tools from the LLM.
+   */
+  visibilityPolicy?: ToolVisibilityPolicy;
+  /**
+   * Optional sink for minimal tool-action lifecycle events
+   * (`tool_proposed` / `tool_denied` / `tool_started` / `tool_completed` / `tool_failed`).
+   * Independent of low-level {@link EngineHooks}.
+   */
+  toolEventSink?: ToolActionEventSink;
+  /**
+   * When true, `tool_proposed` / `tool_completed` events include the prepared
+   * tool input / output. Off by default — raw input and output stay out of the
+   * public event stream unless the host explicitly opts in.
+   */
+  toolEventsIncludeInputOutput?: boolean;
+  /**
+   * Public run-event sinks (versioned, redactable envelope). See
+   * `engine/publicEvents.ts`. Sink failures never fail the run unless
+   * {@link failOnEventSinkError} is set.
+   */
+  eventSinks?: RunEventSink[];
+  /** Host redaction hook applied to public events before delivery. */
+  redactor?: Redactor;
+  /** When true, a throwing event sink propagates its error (default false). */
+  failOnEventSinkError?: boolean;
+  /**
+   * Arbitrary host-resolved context passed to {@link executionPolicy} as
+   * `hostContext`. Prefer JSON-serializable values so workers/queues can
+   * reproduce the same policy inputs.
+   */
+  hostContext?: unknown;
   /**
    * Default LLM when `agent.llm.provider` has no entry in `llmAdaptersByProvider`.
    * Omit only if `llmAdaptersByProvider` covers every provider you use.
@@ -62,6 +105,17 @@ export interface EngineConfig {
    * (hydration reads **`store.methods`** when the value is a facade).
    */
   dynamicDefinitionsStore?: unknown;
+  /**
+   * Optional environment-specific hydration implementation for `dynamicDefinitionsStore`.
+   * Node.js uses the built-in lazy loader when omitted. Browser integrations should inject
+   * a hydrator so core remains independent of browser persistence packages.
+   */
+  dynamicDefinitionsHydrator?: (
+    store: unknown,
+    projectId: string,
+    agentId: string,
+    options?: { secrets?: Record<string, string> },
+  ) => Promise<void>;
   /**
    * **Optional.** Used only when `dynamicDefinitionsStore` is set: supplies **`{{secret:*}}`** values
    * for HTTP tools during hydration. Omit or return **`{}`** if you do not use templated secrets.

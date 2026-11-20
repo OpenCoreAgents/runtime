@@ -26,6 +26,37 @@ export class ToolValidationError extends EngineError {
     this.details = details;
   }
 }
+export class ToolPreparationError extends EngineError {
+  readonly code = "TOOL_PREPARATION_ERROR";
+  readonly details?: string;
+  constructor(message?: string, details?: string) {
+    super(message);
+    this.details = details;
+  }
+}
+export class ExecutionPolicyError extends EngineError {
+  readonly code = "EXECUTION_POLICY_DENIED";
+  readonly details?: unknown;
+  constructor(message?: string, details?: unknown) {
+    super(message ?? "Execution denied by policy");
+    this.details = details;
+  }
+}
+export class ExecutionWaitError extends EngineError {
+  readonly code = "EXECUTION_WAIT";
+  readonly reason?: string;
+  readonly details?: unknown;
+  readonly ttlMs?: number;
+  constructor(message?: string, reason?: string, details?: unknown, ttlMs?: number) {
+    super(message ?? "Execution paused for approval");
+    this.reason = reason;
+    this.details = details;
+    this.ttlMs = ttlMs;
+  }
+}
+export class ExecutionNotAllowedError extends EngineError {
+  readonly code = "EXECUTION_NOT_ALLOWED";
+}
 export class ToolTimeoutError extends EngineError {
   readonly code = "TOOL_TIMEOUT";
 }

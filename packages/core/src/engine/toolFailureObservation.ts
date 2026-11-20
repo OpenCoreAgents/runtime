@@ -2,8 +2,10 @@ import {
   EngineError,
   ToolExecutionError,
   ToolNotAllowedError,
+  ToolPreparationError,
   ToolTimeoutError,
   ToolValidationError,
+  ExecutionPolicyError,
 } from "../errors/index.js";
 
 /**
@@ -15,7 +17,12 @@ export function observationForToolFailure(error: unknown): {
   error: string;
   code: string;
 } {
-  if (error instanceof ToolNotAllowedError || error instanceof ToolValidationError) {
+  if (
+    error instanceof ToolNotAllowedError ||
+    error instanceof ToolValidationError ||
+    error instanceof ToolPreparationError ||
+    error instanceof ExecutionPolicyError
+  ) {
     return { success: false, error: error.message, code: error.code };
   }
   if (error instanceof ToolTimeoutError) {

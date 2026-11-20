@@ -13,6 +13,7 @@ import type { RagFileSourceEntry } from "../ragCatalogTypes.js";
 import { validateRagFileCatalog } from "../ragCatalogTypes.js";
 import { resolveToolRegistry } from "../define/registry.js";
 import type { Run } from "../protocol/types.js";
+import { hasRuntimeEnv, readRuntimeEnv } from "#runtime-environment";
 
 function ragCatalogToolsLookRegistered(): boolean {
   return resolveToolRegistry("").has("system_list_rag_sources");
@@ -20,9 +21,9 @@ function ragCatalogToolsLookRegistered(): boolean {
 
 function shouldEmitRagCatalogDevWarning(): boolean {
   return (
-    typeof process !== "undefined" &&
-    process.env.NODE_ENV !== "test" &&
-    process.env.VITEST !== "true"
+    hasRuntimeEnv() &&
+    readRuntimeEnv("NODE_ENV") !== "test" &&
+    readRuntimeEnv("VITEST") !== "true"
   );
 }
 

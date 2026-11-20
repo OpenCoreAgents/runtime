@@ -29,6 +29,12 @@ export interface ToolContext {
   sendMessageTargetPolicy?: SendMessageTargetPolicy;
   /** Per-project RAG catalog when registered for `session.projectId` (`@opencoreagents/rag` / `AgentRuntime`). */
   ragFileCatalog?: ReadonlyArray<RagFileSourceEntry>;
+  /**
+   * Stable key (`runId_actionId`) present when the execution came from an
+   * approved pending action. Tools with side effects should use it to make
+   * retries/duplicate approvals idempotent downstream.
+   */
+  idempotencyKey?: string;
 }
 
 export type ToolValidationResult =
@@ -38,11 +44,21 @@ export type ToolValidationResult =
       reason?: string;
     };
 
+export type ToolInputPreparation =
+  | { ok: true; value: unknown }
+  | { ok: false; reason: string };
+
 export interface ToolAdapter {
   name: string;
   description?: string;
+  /**
+   * Canonicalizes raw model input before validation, policy, approval, hashing, events,
+   * and execution. When present, the returned `value` is the only input passed to
+   * {@link execute}. Tools without `prepareInput` keep using {@link validate}.
+   */
+  prepareInput?(rawInput: unknown): ToolInputPreparation | Promise<ToolInputPreparation>;
+  validate?(rawInput: unknown): ToolValidationResult;
   execute(input: unknown, context: ToolContext): Promise<unknown>;
-  validate?(input: unknown): ToolValidationResult;
 }
 
 export interface ObservationContent {

@@ -4,6 +4,9 @@ export type {
   Run,
   ProtocolMessage,
   RunEnvelope,
+  PendingState,
+  PendingToolApproval,
+  PreparedActionMeta,
 } from "./protocol/types.js";
 
 export type {
@@ -28,6 +31,7 @@ export type {
 export type {
   ToolAdapter,
   ToolContext,
+  ToolInputPreparation,
   ObservationContent,
 } from "./adapters/tool/ToolAdapter.js";
 
@@ -62,5 +66,24 @@ export type {
   LLMResponseMeta,
   LLMParseOutcome,
 } from "./engine/types.js";
+
+export type {
+  ExecutionPolicy,
+  ExecutionPolicyInput,
+  ExecutionPolicyDecision,
+} from "./engine/executionPolicy.js";
+
+export type {
+  ToolVisibilityPolicy,
+  ToolVisibilityPolicyInput,
+  ToolVisibilityPolicyResult,
+} from "./engine/toolVisibilityPolicy.js";
+
+export type {
+  ToolActionEvent,
+  ToolActionEventContext,
+  ToolActionEventSink,
+  ToolActionEventType,
+} from "./engine/toolActionEvents.js";
 
 export type { UsageContext, UsageSnapshot } from "./engine/watchUsage.js";
