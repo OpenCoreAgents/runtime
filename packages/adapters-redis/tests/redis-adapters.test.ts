@@ -63,6 +63,63 @@ describe("RedisRunStore", () => {
     );
   });
 
+  it("claims an approval once across clients and preserves the prepared input", async () => {
+    const store = new RedisRunStore(redis);
+    const otherStore = new RedisRunStore(new Redis());
+    const now = new Date().toISOString();
+    const run: Run = {
+      runId: "r-approval",
+      agentId: "a1",
+      sessionId: "s1",
+      projectId: "p1",
+      status: "waiting",
+      history: [],
+      state: {
+        iteration: 0,
+        parseAttempts: 0,
+        userInput: "",
+        pending: {
+          kind: "tool_approval",
+          actionId: "action-1",
+          toolId: "tool-1",
+          preparedInput: { items: [], metadata: {} },
+          inputHash: "hash",
+          preparedBy: {
+            toolName: "tool-1",
+            agentId: "a1",
+            scopesAtProposal: "",
+            preparedAt: now,
+            iterationAtPreparation: 0,
+          },
+          createdAt: now,
+          expiresAt: now,
+          attempts: 0,
+        },
+      },
+    };
+    const claim = { runId: run.runId, actionId: "action-1", expectedStatus: "waiting" as const };
+    expect(await store.claimPendingAction(claim)).toEqual({ ok: false, reason: "not_found" });
+    await store.save(run);
+    expect(await store.claimPendingAction({ ...claim, actionId: "other" })).toEqual({
+      ok: false,
+      reason: "action_mismatch",
+    });
+
+    const results = await Promise.all([
+      store.claimPendingAction(claim),
+      otherStore.claimPendingAction(claim),
+    ]);
+    expect(results.filter((result) => result.ok)).toHaveLength(1);
+    expect(results).toContainEqual({ ok: false, reason: "not_waiting" });
+    const saved = await store.load(run.runId);
+    expect(saved).toMatchObject({
+      status: "running",
+      history: [],
+      state: { pending: { claimed: true, attempts: 1, preparedInput: { items: [], metadata: {} } } },
+    });
+    expect(results).toContainEqual({ ok: true, run: saved, idempotencyKey: "r-approval_action-1" });
+  });
+
   it("paginates session-scoped runs in recency order", async () => {
     const rs = new RedisRunStore(redis);
     await rs.save({

@@ -337,6 +337,11 @@ export class RunBuilder implements PromiseLike<Run> {
           `Run ${this.init.runId} belongs to a different tenant`,
         );
       }
+      if (loaded.state.pending?.kind === "tool_approval") {
+        throw new RunInvalidStateError(
+          `Run ${this.init.runId} requires a pending tool approval decision`,
+        );
+      }
       run = loaded;
       run.status = "running";
       run.state.pending = null;
@@ -387,6 +392,7 @@ export class RunBuilder implements PromiseLike<Run> {
     const isFreshRun = typeof this.init === "string" || isNewRunWithOptionalId(this.init);
     while (
       result.status === "waiting" &&
+      result.state.pending?.kind !== "tool_approval" &&
       isFreshRun &&
       this.waitContinuation
     ) {

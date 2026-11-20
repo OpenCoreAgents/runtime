@@ -108,6 +108,16 @@ beforeEach(() => {
 });
 
 describe("approvalApi", () => {
+  it("keeps tool approval pending when a caller attempts a normal resume", async () => {
+    const { rt, store, session, run, execute } = await setupWaiting();
+    const agent = await Agent.load(run.agentId, rt, { session });
+
+    await expect(agent.resume(run.runId, { type: "text", content: "continue" }))
+      .rejects.toThrow("requires a pending tool approval decision");
+    expect(await store.load(run.runId)).toEqual(run);
+    expect(execute).not.toHaveBeenCalled();
+  });
+
   it("approve happy path: executes exact prepared input once, passes idempotencyKey, continues loop", async () => {
     const { rt, store, session, run, pending, execute } = await setupWaiting();
 
