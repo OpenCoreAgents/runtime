@@ -20,13 +20,11 @@ describe("browser compatibility", () => {
     temporaryDirectories.push(outDir);
 
     await build({
+      config: path.join(packageRoot, "tsup.browser.config.ts"),
       entry: [path.join(packageRoot, "src/index.ts")],
-      format: ["esm"],
-      platform: "browser",
-      target: "es2022",
       outDir,
-      clean: false,
-      dts: false,
+      // tsup otherwise chooses .js or .mjs from the invoking package's type.
+      outExtension: () => ({ js: ".js" }),
       minify: false,
       silent: true,
     });
