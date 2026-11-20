@@ -51,6 +51,7 @@ export {
   ToolExecutionError,
   ToolValidationError,
   ToolPreparationError,
+  ExecutionPolicyError,
   ToolTimeoutError,
   MaxIterationsError,
   RunTimeoutError,
@@ -65,6 +66,11 @@ export {
 
 export { AgentRuntime } from "./runtime/AgentRuntime.js";
 export type { EngineConfig, ResolvedEngineConfig } from "./runtime/engineConfig.js";
+export type {
+  ExecutionPolicy,
+  ExecutionPolicyInput,
+  ExecutionPolicyDecision,
+} from "./engine/executionPolicy.js";
 export type { RagFileSourceEntry } from "./ragCatalogTypes.js";
 export { validateRagFileCatalog } from "./ragCatalogTypes.js";
 export { engineRuntimeDefaults } from "./runtime/engineConfig.js";

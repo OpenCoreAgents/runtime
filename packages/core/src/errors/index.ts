@@ -34,6 +34,14 @@ export class ToolPreparationError extends EngineError {
     this.details = details;
   }
 }
+export class ExecutionPolicyError extends EngineError {
+  readonly code = "EXECUTION_POLICY_DENIED";
+  readonly details?: unknown;
+  constructor(message?: string, details?: unknown) {
+    super(message ?? "Execution denied by policy");
+    this.details = details;
+  }
+}
 export class ToolTimeoutError extends EngineError {
   readonly code = "TOOL_TIMEOUT";
 }

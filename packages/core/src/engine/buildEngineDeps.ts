@@ -99,6 +99,8 @@ export function buildEngineDeps(
     toolRegistry,
     contextBuilder: cb,
     securityContext: securityContextForAgent(session, agent),
+    executionPolicy: cfg.executionPolicy,
+    hostContext: cfg.hostContext,
     limits: {
       maxIterations: cfg.maxIterations ?? 25,
       maxParseRecovery: cfg.maxParseRecovery ?? 1,

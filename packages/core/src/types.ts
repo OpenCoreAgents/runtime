@@ -64,4 +64,10 @@ export type {
   LLMParseOutcome,
 } from "./engine/types.js";
 
+export type {
+  ExecutionPolicy,
+  ExecutionPolicyInput,
+  ExecutionPolicyDecision,
+} from "./engine/executionPolicy.js";
+
 export type { UsageContext, UsageSnapshot } from "./engine/watchUsage.js";
