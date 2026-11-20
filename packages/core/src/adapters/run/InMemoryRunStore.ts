@@ -78,4 +78,57 @@ export class InMemoryRunStore implements RunStore {
     const nextCursor = page.length > limit ? String(offset + limit) : undefined;
     return { runs, nextCursor };
   }
+
+  /**
+   * Atomically claim a pending tool-action approval. Two concurrent calls
+   * for the same runId+actionId will have one succeed and one fail with
+   * `already_claimed`.
+   */
+  async claimPendingAction(input: {
+    runId: string;
+    actionId: string;
+    expectedStatus: "waiting";
+  }): Promise<
+    | { ok: true; run: Run; idempotencyKey: string }
+    | { ok: false; reason: "not_found" | "not_waiting" | "action_mismatch" | "already_claimed" }
+  > {
+    const cur = this.runs.get(input.runId);
+    if (!cur) {
+      return { ok: false, reason: "not_found" };
+    }
+    if (cur.status !== "waiting") {
+      return { ok: false, reason: "not_waiting" };
+    }
+    const pending = cur.state.pending;
+    if (
+      !pending ||
+      pending.kind !== "tool_approval" ||
+      pending.actionId !== input.actionId
+    ) {
+      return { ok: false, reason: "action_mismatch" };
+    }
+    if (pending.claimed) {
+      return { ok: false, reason: "already_claimed" };
+    }
+
+    const idempotencyKey = `${input.runId}_${input.actionId}`;
+
+    // Atomic update: mark as claimed
+    const claimed: Run = structuredClone(cur);
+    claimed.status = "running";
+    if (claimed.state.pending && claimed.state.pending.kind === "tool_approval") {
+      claimed.state.pending.claimed = true;
+      claimed.state.pending.claimedAt = new Date().toISOString();
+      claimed.state.pending.claimant = "in-memory-store";
+      claimed.state.pending.attempts = (pending.attempts ?? 0) + 1;
+    }
+    // Save in a single set operation (synchronous in-memory)
+    this.runs.set(input.runId, claimed);
+
+    return {
+      ok: true,
+      run: structuredClone(claimed),
+      idempotencyKey,
+    };
+  }
 }

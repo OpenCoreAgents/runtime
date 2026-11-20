@@ -12,6 +12,9 @@ import type { MessageBus } from "../bus/MessageBus.js";
 import type { SendMessageTargetPolicy } from "../tools/sendMessagePolicy.js";
 import type { RagFileSourceEntry } from "../ragCatalogTypes.js";
 import type { ExecutionPolicy } from "./executionPolicy.js";
+import type { ToolVisibilityPolicy } from "./toolVisibilityPolicy.js";
+import type { ToolActionEventSink } from "./toolActionEvents.js";
+import type { Redactor, RunEventSink } from "./publicEvents.js";
 
 export type { ContextBuilderInput, BuiltContext } from "../context/types.js";
 
@@ -33,6 +36,8 @@ export interface EngineDeps {
   ragFileCatalog?: ReadonlyArray<RagFileSourceEntry>;
   toolRunner: import("../tools/ToolRunner.js").ToolRunner;
   toolRegistry: Map<string, ToolAdapter>;
+  /** Effective tool allowlist: agent + skills ∩ runtime `allowedToolIds`. */
+  effectiveToolAllowlist: ReadonlySet<string>;
   contextBuilder: {
     build(input: ContextBuilderInput): Promise<BuiltContext>;
   };
@@ -42,6 +47,29 @@ export interface EngineDeps {
    * and validation, but before `tool.execute`.
    */
   executionPolicy?: ExecutionPolicy;
+  /**
+   * Optional host-provided filter for the prompt tool catalog. Runs after the
+   * effective tool allowlist is computed and can only hide tools from the LLM.
+   */
+  visibilityPolicy?: ToolVisibilityPolicy;
+  /**
+   * Optional sink for minimal tool-action lifecycle events
+   * (`tool_proposed` / `tool_denied` / `tool_started` / `tool_completed` / `tool_failed`).
+   * Independent of low-level {@link EngineHooks}.
+   */
+  toolEventSink?: ToolActionEventSink;
+  /** When true, `tool_proposed` / `tool_completed` events include prepared input / tool output. */
+  toolEventsIncludeInputOutput?: boolean;
+  /**
+   * Public run-event sinks (versioned, JSON-serializable envelope — see
+   * `publicEvents.ts`). Independent of {@link EngineHooks} and of
+   * {@link toolEventSink}.
+   */
+  eventSinks?: RunEventSink[];
+  /** Host redaction hook applied to public events before delivery. */
+  redactor?: Redactor;
+  /** Default false — sink failures never fail the run. */
+  failOnEventSinkError?: boolean;
   /**
    * Arbitrary host-resolved context passed to {@link executionPolicy} as
    * `hostContext`.
