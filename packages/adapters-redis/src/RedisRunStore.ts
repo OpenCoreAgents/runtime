@@ -7,6 +7,16 @@ import type {
 } from "@opencoreagents/core";
 import type Redis from "ioredis";
 
+type ClaimPendingAction = NonNullable<RunStore["claimPendingAction"]>;
+
+// Compare the original JSON without a Lua decode/encode round trip. Prepared
+// inputs must preserve their JSON shape, including empty arrays and objects.
+const claimRunScript = `
+  if redis.call("GET", KEYS[1]) ~= ARGV[1] then return 0 end
+  redis.call("SET", KEYS[1], ARGV[2])
+  return 1
+`;
+
 function isolationScope(projectId: string, tenantId?: string): string {
   return tenantId && tenantId.trim()
     ? `tenant:${tenantId.trim()}:project:${projectId}`
@@ -96,6 +106,36 @@ export class RedisRunStore implements RunStore {
     const raw = await this.redis.get(`run:data:${runId}`);
     if (raw == null || raw === "") return null;
     return JSON.parse(raw) as Run;
+  }
+
+  async claimPendingAction(
+    input: Parameters<ClaimPendingAction>[0],
+  ): ReturnType<ClaimPendingAction> {
+    const key = `run:data:${input.runId}`;
+    for (;;) {
+      const raw = await this.redis.get(key);
+      if (!raw) return { ok: false, reason: "not_found" };
+
+      const run = JSON.parse(raw) as Run;
+      if (run.status !== input.expectedStatus) return { ok: false, reason: "not_waiting" };
+
+      const pending = run.state.pending;
+      if (pending?.kind !== "tool_approval" || pending.actionId !== input.actionId) {
+        return { ok: false, reason: "action_mismatch" };
+      }
+      if (pending.claimed) return { ok: false, reason: "already_claimed" };
+
+      run.status = "running";
+      pending.claimed = true;
+      pending.claimedAt = new Date().toISOString();
+      pending.claimant = "redis-store";
+      pending.attempts = (pending.attempts ?? 0) + 1;
+      // The claim changes neither the run's scope nor its history/index entries.
+      const claimed = await this.redis.eval(claimRunScript, 1, key, raw, JSON.stringify(run));
+      if (claimed === 1) {
+        return { ok: true, run, idempotencyKey: `${input.runId}_${input.actionId}` };
+      }
+    }
   }
 
   async delete(runId: string): Promise<void> {
