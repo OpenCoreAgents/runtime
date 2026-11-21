@@ -11,6 +11,7 @@ Practical docs for onboarding and first implementations.
 - [Root README quickstart](../../README.md#easy-getting-started-runnable-stack): Docker stack with Redis, API, and worker.
 - [Examples index](../../examples/README.md): runnable reference projects.
 - [RAG guide](./rag-guide.md): practical setup for catalog, ingest, vector search, and agent wiring.
+- [Tool approvals](./tool-approvals.md): filter tool visibility, evaluate prepared calls, and resolve pending approvals from your application.
 - [Bot guide with Conversation Gateway](./bots-conversation-gateway.md): inbound normalization, run/resume orchestration, outbound dispatch, and production checklist.
 
 ## Next steps

@@ -5,8 +5,6 @@ Audience: users, contributors
 
 This guide explains what the agents framework is, how it behaves architecturally, and how to set up an agent workflow end to end. Topics such as adapters, multi-tenancy, RAG, cluster deployment, and consumer APIs are only summarized here — see [§15 Further reading](#15-further-reading).
 
-> **npm package name TBD.** The public package name and scope are not decided yet. Install commands and `import` paths use the placeholder **`@your-scope/agents`** — replace it with the real package name once it is published.
-
 ---
 
 ## 1. What this framework is
@@ -53,7 +51,7 @@ Typical hooks include `onThought`, `onAction`, `onObservation`, `onWait`, `onRes
 ### 2.4 Wait and resume
 
 - `wait` steps **pause** the workflow; state can be **persisted**.
-- Resume with `runtime.resume(runId, input)` for multi-turn or async external events.
+- Resume a waiting run with `agent.resume(runId, input)`. Use `agent.continueRun(runId, message)` for a new turn on a completed or failed run.
 
 ### 2.5 Max iterations vs LLM calls
 
@@ -121,14 +119,12 @@ Tools and skills **must** exist before the agent that references them. **`Sessio
 
 ## 5. Install dependencies
 
-```bash
-npm install @your-scope/agents
-```
+To run from a checkout, follow the [minimal example](../examples/minimal-run/README.md). It builds the workspace package and uses a scripted model that requires no API key.
 
-or
+For the OpenAI-backed snippets below, use the core and OpenAI adapter workspace packages or install their published packages from [GitHub Packages](../README.md#github-packages). Configure your package manager for the `@opencoreagents` registry before installing.
 
 ```bash
-yarn add @your-scope/agents
+pnpm add @opencoreagents/core @opencoreagents/adapters-openai
 ```
 
 ---
@@ -138,11 +134,11 @@ yarn add @your-scope/agents
 The runtime orchestrates execution.
 
 ```ts
-import { AgentRuntime } from "@your-scope/agents";
-import { OpenAIAdapter, InMemoryMemoryAdapter, InMemoryRunStore } from "@your-scope/agents";
+import { AgentRuntime, InMemoryMemoryAdapter, InMemoryRunStore } from "@opencoreagents/core";
+import { OpenAILLMAdapter } from "@opencoreagents/adapters-openai";
 
 const runtime = new AgentRuntime({
-  llmAdapter: new OpenAIAdapter({ apiKey: process.env.OPENAI_API_KEY }),
+  llmAdapter: new OpenAILLMAdapter(process.env.OPENAI_API_KEY!),
   memoryAdapter: new InMemoryMemoryAdapter(),
   runStore: new InMemoryRunStore(),
 });
@@ -155,17 +151,18 @@ const runtime = new AgentRuntime({
 Tools are atomic actions your agent can execute.
 
 ```ts
-import { Tool } from "@your-scope/agents";
+import { Tool } from "@opencoreagents/core";
 
 await Tool.define({
   id: "lookup_ticket",
+  projectId: "demo-project",
   description: "Lookup a ticket by ID",
   inputSchema: {
     type: "object",
     properties: { id: { type: "string" } },
     required: ["id"]
   },
-  execute: async ({ id }) => {
+  execute: async ({ id }: { id: string }) => {
     return { ticket: { id, status: "open" } };
   }
 });
@@ -178,10 +175,11 @@ await Tool.define({
 Skills group tools (and may add reusable logic).
 
 ```ts
-import { Skill } from "@your-scope/agents";
+import { Skill } from "@opencoreagents/core";
 
 await Skill.define({
   id: "ticketSupport",
+  projectId: "demo-project",
   description: "Support workflow for tickets",
   tools: ["lookup_ticket"]
 });
@@ -194,7 +192,7 @@ await Skill.define({
 Agents combine skills, tools, and a system prompt.
 
 ```ts
-import { Agent } from "@your-scope/agents";
+import { Agent } from "@opencoreagents/core";
 
 await Agent.define({
   id: "support-agent",
@@ -216,7 +214,7 @@ await Agent.define({
 Each **`Agent.load`** is scoped with a **`Session`**: a stable **`id`** for the conversation (e.g. end-user or thread) and a **`projectId`** that must match the agent definition so memory and registry lookups stay in the right project. Sessions can also carry optional **`tenantId`** (a sub-scope inside the project for runs), optional **`expiresAtMs`** deadline, and can be renewed in code with **`session.withExpiresAt(...)`** or **`session.extendBy(ttlMs)`**.
 
 ```ts
-import { Session } from "@your-scope/agents";
+import { Session } from "@opencoreagents/core";
 
 const session = new Session({
   id: "user-thread-1",
@@ -237,7 +235,9 @@ console.log(resultMsg?.content);
 If the agent emits a `wait` step, execution pauses until you provide input (or an adapter delivers it).
 
 ```ts
-await runtime.resume(runId, { userInput: "email@example.com" });
+if (run.status === "waiting") {
+  await agent.resume(run.runId, { type: "text", content: "email@example.com" });
+}
 ```
 
 ---
@@ -245,11 +245,12 @@ await runtime.resume(runId, { userInput: "email@example.com" });
 ## 12. Observability hooks
 
 ```ts
-agent.onThought((thought) => console.log("Thought:", thought.text));
-agent.onAction((action) => console.log("Action:", action.tool));
-agent.onObservation((obs) => console.log("Observation:", obs.value));
-agent.onWait((wait) => console.log("Waiting:", wait.reason));
-agent.onResult((result) => console.log("Result:", result.output));
+const observedRun = await agent
+  .run("Lookup ticket #123")
+  .onAction((action) => console.log("Action:", action))
+  .onObservation((observation) => console.log("Observation:", observation));
+
+console.log("Status:", observedRun.status);
 ```
 
 ---

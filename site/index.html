@@ -12,10 +12,17 @@
   <header class="shell">
     <a class="brand" href="./">OpenCore Agents</a>
     <nav aria-label="Primary">
-      <a href="#why-opencore">Why OpenCore</a>
-      <a href="#dynamic-agents">Dynamic agents</a>
       <a href="#quickstart">Quickstart</a>
-      <a href="#docs">Docs</a>
+      <a href="#sdk">SDK</a>
+      <a href="#workers">Workers</a>
+      <a href="#multi-tenancy">Multi-tenancy</a>
+      <a href="#adapters">Adapters</a>
+      <a href="#memory-secrets">Memory &amp; secrets</a>
+      <a href="#rag">RAG</a>
+      <a href="#http-tools">HTTP tools</a>
+      <a href="#mcp">MCP</a>
+      <a href="#dynamic-agents">Dynamic agents</a>
+      <a href="#docs">Guides</a>
       <a href="https://github.com/OpenCoreAgents/runtime">GitHub</a>
     </nav>
   </header>
@@ -40,6 +47,26 @@
         </ol>
       </div>
     </section>
+    <section id="quickstart">
+      <h2>Try OpenCore Agents</h2>
+      <div class="cards">
+        <article>
+          <h3>Run the SDK demo without an API key</h3>
+          <p>Clone the repo and run the minimal example with Node.js and pnpm. A scripted model makes the run reproducible.</p>
+          <pre tabindex="0"><code>git clone https://github.com/OpenCoreAgents/runtime.git
+cd runtime
+pnpm install
+pnpm turbo run build --filter=@opencoreagents/core
+pnpm --filter @opencoreagents/example-minimal-run start</code></pre>
+          <a href="https://github.com/OpenCoreAgents/runtime/blob/main/examples/minimal-run/README.md">Read the minimal example</a>
+        </article>
+        <article id="server-stack">
+          <h3>Run the REST API and worker stack</h3>
+          <p>Use Docker Compose to start Express, Redis, and a BullMQ worker. Configure a model provider before startup, then open <code>/docs</code> for OpenAPI or <code>/ui</code> for the playground on port 3010.</p>
+          <a href="https://github.com/OpenCoreAgents/runtime/blob/main/apps/runtime/docs/docker.md">Follow the Docker setup</a>
+        </article>
+      </div>
+    </section>
     <section id="why-opencore">
       <h2>Why OpenCore Agents</h2>
       <div class="cards">
@@ -61,8 +88,75 @@
         <article>
           <h3>Wire the runtime into infrastructure you own</h3>
           <p>Choose how the runtime talks to models, stores memory and run state, and sends messages. Use the included adapters or implement the same interfaces for your infrastructure.</p>
-          <a href="https://github.com/OpenCoreAgents/runtime/blob/main/docs/reference/core/05-adapters-contracts.md">Read the adapter contracts</a>
+          <a href="#adapters">Build a custom adapter</a>
         </article>
+      </div>
+    </section>
+    <section id="sdk">
+      <h2>Build with the TypeScript SDK</h2>
+      <div class="cards">
+        <article>
+          <h3>Define an agent and start a run</h3>
+          <p>In the minimal example, a scripted model and in-memory adapter make the run reproducible. The session and agent definition share a project ID.</p>
+          <pre tabindex="0"><code>const runtime = new AgentRuntime({
+  llmAdapter: new DeterministicDemoLlm(),
+  memoryAdapter: new InMemoryMemoryAdapter(),
+});
+
+await Agent.define({
+  id: "demo-greeter",
+  projectId: "demo-project",
+  systemPrompt: "You are a helpful assistant.",
+  tools: [],
+  llm: { provider: "openai", model: "gpt-4o-mini" },
+});
+
+const session = new Session({
+  id: "demo-session-1",
+  projectId: "demo-project",
+});
+const agent = await Agent.load("demo-greeter", runtime, { session });
+const run = await agent.run("Say hello.");</code></pre>
+          <a href="https://github.com/OpenCoreAgents/runtime/blob/main/examples/minimal-run/src/main.ts">Open the runnable source</a>
+        </article>
+        <article id="resume">
+          <h3>Pause for input and resume by run ID</h3>
+          <p>In the support example, the agent asks for an email address before opening a ticket. The application resumes the waiting run after it receives the answer.</p>
+          <pre tabindex="0"><code>let run = await agent.run(refundMessage);
+
+if (run.status === "waiting") {
+  const resumeText = await readUserResumeMessageAsEmail(ticketEmailRef);
+  run = await agent.resume(run.runId, {
+    type: "text",
+    content: resumeText,
+  });
+}</code></pre>
+          <p>Configure a shared <code>RunStore</code> to resume from another process. Use <code>agent.continueRun(runId, message)</code> to append a new turn to a completed or failed run.</p>
+          <a href="https://github.com/OpenCoreAgents/runtime/blob/main/examples/rag-contact-support/src/main.ts">Open the support example source</a>
+        </article>
+      </div>
+    </section>
+    <section id="workers" class="split">
+      <div>
+        <h2>Deploy an API and background workers</h2>
+        <ol>
+          <li><strong>Express</strong> accepts <code>POST /agents/:agentId/run</code> and queues the run in BullMQ.</li>
+          <li><strong>BullMQ</strong> delivers the job to a separate worker process.</li>
+          <li><strong>The worker</strong> can load definitions from Redis, execute the run, and persist state in the shared <code>RunStore</code>.</li>
+        </ol>
+        <p>Use <code>GET /jobs/:jobId</code> to check the queue and <code>GET /runs/:runId?sessionId=…</code> to read the run. The runtime can also stream run events when SSE is enabled.</p>
+        <a href="https://github.com/OpenCoreAgents/runtime/blob/main/apps/runtime/docs/chat-runs-and-planner.md">Read the run and event API guide</a>
+      </div>
+      <div class="flow">
+        <h3>Dispatch a worker job</h3>
+        <pre tabindex="0"><code>const worker = createEngineWorker(
+  ENGINE_QUEUE_NAME,
+  workerRedis,
+  async (job) =&gt; {
+    return runtime.dispatch(job.data);
+  },
+);</code></pre>
+        <a href="https://github.com/OpenCoreAgents/runtime/blob/main/examples/dynamic-runtime-rest/src/worker.ts">Open the worker source</a>
       </div>
     </section>
     <section id="dynamic-agents" class="split">
@@ -70,6 +164,13 @@
         <h2>How dynamic agents and subagents work</h2>
         <p>Define a reusable agent by saving its prompt, tools, and model under a project in Redis. When BullMQ hands a job to a worker, the worker loads the agent and its referenced skills and HTTP tools before running it.</p>
         <p>The worker reads the definitions when it processes each job, so updates can also affect jobs that are already queued.</p>
+        <pre tabindex="0"><code>await store.Agent.define({
+  id: "support-agent",
+  projectId: "support",
+  systemPrompt: "Help customers with their orders.",
+  tools: [],
+  llm: { provider: "openai", model: "gpt-4o-mini" },
+});</code></pre>
         <ul>
           <li><a href="https://github.com/OpenCoreAgents/runtime/blob/main/examples/dynamic-runtime-rest/README.md">Run the Redis and worker example</a></li>
           <li><a href="https://github.com/OpenCoreAgents/runtime/blob/main/apps/runtime/docs/chat-runs-and-planner.md">Read the planner and chat guide</a></li>
@@ -81,33 +182,206 @@
         <ol>
           <li><strong>Delegate in the background</strong><span>The support agent calls <code>invoke_planner</code> and receives a run ID it can check later.</span></li>
           <li><strong>Define two specialists</strong><span>The planner uses <code>spawn_agent</code> to assign an order lookup and a policy review. Each subagent gets its own instructions, tools, and run ID. The definition is stored in Redis before the run is queued.</span></li>
-          <li><strong>Collect the results</strong><span>Workers run the specialists. The planner calls <code>wait_for_agents</code> with their run IDs to collect results or failures.</span></li>
+          <li><strong>Collect the results</strong><span>Workers run the specialists. The planner calls <code>wait_for_agents</code> with their run IDs to collect results or failures from a shared <code>RunStore</code>.</span></li>
           <li><strong>Return to the conversation</strong><span>In the reference chat app, a later turn in the same session can fetch the planner result with <code>runtime_fetch_run</code>.</span></li>
         </ol>
       </div>
     </section>
-    <section id="quickstart">
-      <h2>Try OpenCore Agents</h2>
-      <div class="cards">
-        <article>
-          <h3>Run the SDK demo without an API key</h3>
-          <p>Clone the repo and run the minimal example with Node.js and pnpm. A scripted model makes the run reproducible.</p>
-          <pre tabindex="0"><code>git clone https://github.com/OpenCoreAgents/runtime.git
-cd runtime
-pnpm install
-pnpm turbo run build --filter=@opencoreagents/core
-pnpm --filter @opencoreagents/example-minimal-run start</code></pre>
-          <a href="https://github.com/OpenCoreAgents/runtime/blob/main/examples/minimal-run/README.md">Read the minimal example</a>
-        </article>
-        <article id="server-stack">
-          <h3>Run the REST API and worker stack</h3>
-          <p>Use Docker Compose to start Express, Redis, and a BullMQ worker. Configure a model provider before startup, then open <code>/docs</code> for OpenAPI or <code>/ui</code> for the playground on port 3010.</p>
-          <a href="https://github.com/OpenCoreAgents/runtime/blob/main/apps/runtime/docs/docker.md">Follow the Docker setup</a>
-        </article>
+    <section id="multi-tenancy" class="split">
+      <div>
+        <h2>Run agents for multiple tenants</h2>
+        <p>Share agent definitions across customers in one project and scope runs by tenant. Use separate projects when customers need separate agent, skill, and tool definitions.</p>
+        <ul>
+          <li><strong><code>projectId</code></strong> selects the agent definition namespace.</li>
+          <li><strong><code>tenantId</code></strong> adds a run scope within that project.</li>
+          <li><strong><code>Session.id</code></strong> identifies the conversation or workflow.</li>
+        </ul>
+      </div>
+      <div class="flow">
+        <h3>Bind the session to an authorized tenant</h3>
+        <p>Resolve these IDs on the server after authenticating the caller and checking access to the project, tenant, and conversation.</p>
+        <pre tabindex="0"><code>const session = new Session({
+  id: conversation.id,
+  projectId: access.projectId,
+  tenantId: access.tenantId,
+});
+
+const agent = await Agent.load("support-agent", runtime, {
+  session,
+});
+const run = await agent.run(message);</code></pre>
+        <a href="https://github.com/OpenCoreAgents/runtime/blob/main/docs/reference/core/12-multi-tenancy.md">Read the multi-tenancy reference</a>
+      </div>
+    </section>
+    <section id="adapters" class="split">
+      <div>
+        <h2>Bring your own adapters</h2>
+        <p>Implement the SDK interfaces and pass your implementations to <code>AgentRuntime</code>. Agent definitions and run calls can stay the same while you change providers or infrastructure.</p>
+        <ul>
+          <li><code>LLMAdapter</code> connects a model provider or internal gateway. Use <code>llmAdaptersByProvider</code> to route agents by provider.</li>
+          <li><code>MemoryAdapter</code> stores conversation memory. <code>RunStore</code> persists run state for later resume.</li>
+          <li><code>MessageBus</code> transports messages between agents.</li>
+        </ul>
+        <p><a href="https://github.com/OpenCoreAgents/runtime/blob/main/docs/reference/core/05-adapters-contracts.md">Read the adapter contracts</a></p>
+      </div>
+      <div class="flow">
+        <h3>Inject a model adapter</h3>
+        <p>This adapter returns a fixed protocol result for local tests. For a real provider, implement <code>generate(request)</code> to translate the request and map the provider response to <code>LLMResponse</code>.</p>
+        <pre tabindex="0"><code>import {
+  AgentRuntime,
+  InMemoryMemoryAdapter,
+  type LLMAdapter,
+} from "@opencoreagents/core";
+
+const llmAdapter: LLMAdapter = {
+  async generate() {
+    return {
+      content: JSON.stringify({
+        type: "result",
+        content: "Hello from a custom adapter.",
+      }),
+    };
+  },
+};
+
+const runtime = new AgentRuntime({
+  llmAdapter,
+  memoryAdapter: new InMemoryMemoryAdapter(),
+});</code></pre>
+        <a href="https://github.com/OpenCoreAgents/runtime/blob/main/examples/minimal-run/src/main.ts">Open the runnable adapter example</a>
+      </div>
+    </section>
+    <section id="rag" class="split">
+      <div>
+        <h2>Build an agent with RAG</h2>
+        <p>Give an agent a project-scoped catalog of documents, then use retrieval-augmented generation (RAG) to find relevant passages for its answer.</p>
+        <ol>
+          <li><strong>Register sources.</strong> Give each document an ID and description. Configure <code>fileReadRoot</code> on the runtime so relative paths resolve to your documents.</li>
+          <li><strong>Ingest documents.</strong> <code>system_ingest_rag_source</code> reads the source by catalog ID, chunks it, generates embeddings, and writes them to the vector store.</li>
+          <li><strong>Retrieve passages.</strong> <code>system_vector_search</code> returns relevant chunks as a tool result for the agent's next step.</li>
+        </ol>
+        <a href="https://github.com/OpenCoreAgents/runtime/blob/main/docs/guides/rag-guide.md">Read the RAG guide</a>
+      </div>
+      <div class="flow">
+        <h3>Register a knowledge base</h3>
+        <p>With <code>embeddingAdapter</code> and <code>vectorAdapter</code> configured on the runtime, register the catalog and attach <code>skills: ["rag"]</code> to the agent in the same project.</p>
+        <pre tabindex="0"><code>import {
+  registerRagCatalog,
+  registerRagToolsAndSkills,
+} from "@opencoreagents/rag";
+
+await registerRagToolsAndSkills();
+registerRagCatalog(runtime, "demo-project", [
+  {
+    id: "demo-handbook",
+    description: "Support handbook and policies",
+    source: "sample.md",
+  },
+]);</code></pre>
+        <p>The runnable demo uses a scripted model, local embeddings, and an in-memory vector store. The support example combines retrieval with a custom ticketing tool and pauses for missing customer details.</p>
+        <ul>
+          <li><a href="https://github.com/OpenCoreAgents/runtime/blob/main/examples/rag/README.md">Run the RAG demo without API keys</a></li>
+          <li><a href="https://github.com/OpenCoreAgents/runtime/blob/main/examples/rag-contact-support/README.md">Build a support agent with RAG and tools</a></li>
+        </ul>
+      </div>
+    </section>
+    <section id="http-tools" class="split">
+      <div>
+        <h2>Connect agents to your HTTP APIs</h2>
+        <p>Define an outbound HTTP call as configuration. Attach the tool to an agent to look up order status, read account data, or hand off work to a ticketing API.</p>
+        <ul>
+          <li>Describe the input with a JSON schema and use templates to map arguments to the request.</li>
+          <li>Keep credentials separate from the definition and restrict the request to approved hosts with <code>allowedHosts</code>.</li>
+          <li>Store definitions in Redis when workers need to load updated integrations per job.</li>
+        </ul>
+        <p><a href="https://github.com/OpenCoreAgents/runtime/blob/main/docs/reference/core/20-http-tool-adapter.md">Read the HTTP tool reference</a></p>
+      </div>
+      <div class="flow">
+        <h3>Register an order lookup tool</h3>
+        <pre tabindex="0"><code>import { registerHttpToolsFromDefinitions }
+  from "@opencoreagents/adapters-http-tool";
+
+await registerHttpToolsFromDefinitions(
+  [{
+    id: "lookup_order",
+    projectId: "support",
+    description: "Look up an order by ID.",
+    inputSchema: {
+      type: "object",
+      properties: { orderId: { type: "string" } },
+      required: ["orderId"],
+    },
+    http: {
+      method: "GET",
+      url: "https://orders.example.com/v1/orders",
+      allowedHosts: ["orders.example.com"],
+      query: { id: "{{input.orderId}}" },
+      headers: {
+        authorization: "Bearer {{secret:ORDERS_API_KEY}}",
+      },
+    },
+  }],
+  { secrets: { ORDERS_API_KEY: ordersApiKey } },
+);</code></pre>
+        <p>Pass <code>ordersApiKey</code> from your application's secret store. Add <code>tools: ["lookup_order"]</code> to the agent definition in the <code>support</code> project.</p>
+      </div>
+    </section>
+    <section id="mcp" class="split">
+      <div>
+        <h2>Give agents access to selected MCP tools</h2>
+        <p>Connect an MCP client in your application and discover the server catalog with <code>listTools()</code>. Choose the tool names each agent can use and register those definitions with Core.</p>
+        <p>A shared registration helper can map the names, descriptions, and input schemas to <code>Tool.define()</code> and forward calls through <code>client.callTool()</code>.</p>
+        <ul>
+          <li><a href="https://github.com/OpenCoreAgents/runtime/blob/main/examples/mcp-order-lookup/README.md">Run the MCP example</a></li>
+          <li><a href="https://github.com/OpenCoreAgents/runtime/blob/main/docs/reference/core/06-definition-syntax.md">Read the Core tool definition reference</a></li>
+        </ul>
+      </div>
+      <div class="flow">
+        <h3>Select the tools an agent can call</h3>
+        <p>In this example, <code>registerMcpTools</code> is an application helper and <code>client</code> is already connected.</p>
+        <pre tabindex="0"><code>const toolIds = await registerMcpTools(
+  client,
+  projectId,
+  "orders",
+  ["lookup_order", "estimate_delivery"],
+);
+
+await Agent.define({
+  ...agentDefinition,
+  projectId,
+  tools: toolIds,
+});</code></pre>
+        <p>Core tool IDs are derived from the project, connection namespace, and remote tool name. Give each connection in a project a distinct namespace. The helper rejects IDs already registered in the process.</p>
+        <p>Pass <code>"*"</code> as the last argument to register the entire server catalog. Use an explicit list to give an agent access to specific tools.</p>
+      </div>
+    </section>
+    <section id="memory-secrets" class="split">
+      <div>
+        <h2>Configure memory and secrets</h2>
+        <ul>
+          <li><strong>Memory.</strong> Start with <code>InMemoryMemoryAdapter</code> for a single process or use <code>RedisMemoryAdapter</code> to share memory between workers. Memory keys depend on the adapter and the scope passed to it.</li>
+          <li><strong>Run state.</strong> Use <code>RedisRunStore</code> to persist run history and resume a waiting run from another worker.</li>
+          <li><strong>Secrets.</strong> Put a reference like <code>{{secret:ORDERS_API_KEY}}</code> in the HTTP tool definition. Resolve the value from your application's secret store when the runtime loads dynamic definitions. Keep secret values out of definitions and queue payloads.</li>
+        </ul>
+        <p><a href="https://github.com/OpenCoreAgents/runtime/blob/main/docs/reference/core/05-adapters-contracts.md">Read the memory and run-store contracts</a></p>
+      </div>
+      <div class="flow">
+        <h3>Wire shared state and tool credentials</h3>
+        <pre tabindex="0"><code>const runtime = new AgentRuntime({
+  llmAdapter,
+  memoryAdapter: new RedisMemoryAdapter(redis),
+  runStore: new RedisRunStore(redis),
+  dynamicDefinitionsStore: definitionsStore,
+  dynamicDefinitionsSecrets: () =&gt; ({
+    ORDERS_API_KEY: ordersApiKey,
+  }),
+});</code></pre>
+        <p><code>ordersApiKey</code> comes from the worker's configuration. If your API also hydrates those definitions, configure the credential there too.</p>
+        <a href="https://github.com/OpenCoreAgents/runtime/blob/main/apps/runtime/docs/security.md">Read the runtime secrets guide</a>
       </div>
     </section>
     <section id="docs">
-      <h2>Explore the runtime</h2>
+      <h2>Guides and examples</h2>
       <div class="cards">
         <article>
           <h3>Support agents that can escalate</h3>
@@ -117,7 +391,7 @@ pnpm --filter @opencoreagents/example-minimal-run start</code></pre>
         <article>
           <h3>Tool policies and human approval</h3>
           <p>Use SDK policies to control which tools an agent can see and which calls need approval. Wire approval decisions into your application with an approval-capable run store.</p>
-          <a href="https://github.com/OpenCoreAgents/runtime/blob/main/packages/core/src/engine/approvalApi.ts">Inspect the approval API</a>
+          <a href="https://github.com/OpenCoreAgents/runtime/blob/main/docs/guides/tool-approvals.md">Read the integration guide</a>
         </article>
         <article>
           <h3>Connect agents to messaging channels</h3>
