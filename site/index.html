@@ -22,25 +22,22 @@
   <main id="main" class="shell">
     <section class="hero">
       <div>
-        <h1>Build agents that can pick up where they left off.</h1>
-        <p>OpenCore Agents is a TypeScript runtime for Node.js services. Queue long-running work outside the HTTP request, resume runs after user input, and give a planner the tools to create subagents for each task.</p>
+        <h1>Build agent APIs and background workers.</h1>
+        <p>OpenCore Agents is a TypeScript runtime for running agents in your Node.js application or dispatching work to a queue. Persist runs so they can resume, and let a planner define and queue subagents as work comes in.</p>
         <div class="actions">
-          <a class="button" href="#quickstart">Run the SDK demo</a>
-          <a href="#server-stack">Start the API and worker stack</a>
+          <a class="button" href="#quickstart">Run the example</a>
+          <a href="https://github.com/OpenCoreAgents/runtime/blob/main/docs/reference/core/README.md">Read the engine reference</a>
+          <a href="https://github.com/OpenCoreAgents/runtime/blob/main/examples/rag-contact-support/src/main.ts"><code aria-hidden="true">&lt;/&gt;</code> View code</a>
         </div>
       </div>
       <div class="flow">
-        <h2>Resume a support run after user input</h2>
-        <p>In the support example, the run pauses if it needs an email address before opening a ticket. Your application supplies the answer and resumes by run ID.</p>
-        <pre tabindex="0"><code>let run = await agent.run(refundMessage);
-
-if (run.status === "waiting") {
-  run = await agent.resume(run.runId, {
-    type: "text",
-    content: email,
-  });
-}</code></pre>
-        <a href="https://github.com/OpenCoreAgents/runtime/blob/main/examples/rag-contact-support/src/main.ts">Read the example source</a>
+        <h2>Run lifecycle</h2>
+        <ol>
+          <li><strong>Run</strong><span>Load an agent into a session and send input.</span></li>
+          <li><strong>Act</strong><span>Execute a tool and pass its result back to the model.</span></li>
+          <li><strong>Wait and resume</strong><span>Pause for input and continue with the same run ID.</span></li>
+          <li><strong>Complete</strong><span>Return a result and retain the run history.</span></li>
+        </ol>
       </div>
     </section>
     <section id="why-opencore">
