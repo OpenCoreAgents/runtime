@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Build agent APIs and background workers in TypeScript. Persist runs, load agent definitions per job, and queue subagents at runtime.">
+  <meta name="description" content="Build agent backends in TypeScript. Queue work, resume after user input, and update agent definitions without redeploying workers.">
   <title>OpenCore Agents</title>
   <link rel="stylesheet" href="style.css">
 </head>
@@ -22,30 +22,34 @@
   <main id="main" class="shell">
     <section class="hero">
       <div>
-        <h1>Build agent APIs and background workers.</h1>
-        <p>OpenCore Agents is a TypeScript runtime for running agents in your Node.js application or dispatching work to a queue. Persist runs so they can resume, and let a planner define and queue subagents as work comes in.</p>
+        <h1>Build agents that can pick up where they left off.</h1>
+        <p>OpenCore Agents is a TypeScript runtime for Node.js services. Queue long-running work outside the HTTP request, resume runs after user input, and give a planner the tools to create subagents for each task.</p>
         <div class="actions">
-          <a class="button" href="#quickstart">Run the example</a>
-          <a href="https://github.com/OpenCoreAgents/runtime/blob/main/docs/reference/core/README.md">Read the engine reference</a>
+          <a class="button" href="#quickstart">Run the SDK demo</a>
+          <a href="#server-stack">Start the API and worker stack</a>
         </div>
       </div>
       <div class="flow">
-        <h2>Run lifecycle</h2>
-        <ol>
-          <li><strong>Run</strong><span>Load an agent into a session and send input.</span></li>
-          <li><strong>Act</strong><span>Execute a tool and pass its result back to the model.</span></li>
-          <li><strong>Wait and resume</strong><span>Pause for input and continue with the same run ID.</span></li>
-          <li><strong>Complete</strong><span>Return a result and retain the run history.</span></li>
-        </ol>
+        <h2>Resume a support run after user input</h2>
+        <p>In the support example, the run pauses if it needs an email address before opening a ticket. Your application supplies the answer and resumes by run ID.</p>
+        <pre tabindex="0"><code>let run = await agent.run(refundMessage);
+
+if (run.status === "waiting") {
+  run = await agent.resume(run.runId, {
+    type: "text",
+    content: email,
+  });
+}</code></pre>
+        <a href="https://github.com/OpenCoreAgents/runtime/blob/main/examples/rag-contact-support/src/main.ts">Read the example source</a>
       </div>
     </section>
     <section id="why-opencore">
       <h2>Why OpenCore Agents</h2>
       <div class="cards">
         <article>
-          <h3>Run agents in Node.js or on separate workers</h3>
-          <p>Embed the runtime in your Node.js service or use the reference Express API to queue runs for BullMQ workers. With a shared Redis run store, a worker can resume a waiting run by ID.</p>
-          <a href="https://github.com/OpenCoreAgents/runtime/blob/main/apps/runtime/README.md">Explore the server runtime</a>
+          <h3>Move long-running work out of HTTP requests</h3>
+          <p>The reference Express API can return a job ID while BullMQ workers execute the run. Read progress from the run API, or enable server-sent events to stream updates.</p>
+          <a href="https://github.com/OpenCoreAgents/runtime/blob/main/apps/runtime/docs/chat-runs-and-planner.md">Read the API and event guide</a>
         </article>
         <article>
           <h3>Create and queue subagents at runtime</h3>
@@ -53,8 +57,8 @@
           <a href="#dynamic-agents">See how delegation works</a>
         </article>
         <article>
-          <h3>Load agent configuration when a job runs</h3>
-          <p>Workers can load agent, skill, and HTTP tool definitions from Redis when they pick up a job. Update prompts and tool configuration without redeploying those workers.</p>
+          <h3>Update agents without redeploying workers</h3>
+          <p>Store prompts, skills, and HTTP tool configuration by project in Redis. Workers load the definitions when they pick up a job, so edits can take effect on the next run.</p>
           <a href="https://github.com/OpenCoreAgents/runtime/blob/main/docs/reference/core/21-dynamic-runtime-rest.md">Read the dynamic definitions guide</a>
         </article>
         <article>
@@ -85,21 +89,50 @@
         </ol>
       </div>
     </section>
-    <section id="quickstart" class="split">
-      <div>
-        <h2>Run your first agent</h2>
-        <p>The minimal example uses a deterministic mock model and in-memory state. It requires Node.js and pnpm, with no model API key.</p>
-        <a href="https://github.com/OpenCoreAgents/runtime/blob/main/examples/minimal-run/README.md">Read the minimal example</a>
-      </div>
-      <pre tabindex="0"><code>git clone https://github.com/OpenCoreAgents/runtime.git
+    <section id="quickstart">
+      <h2>Try OpenCore Agents</h2>
+      <div class="cards">
+        <article>
+          <h3>Run the SDK demo without an API key</h3>
+          <p>Clone the repo and run the minimal example with Node.js and pnpm. A scripted model makes the run reproducible.</p>
+          <pre tabindex="0"><code>git clone https://github.com/OpenCoreAgents/runtime.git
 cd runtime
 pnpm install
 pnpm turbo run build --filter=@opencoreagents/core
 pnpm --filter @opencoreagents/example-minimal-run start</code></pre>
+          <a href="https://github.com/OpenCoreAgents/runtime/blob/main/examples/minimal-run/README.md">Read the minimal example</a>
+        </article>
+        <article id="server-stack">
+          <h3>Run the REST API and worker stack</h3>
+          <p>Use Docker Compose to start Express, Redis, and a BullMQ worker. Configure a model provider before startup, then open <code>/docs</code> for OpenAPI or <code>/ui</code> for the playground on port 3010.</p>
+          <a href="https://github.com/OpenCoreAgents/runtime/blob/main/apps/runtime/docs/docker.md">Follow the Docker setup</a>
+        </article>
+      </div>
     </section>
     <section id="docs">
       <h2>Explore the runtime</h2>
-      <div class="cards"><article><h3>Run lifecycle</h3><p>Define agents, skills, and tools. Observe execution, pause a run for input, and resume it with a persistent run store.</p><a href="https://github.com/OpenCoreAgents/runtime/blob/main/docs/reference/core/README.md">Core reference</a></article><article><h3>API and workers</h3><p>Run the reference Express API and BullMQ worker with Redis. Use dynamic definitions to load agent configuration into workers.</p><a href="https://github.com/OpenCoreAgents/runtime/blob/main/apps/runtime/docs/README.md">Runtime setup</a></article><article><h3>Knowledge and channels</h3><p>Register a project-scoped RAG catalog or connect a messaging channel through the conversation gateway.</p><a href="https://github.com/OpenCoreAgents/runtime/blob/main/docs/guides/README.md">Integration guides</a></article><article><h3>OpenClaw skills</h3><p>Load compatible SKILL.md packs into the runtime and apply their declared requirements before registering skills.</p><a href="https://github.com/OpenCoreAgents/runtime/blob/main/examples/load-openclaw-skills/README.md">OpenClaw skills example</a></article></div>
+      <div class="cards">
+        <article>
+          <h3>Support agents that can escalate</h3>
+          <p>Search a knowledge base, ask for missing details, and call your ticketing tool once the run has what it needs.</p>
+          <a href="https://github.com/OpenCoreAgents/runtime/blob/main/examples/rag-contact-support/README.md">Run the support example</a>
+        </article>
+        <article>
+          <h3>Tool policies and human approval</h3>
+          <p>Use SDK policies to control which tools an agent can see and which calls need approval. Wire approval decisions into your application with an approval-capable run store.</p>
+          <a href="https://github.com/OpenCoreAgents/runtime/blob/main/packages/core/src/engine/approvalApi.ts">Inspect the approval API</a>
+        </article>
+        <article>
+          <h3>Connect agents to messaging channels</h3>
+          <p>Normalize incoming messages, route them to a session, and send the reply through your own transport.</p>
+          <a href="https://github.com/OpenCoreAgents/runtime/blob/main/docs/guides/bots-conversation-gateway.md">Read the gateway guide</a>
+        </article>
+        <article>
+          <h3>Reuse compatible OpenClaw skills</h3>
+          <p>Load existing <code>SKILL.md</code> packs and check their declared requirements before registering them.</p>
+          <a href="https://github.com/OpenCoreAgents/runtime/blob/main/examples/load-openclaw-skills/README.md">Try the OpenClaw skills example</a>
+        </article>
+      </div>
     </section>
     <section class="split">
       <div>
@@ -116,6 +149,7 @@ pnpm --filter @opencoreagents/example-minimal-run start</code></pre>
     <section class="split">
       <div>
         <h2>Operate the runtime</h2>
+        <p>Your application owns authentication and tenant access. The reference stack provides the API, queue, and worker wiring.</p>
         <ul><li><a href="https://github.com/OpenCoreAgents/runtime/blob/main/apps/runtime/docs/docker.md">Docker deployment</a></li><li><a href="https://github.com/OpenCoreAgents/runtime/blob/main/apps/runtime/docs/chat-runs-and-planner.md">Run and planner APIs</a></li><li><a href="https://github.com/OpenCoreAgents/runtime/blob/main/docs/roadmap/technical-debt-security-production.md">Production and security checklist</a></li></ul>
       </div>
       <div>
