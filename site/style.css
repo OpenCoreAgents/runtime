@@ -50,3 +50,5 @@ footer { color: var(--muted); }
   .shell { width: calc(100% - 2rem); }
   .hero, .split, .cards { grid-template-columns: 1fr; }
 }
+
+.flow pre, article pre { margin-bottom: 1rem; }
