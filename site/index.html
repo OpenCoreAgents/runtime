@@ -13,6 +13,7 @@
     <a class="brand" href="./">OpenCore Agents</a>
     <nav aria-label="Primary">
       <a href="#why-opencore">Why OpenCore</a>
+      <a href="#dynamic-agents">Dynamic agents</a>
       <a href="#quickstart">Quickstart</a>
       <a href="#docs">Docs</a>
       <a href="https://github.com/OpenCoreAgents/runtime">GitHub</a>
@@ -49,7 +50,7 @@
         <article>
           <h3>Create and queue subagents at runtime</h3>
           <p>A planner can give a new subagent instructions, tools, and a model, persist its definition, and enqueue its run. It can then wait for the result and use it in the parent run.</p>
-          <a href="https://github.com/OpenCoreAgents/runtime/blob/main/packages/dynamic-planner/README.md">Explore the planner tools</a>
+          <a href="#dynamic-agents">See how delegation works</a>
         </article>
         <article>
           <h3>Load agent configuration when a job runs</h3>
@@ -61,6 +62,27 @@
           <p>Start with the Express, Redis, and BullMQ reference stack. Inject your own model, memory, run store, and messaging adapters as your deployment needs change.</p>
           <a href="https://github.com/OpenCoreAgents/runtime/blob/main/docs/reference/core/05-adapters-contracts.md">Read the adapter contracts</a>
         </article>
+      </div>
+    </section>
+    <section id="dynamic-agents" class="split">
+      <div>
+        <h2>How dynamic agents and subagents work</h2>
+        <p>Define a reusable agent by saving its prompt, tools, and model under a project in Redis. When BullMQ hands a job to a worker, the worker loads the agent and its referenced skills and HTTP tools before running it.</p>
+        <p>The worker reads the definitions when it processes each job, so updates can also affect jobs that are already queued.</p>
+        <ul>
+          <li><a href="https://github.com/OpenCoreAgents/runtime/blob/main/examples/dynamic-runtime-rest/README.md">Run the Redis and worker example</a></li>
+          <li><a href="https://github.com/OpenCoreAgents/runtime/blob/main/apps/runtime/docs/chat-runs-and-planner.md">Read the planner and chat guide</a></li>
+          <li><a href="https://github.com/OpenCoreAgents/runtime/blob/main/packages/dynamic-planner/README.md">Read the planner tool reference</a></li>
+        </ul>
+      </div>
+      <div class="flow">
+        <h3>Example: investigate a support ticket</h3>
+        <ol>
+          <li><strong>Delegate in the background</strong><span>The support agent calls <code>invoke_planner</code> and receives a run ID it can check later.</span></li>
+          <li><strong>Define two specialists</strong><span>The planner uses <code>spawn_agent</code> to assign an order lookup and a policy review. Each subagent gets its own instructions, tools, and run ID. The definition is stored in Redis before the run is queued.</span></li>
+          <li><strong>Collect the results</strong><span>Workers run the specialists. The planner calls <code>wait_for_agents</code> with their run IDs to collect results or failures.</span></li>
+          <li><strong>Return to the conversation</strong><span>In the reference chat app, a later turn in the same session can fetch the planner result with <code>runtime_fetch_run</code>.</span></li>
+        </ol>
       </div>
     </section>
     <section id="quickstart" class="split">
