@@ -1,6 +1,6 @@
 # `@opencoreagents/dynamic-planner`
 
-Registers **global** orchestration tools for a **Planner** agent: spawn sub-agents at runtime, wait on their runs, retry with corrections, and list tools/models before assigning work. Matches the design in [`docs/brainstorm/15-autonomous-agent-dynamic-planning.md`](../../docs/brainstorm/15-autonomous-agent-dynamic-planning.md).
+Registers **global** orchestration tools for a **Planner** agent: spawn sub-agents at runtime, wait on their runs, retry with corrections, and list tools/models before assigning work. Matches the design in [`docs/archive/brainstorm/15-autonomous-agent-dynamic-planning.md`](../../docs/archive/brainstorm/15-autonomous-agent-dynamic-planning.md).
 
 The Planner delegates execution; sub-agents use normal tools and definitions.
 
@@ -87,4 +87,4 @@ Use **`DEFAULT_PLANNER_SYSTEM_PROMPT`** from this package as a starting `systemP
 
 ## Related docs
 
-[`docs/brainstorm/15-autonomous-agent-dynamic-planning.md`](../../docs/brainstorm/15-autonomous-agent-dynamic-planning.md)
+[`docs/archive/brainstorm/15-autonomous-agent-dynamic-planning.md`](../../docs/archive/brainstorm/15-autonomous-agent-dynamic-planning.md)

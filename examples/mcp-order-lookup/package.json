@@ -1,0 +1,21 @@
+{
+  "name": "@opencoreagents/example-mcp-order-lookup",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Use an MCP server tool from an OpenCore agent over stdio.",
+  "scripts": {
+    "start": "tsx src/main.ts",
+    "test": "tsx --test src/registerMcpTools.test.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "@opencoreagents/core": "workspace:*",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.3",
+    "typescript": "^5.7.3"
+  }
+}
