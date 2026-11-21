@@ -31,6 +31,10 @@ The SDK exposes a tool visibility policy and a pre-execution policy that evaluat
 
 Approval currently requires an approval-capable run store. The in-memory store and `RedisRunStore` implement the pending-action claim. The reference Redis/BullMQ app still needs authenticated HTTP approval wiring. Its SSE interface continues to use the separate Redis lifecycle hooks. [Run store contract](../packages/core/src/adapters/run/RunStore.ts) · [In-memory store](../packages/core/src/adapters/run/InMemoryRunStore.ts) · [Redis run store](../packages/adapters-redis/src/RedisRunStore.ts) · [Runtime server](../apps/runtime/src/server.ts)
 
+To complete the reference HTTP flow, the application needs endpoints that authenticate the reviewer, authorize the decision for the tenant and run, and pass the decision to the SDK. An end-to-end test should persist a pending action, restart the process, and resolve it from another process. It should also verify that concurrent approval requests execute the tool only once and that a reviewer from another tenant cannot resolve the action.
+
+The governance score reflects integration effort. OpenCore provides policy evaluation, SDK decision APIs, and atomic Redis claims. Mastra documents approval, rejection, and resumption with compatible persistent storage. The authenticated HTTP flow and the end-to-end checks above would justify reassessing OpenCore's score. [Mastra human-in-the-loop](https://mastra.ai/docs/agents/human-in-the-loop)
+
 ## Verification results
 
 OpenCore’s browser example wires WebLLM and IndexedDB. Its planner writes the subagent definition before calling the queue. The merged changes fix the browser compatibility test, add atomic Redis claims, and preserve pending approvals when a caller attempts an ordinary resume. [Browser example](../examples/browser-local/src/main.ts) · [Planner source](../packages/dynamic-planner/src/registerDynamicPlannerTools.ts) · [PR #24](https://github.com/OpenCoreAgents/runtime/pull/24)
