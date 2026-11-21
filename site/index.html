@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Build TypeScript agents with resumable runs, configurable tools, and background workers.">
+  <meta name="description" content="Run TypeScript agents on-device or on your own workers. Let a planner define and queue subagents at runtime.">
   <title>OpenCore Agents</title>
   <link rel="stylesheet" href="style.css">
 </head>
@@ -12,6 +12,8 @@
   <header class="shell">
     <a class="brand" href="./">OpenCore Agents</a>
     <nav aria-label="Primary">
+      <a href="#why-opencore">Why OpenCore</a>
+      <a href="#dynamic-agents">Dynamic agents</a>
       <a href="#quickstart">Quickstart</a>
       <a href="#docs">Docs</a>
       <a href="https://github.com/OpenCoreAgents/runtime">GitHub</a>
@@ -20,8 +22,8 @@
   <main id="main" class="shell">
     <section class="hero">
       <div>
-        <h1>Build agents you can resume.</h1>
-        <p>A TypeScript runtime for agent APIs and workers. Define tools and skills, persist run state, and move longer jobs to background workers.</p>
+        <h1>Run agents on-device or on your own workers.</h1>
+        <p>OpenCore Agents is a TypeScript runtime that can run inside a browser or across an API and background workers. Give a planner the ability to define and queue subagents as work comes in.</p>
         <div class="actions">
           <a class="button" href="#quickstart">Run the example</a>
           <a href="https://github.com/OpenCoreAgents/runtime/blob/main/docs/reference/core/README.md">Read the engine reference</a>
@@ -34,6 +36,52 @@
           <li><strong>Act</strong><span>Execute a tool and pass its result back to the model.</span></li>
           <li><strong>Wait and resume</strong><span>Pause for input and continue with the same run ID.</span></li>
           <li><strong>Complete</strong><span>Return a result and retain the run history.</span></li>
+        </ol>
+      </div>
+    </section>
+    <section id="why-opencore">
+      <h2>Why OpenCore Agents</h2>
+      <div class="cards">
+        <article>
+          <h3>Run the agent inside the browser</h3>
+          <p>Keep run history, memory, and agent definitions in IndexedDB. On WebGPU-capable devices, the browser example can run model inference in a Web Worker using WebLLM.</p>
+          <a href="https://github.com/OpenCoreAgents/runtime/blob/main/examples/browser-local/README.md">Explore the browser example</a>
+        </article>
+        <article>
+          <h3>Create and queue subagents at runtime</h3>
+          <p>A planner can give a new subagent instructions, tools, and a model, persist its definition, and enqueue its run. It can then wait for the result and use it in the parent run.</p>
+          <a href="#dynamic-agents">See how delegation works</a>
+        </article>
+        <article>
+          <h3>Load agent configuration when a job runs</h3>
+          <p>Workers can load agent, skill, and HTTP tool definitions from Redis when they pick up a job. Update prompts and tool configuration without redeploying those workers.</p>
+          <a href="https://github.com/OpenCoreAgents/runtime/blob/main/docs/reference/core/21-dynamic-runtime-rest.md">Read the dynamic definitions guide</a>
+        </article>
+        <article>
+          <h3>Wire the runtime into infrastructure you own</h3>
+          <p>Start with the Express, Redis, and BullMQ reference stack. Inject your own model, memory, run store, and messaging adapters as your deployment needs change.</p>
+          <a href="https://github.com/OpenCoreAgents/runtime/blob/main/docs/reference/core/05-adapters-contracts.md">Read the adapter contracts</a>
+        </article>
+      </div>
+    </section>
+    <section id="dynamic-agents" class="split">
+      <div>
+        <h2>How dynamic agents and subagents work</h2>
+        <p>Define a reusable agent by saving its prompt, tools, and model under a project in Redis. When BullMQ hands a job to a worker, the worker loads the agent and its referenced skills and HTTP tools before running it.</p>
+        <p>The worker reads the definitions when it processes each job, so updates can also affect jobs that are already queued.</p>
+        <ul>
+          <li><a href="https://github.com/OpenCoreAgents/runtime/blob/main/examples/dynamic-runtime-rest/README.md">Run the Redis and worker example</a></li>
+          <li><a href="https://github.com/OpenCoreAgents/runtime/blob/main/apps/runtime/docs/chat-runs-and-planner.md">Read the planner and chat guide</a></li>
+          <li><a href="https://github.com/OpenCoreAgents/runtime/blob/main/packages/dynamic-planner/README.md">Read the planner tool reference</a></li>
+        </ul>
+      </div>
+      <div class="flow">
+        <h3>Example: investigate a support ticket</h3>
+        <ol>
+          <li><strong>Delegate in the background</strong><span>The support agent calls <code>invoke_planner</code> and receives a run ID it can check later.</span></li>
+          <li><strong>Define two specialists</strong><span>The planner uses <code>spawn_agent</code> to assign an order lookup and a policy review. Each subagent gets its own instructions, tools, and run ID. The definition is stored in Redis before the run is queued.</span></li>
+          <li><strong>Collect the results</strong><span>Workers run the specialists. The planner calls <code>wait_for_agents</code> with their run IDs to collect results or failures.</span></li>
+          <li><strong>Return to the conversation</strong><span>In the reference chat app, a later turn in the same session can fetch the planner result with <code>runtime_fetch_run</code>.</span></li>
         </ol>
       </div>
     </section>
@@ -51,7 +99,7 @@ pnpm --filter @opencoreagents/example-minimal-run start</code></pre>
     </section>
     <section id="docs">
       <h2>Explore the runtime</h2>
-      <div class="cards"><article><h3>Run lifecycle</h3><p>Define agents, skills, and tools. Observe execution, pause a run for input, and resume it with a persistent run store.</p><a href="https://github.com/OpenCoreAgents/runtime/blob/main/docs/reference/core/README.md">Core reference</a></article><article><h3>API and workers</h3><p>Run the reference Express API and BullMQ worker with Redis. Use dynamic definitions to load agent configuration into workers.</p><a href="https://github.com/OpenCoreAgents/runtime/blob/main/apps/runtime/docs/README.md">Runtime setup</a></article><article><h3>Knowledge and channels</h3><p>Register a project-scoped RAG catalog or connect a messaging channel through the conversation gateway.</p><a href="https://github.com/OpenCoreAgents/runtime/blob/main/docs/guides/README.md">Integration guides</a></article><article><h3>Browser runtime</h3><p>Use IndexedDB for local persistence and connect a browser-compatible model adapter. The browser example includes optional WebLLM inference.</p><a href="https://github.com/OpenCoreAgents/runtime/blob/main/examples/browser-local/README.md">Browser example</a></article></div>
+      <div class="cards"><article><h3>Run lifecycle</h3><p>Define agents, skills, and tools. Observe execution, pause a run for input, and resume it with a persistent run store.</p><a href="https://github.com/OpenCoreAgents/runtime/blob/main/docs/reference/core/README.md">Core reference</a></article><article><h3>API and workers</h3><p>Run the reference Express API and BullMQ worker with Redis. Use dynamic definitions to load agent configuration into workers.</p><a href="https://github.com/OpenCoreAgents/runtime/blob/main/apps/runtime/docs/README.md">Runtime setup</a></article><article><h3>Knowledge and channels</h3><p>Register a project-scoped RAG catalog or connect a messaging channel through the conversation gateway.</p><a href="https://github.com/OpenCoreAgents/runtime/blob/main/docs/guides/README.md">Integration guides</a></article><article><h3>OpenClaw skills</h3><p>Load compatible SKILL.md packs into the runtime and apply their declared requirements before registering skills.</p><a href="https://github.com/OpenCoreAgents/runtime/blob/main/examples/load-openclaw-skills/README.md">OpenClaw skills example</a></article></div>
     </section>
     <section class="split">
       <div>
