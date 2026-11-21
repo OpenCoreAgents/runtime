@@ -41,7 +41,7 @@ When the agent references `tools: ["system_save_memory", "upstash_trigger"]`:
 
 Definitions may be registered from **code** (`Tool.define` / `Skill.define` / `Agent.define`) or **hydrated** from a store into the same registry (`Skill.define` with JSON metadata + optional `execute`, or `Skill.defineBatch`); resolution rules are unchanged. See [Definition syntax](./06-definition-syntax.md) §9.2b.
 
-**Today in core:** the prompt tool catalog is the agent allowlist (**explicit `tools` + tools from `skills`**) intersected with the **tool registry** and optional **`AgentRuntime.allowedToolIds`** — see `ContextBuilder` / `effectiveToolAllowlist`. **`SecurityContext` is not applied there yet** (no role-based hiding of tools in the LLM payload). Hosts must treat **definition resolution + agent allowlist** as the enforced surface unless they add their own filtering. Gap: [`technical-debt-security-production.md` §1](../../roadmap/technical-debt-security-production.md#1-security-integrity-and-production-readiness) (`SecurityContext` / `ContextBuilder`).
+**Today in core:** the prompt tool catalog starts with the agent and skill allowlist, intersected with the registry and any runtime tool allowlist. An optional visibility policy can further filter the catalog using `SecurityContext`. An execution policy can evaluate the canonical arguments before the tool runs. The built-in context describes the agent's internal identity. The host must authenticate external callers, authorize their access to the project and tenant, and provide trusted caller information to any principal-specific policy. [Production gaps](../../roadmap/technical-debt-security-production.md#1-security-integrity-and-production-readiness)
 
 ---
 
