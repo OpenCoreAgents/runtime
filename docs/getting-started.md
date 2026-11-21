@@ -162,7 +162,11 @@ await Tool.define({
     properties: { id: { type: "string" } },
     required: ["id"]
   },
-  execute: async ({ id }: { id: string }) => {
+  execute: async (input) => {
+    const id = (input as { id?: unknown } | null)?.id;
+    if (typeof id !== "string" || !id.trim()) {
+      throw new Error("A ticket ID is required.");
+    }
     return { ticket: { id, status: "open" } };
   }
 });

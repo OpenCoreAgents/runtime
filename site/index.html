@@ -14,6 +14,7 @@
     <nav aria-label="Primary">
       <a href="#quickstart">Quickstart</a>
       <a href="#sdk">SDK</a>
+      <a href="#tools">Tools</a>
       <a href="#workers">Workers</a>
       <a href="#multi-tenancy">Multi-tenancy</a>
       <a href="#adapters">Adapters</a>
@@ -134,6 +135,37 @@ if (run.status === "waiting") {
           <p>Configure a shared <code>RunStore</code> to resume from another process. Use <code>agent.continueRun(runId, message)</code> to append a new turn to a completed or failed run.</p>
           <a href="https://github.com/OpenCoreAgents/runtime/blob/main/examples/rag-contact-support/src/main.ts">Open the support example source</a>
         </article>
+      </div>
+    </section>
+    <section id="tools" class="split">
+      <div>
+        <h2>Define tools with TypeScript</h2>
+        <p>Use <code>Tool.define()</code> for application logic. The tool's <code>inputSchema</code> describes the arguments to the model. Validate model-provided values before passing them to your application's typed functions.</p>
+        <p>Add <code>lookup_order</code> to an agent's <code>tools</code>, or group it with related tools in a reusable <code>Skill</code>.</p>
+        <a href="https://github.com/OpenCoreAgents/runtime/blob/main/docs/reference/core/06-definition-syntax.md">Read the tool and skill reference</a>
+      </div>
+      <div class="flow">
+        <h3>Connect a typed order lookup</h3>
+        <pre tabindex="0"><code>import { Tool } from "@opencoreagents/core";
+
+await Tool.define({
+  id: "lookup_order",
+  projectId: "support",
+  description: "Look up an order by ID.",
+  inputSchema: {
+    type: "object",
+    properties: { orderId: { type: "string" } },
+    required: ["orderId"],
+  },
+  async execute(input) {
+    const orderId = (input as { orderId?: unknown } | null)?.orderId;
+    if (typeof orderId !== "string" || !orderId.trim()) {
+      throw new Error("An order ID is required.");
+    }
+    return findOrder(orderId);
+  },
+});</code></pre>
+        <p><code>findOrder</code> is your application's order lookup function.</p>
       </div>
     </section>
     <section id="workers" class="split">
