@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Build TypeScript agents with resumable runs, configurable tools, and background workers.">
+  <title>OpenCore Agents</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="shell">
+    <a class="brand" href="./">OpenCore Agents</a>
+    <nav aria-label="Primary">
+      <a href="#quickstart">Quickstart</a>
+      <a href="#docs">Docs</a>
+      <a href="https://github.com/OpenCoreAgents/runtime">GitHub</a>
+    </nav>
+  </header>
+  <main id="main" class="shell">
+    <section class="hero">
+      <div>
+        <h1>Build agents you can resume.</h1>
+        <p>A TypeScript runtime for agent APIs and workers. Define tools and skills, persist run state, and move longer jobs to background workers.</p>
+        <div class="actions">
+          <a class="button" href="#quickstart">Run the example</a>
+          <a href="https://github.com/OpenCoreAgents/runtime/blob/main/docs/reference/core/README.md">Read the engine reference</a>
+        </div>
+      </div>
+      <div class="flow">
+        <h2>Run lifecycle</h2>
+        <ol>
+          <li><strong>Run</strong><span>Load an agent into a session and send input.</span></li>
+          <li><strong>Act</strong><span>Execute a tool and pass its result back to the model.</span></li>
+          <li><strong>Wait and resume</strong><span>Pause for input and continue with the same run ID.</span></li>
+          <li><strong>Complete</strong><span>Return a result and retain the run history.</span></li>
+        </ol>
+      </div>
+    </section>
+    <section id="quickstart" class="split">
+      <div>
+        <h2>Run your first agent</h2>
+        <p>The minimal example uses a deterministic mock model and in-memory state. It requires Node.js and pnpm, with no model API key.</p>
+        <a href="https://github.com/OpenCoreAgents/runtime/blob/main/examples/minimal-run/README.md">Read the minimal example</a>
+      </div>
+      <pre tabindex="0"><code>git clone https://github.com/OpenCoreAgents/runtime.git
+cd runtime
+pnpm install
+pnpm turbo run build --filter=@opencoreagents/core
+pnpm --filter @opencoreagents/example-minimal-run start</code></pre>
+    </section>
+    <section id="docs">
+      <h2>Explore the runtime</h2>
+      <div class="cards"><article><h3>Run lifecycle</h3><p>Define agents, skills, and tools. Observe execution, pause a run for input, and resume it with a persistent run store.</p><a href="https://github.com/OpenCoreAgents/runtime/blob/main/docs/reference/core/README.md">Core reference</a></article><article><h3>API and workers</h3><p>Run the reference Express API and BullMQ worker with Redis. Use dynamic definitions to load agent configuration into workers.</p><a href="https://github.com/OpenCoreAgents/runtime/blob/main/apps/runtime/docs/README.md">Runtime setup</a></article><article><h3>Knowledge and channels</h3><p>Register a project-scoped RAG catalog or connect a messaging channel through the conversation gateway.</p><a href="https://github.com/OpenCoreAgents/runtime/blob/main/docs/guides/README.md">Integration guides</a></article><article><h3>Browser runtime</h3><p>Use IndexedDB for local persistence and connect a browser-compatible model adapter. The browser example includes optional WebLLM inference.</p><a href="https://github.com/OpenCoreAgents/runtime/blob/main/examples/browser-local/README.md">Browser example</a></article></div>
+    </section>
+    <section class="split">
+      <div>
+        <h2>Packages</h2>
+        <p>Core, infrastructure adapters, API integrations, and developer tooling.</p>
+        <div class="inventory"><ul><li><a href="https://github.com/OpenCoreAgents/runtime/blob/main/packages/adapters-anthropic/README.md">adapters-anthropic</a></li><li><a href="https://github.com/OpenCoreAgents/runtime/blob/main/packages/adapters-bullmq/README.md">adapters-bullmq</a></li><li><a href="https://github.com/OpenCoreAgents/runtime/blob/main/packages/adapters-http-tool/README.md">adapters-http-tool</a></li><li><a href="https://github.com/OpenCoreAgents/runtime/blob/main/packages/adapters-openai/README.md">adapters-openai</a></li><li><a href="https://github.com/OpenCoreAgents/runtime/blob/main/packages/adapters-redis/README.md">adapters-redis</a></li><li><a href="https://github.com/OpenCoreAgents/runtime/blob/main/packages/adapters-upstash/README.md">adapters-upstash</a></li><li><a href="https://github.com/OpenCoreAgents/runtime/blob/main/packages/browser/README.md">browser</a></li><li><a href="https://github.com/OpenCoreAgents/runtime/blob/main/packages/cli/README.md">cli</a></li><li><a href="https://github.com/OpenCoreAgents/runtime/blob/main/packages/code-skills/README.md">code-skills</a></li><li><a href="https://github.com/OpenCoreAgents/runtime/blob/main/packages/conversation-gateway/README.md">conversation-gateway</a></li><li><a href="https://github.com/OpenCoreAgents/runtime/blob/main/packages/core/README.md">core</a></li><li><a href="https://github.com/OpenCoreAgents/runtime/blob/main/packages/dynamic-definitions/README.md">dynamic-definitions</a></li><li><a href="https://github.com/OpenCoreAgents/runtime/blob/main/packages/dynamic-planner/README.md">dynamic-planner</a></li><li><a href="https://github.com/OpenCoreAgents/runtime/blob/main/packages/rag/README.md">rag</a></li><li><a href="https://github.com/OpenCoreAgents/runtime/blob/main/packages/rest-api/README.md">rest-api</a></li><li><a href="https://github.com/OpenCoreAgents/runtime/blob/main/packages/scaffold/README.md">scaffold</a></li><li><a href="https://github.com/OpenCoreAgents/runtime/blob/main/packages/skill-loader-openclaw/src/index.ts">skill-loader-openclaw</a></li><li><a href="https://github.com/OpenCoreAgents/runtime/blob/main/packages/utils/README.md">utils</a></li></ul></div>
+      </div>
+      <div>
+        <h2>Examples</h2>
+        <p>Runnable projects for local execution, REST, RAG, messaging, and more.</p>
+        <div class="inventory"><ul><li><a href="https://github.com/OpenCoreAgents/runtime/blob/main/examples/browser-local/README.md">browser-local</a></li><li><a href="https://github.com/OpenCoreAgents/runtime/blob/main/examples/console-wait/README.md">console-wait</a></li><li><a href="https://github.com/OpenCoreAgents/runtime/blob/main/examples/dynamic-runtime-rest/README.md">dynamic-runtime-rest</a></li><li><a href="https://github.com/OpenCoreAgents/runtime/blob/main/examples/load-openclaw-skills/README.md">load-openclaw-skills</a></li><li><a href="https://github.com/OpenCoreAgents/runtime/blob/main/examples/minimal-run/README.md">minimal-run</a></li><li><a href="https://github.com/OpenCoreAgents/runtime/blob/main/examples/multi-agent/README.md">multi-agent</a></li><li><a href="https://github.com/OpenCoreAgents/runtime/blob/main/examples/openai-tools-skill/README.md">openai-tools-skill</a></li><li><a href="https://github.com/OpenCoreAgents/runtime/blob/main/examples/plan-rest-express/README.md">plan-rest-express</a></li><li><a href="https://github.com/OpenCoreAgents/runtime/blob/main/examples/rag/README.md">rag</a></li><li><a href="https://github.com/OpenCoreAgents/runtime/blob/main/examples/rag-contact-support/README.md">rag-contact-support</a></li><li><a href="https://github.com/OpenCoreAgents/runtime/blob/main/examples/real-world-with-express/README.md">real-world-with-express</a></li><li><a href="https://github.com/OpenCoreAgents/runtime/blob/main/examples/telegram-example-mocked/README.md">telegram-example-mocked</a></li></ul></div>
+      </div>
+    </section>
+    <section class="split">
+      <div>
+        <h2>Operate the runtime</h2>
+        <ul><li><a href="https://github.com/OpenCoreAgents/runtime/blob/main/apps/runtime/docs/docker.md">Docker deployment</a></li><li><a href="https://github.com/OpenCoreAgents/runtime/blob/main/apps/runtime/docs/chat-runs-and-planner.md">Run and planner APIs</a></li><li><a href="https://github.com/OpenCoreAgents/runtime/blob/main/docs/roadmap/technical-debt-security-production.md">Production and security checklist</a></li></ul>
+      </div>
+      <div>
+        <h2>Project direction</h2>
+        <ul><li><a href="https://github.com/OpenCoreAgents/runtime/blob/main/docs/roadmap/README.md">Roadmap and implementation plans</a></li><li><a href="https://github.com/OpenCoreAgents/runtime/blob/main/docs/roadmap/technical-debt.md">Known gaps</a></li><li><a href="https://github.com/OpenCoreAgents/runtime/blob/main/docs/archive/README.md">Archived design notes</a></li></ul>
+      </div>
+    </section>
+  </main>
+  <footer class="shell"><span>OpenCore Agents</span><a href="https://github.com/OpenCoreAgents/runtime/blob/main/LICENSE">Apache License 2.0</a></footer>
+</body>
+</html>
