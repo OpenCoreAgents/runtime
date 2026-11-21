@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Run TypeScript agents on-device or on your own workers. Let a planner define and queue subagents at runtime.">
+  <meta name="description" content="Build agent APIs and background workers in TypeScript. Persist runs, load agent definitions per job, and queue subagents at runtime.">
   <title>OpenCore Agents</title>
   <link rel="stylesheet" href="style.css">
 </head>
@@ -22,8 +22,8 @@
   <main id="main" class="shell">
     <section class="hero">
       <div>
-        <h1>Run agents on-device or on your own workers.</h1>
-        <p>OpenCore Agents is a TypeScript runtime that can run inside a browser or across an API and background workers. Give a planner the ability to define and queue subagents as work comes in.</p>
+        <h1>Build agent APIs and background workers.</h1>
+        <p>OpenCore Agents is a TypeScript runtime for running agents in your Node.js application or dispatching work to a queue. Persist runs so they can resume, and let a planner define and queue subagents as work comes in.</p>
         <div class="actions">
           <a class="button" href="#quickstart">Run the example</a>
           <a href="https://github.com/OpenCoreAgents/runtime/blob/main/docs/reference/core/README.md">Read the engine reference</a>
@@ -43,9 +43,9 @@
       <h2>Why OpenCore Agents</h2>
       <div class="cards">
         <article>
-          <h3>Run the agent inside the browser</h3>
-          <p>Keep run history, memory, and agent definitions in IndexedDB. On WebGPU-capable devices, the browser example can run model inference in a Web Worker using WebLLM.</p>
-          <a href="https://github.com/OpenCoreAgents/runtime/blob/main/examples/browser-local/README.md">Explore the browser example</a>
+          <h3>Run agents in Node.js or on separate workers</h3>
+          <p>Embed the runtime in your Node.js service or use the reference Express API to queue runs for BullMQ workers. With a shared Redis run store, a worker can resume a waiting run by ID.</p>
+          <a href="https://github.com/OpenCoreAgents/runtime/blob/main/apps/runtime/README.md">Explore the server runtime</a>
         </article>
         <article>
           <h3>Create and queue subagents at runtime</h3>
@@ -59,7 +59,7 @@
         </article>
         <article>
           <h3>Wire the runtime into infrastructure you own</h3>
-          <p>Start with the Express, Redis, and BullMQ reference stack. Inject your own model, memory, run store, and messaging adapters as your deployment needs change.</p>
+          <p>Choose how the runtime talks to models, stores memory and run state, and sends messages. Use the included adapters or implement the same interfaces for your infrastructure.</p>
           <a href="https://github.com/OpenCoreAgents/runtime/blob/main/docs/reference/core/05-adapters-contracts.md">Read the adapter contracts</a>
         </article>
       </div>
@@ -109,7 +109,7 @@ pnpm --filter @opencoreagents/example-minimal-run start</code></pre>
       </div>
       <div>
         <h2>Examples</h2>
-        <p>Runnable projects for local execution, REST, RAG, messaging, and more.</p>
+        <p>Try REST, worker queues, RAG, and messaging. The browser-local example adds optional on-device execution with IndexedDB and WebLLM on WebGPU-capable devices.</p>
         <div class="inventory"><ul><li><a href="https://github.com/OpenCoreAgents/runtime/blob/main/examples/browser-local/README.md">browser-local</a></li><li><a href="https://github.com/OpenCoreAgents/runtime/blob/main/examples/console-wait/README.md">console-wait</a></li><li><a href="https://github.com/OpenCoreAgents/runtime/blob/main/examples/dynamic-runtime-rest/README.md">dynamic-runtime-rest</a></li><li><a href="https://github.com/OpenCoreAgents/runtime/blob/main/examples/load-openclaw-skills/README.md">load-openclaw-skills</a></li><li><a href="https://github.com/OpenCoreAgents/runtime/blob/main/examples/minimal-run/README.md">minimal-run</a></li><li><a href="https://github.com/OpenCoreAgents/runtime/blob/main/examples/multi-agent/README.md">multi-agent</a></li><li><a href="https://github.com/OpenCoreAgents/runtime/blob/main/examples/openai-tools-skill/README.md">openai-tools-skill</a></li><li><a href="https://github.com/OpenCoreAgents/runtime/blob/main/examples/plan-rest-express/README.md">plan-rest-express</a></li><li><a href="https://github.com/OpenCoreAgents/runtime/blob/main/examples/rag/README.md">rag</a></li><li><a href="https://github.com/OpenCoreAgents/runtime/blob/main/examples/rag-contact-support/README.md">rag-contact-support</a></li><li><a href="https://github.com/OpenCoreAgents/runtime/blob/main/examples/real-world-with-express/README.md">real-world-with-express</a></li><li><a href="https://github.com/OpenCoreAgents/runtime/blob/main/examples/telegram-example-mocked/README.md">telegram-example-mocked</a></li></ul></div>
       </div>
     </section>
