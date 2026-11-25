@@ -4,7 +4,7 @@ TypeScript monorepo for production-shaped agent backends.
 
 OpenCore Agents helps teams ship agent APIs and workers they can own in production, not demo scripts that collapse on timeouts or process restarts.
 
-Use the OpenClaw skill ecosystem you already know, but run it your way. `@opencoreagents/runtime` gives you control to build, customize, and scale assistants without depending on the OpenClaw Gateway.
+Use the OpenClaw skill ecosystem you already know, but run it your way. The OpenCore runtime gives you control to build, customize, and scale assistants without depending on the OpenClaw Gateway.
 
 Stop hand-rolling the same glue:
 
@@ -18,6 +18,22 @@ Stop hand-rolling the same glue:
 Plug in OpenAI, Anthropic, Redis, Upstash, Express. Explicit wiring, no hidden global singleton.
 
 Apache License 2.0: use it in commercial products without copyleft constraints.
+
+## Install from npm
+
+The [public npm registry](https://www.npmjs.com/org/opencoreagents) is the official installation source for OpenCore Agents packages.
+
+```bash
+npm install @opencoreagents/core
+```
+
+For an OpenAI-backed agent, install the provider adapter alongside the SDK.
+
+```bash
+npm install @opencoreagents/core @opencoreagents/adapters-openai
+```
+
+See the [getting started guide](docs/getting-started.md) for your first agent. The reference REST API and worker app runs from the repository using Docker Compose.
 
 ## Easy getting started (runnable stack)
 
@@ -229,10 +245,6 @@ npx @opencoreagents/code-skills add opencoreagents-engine
 pnpm install
 pnpm turbo run build test lint
 ```
-
-## GitHub Packages
-
-Publishing is maintainers-only via [publish workflow](.github/workflows/publish.yml).
 
 ## License
 

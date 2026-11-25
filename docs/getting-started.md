@@ -121,10 +121,10 @@ Tools and skills **must** exist before the agent that references them. **`Sessio
 
 To run from a checkout, follow the [minimal example](../examples/minimal-run/README.md). It builds the workspace package and uses a scripted model that requires no API key.
 
-For the OpenAI-backed snippets below, use the core and OpenAI adapter workspace packages or install their published packages from [GitHub Packages](../README.md#github-packages). Configure your package manager for the `@opencoreagents` registry before installing.
+The [public npm registry](https://www.npmjs.com/org/opencoreagents) is the official installation source for OpenCore Agents packages. For the OpenAI-backed snippets below, install the SDK and the OpenAI adapter.
 
 ```bash
-pnpm add @opencoreagents/core @opencoreagents/adapters-openai
+npm install @opencoreagents/core @opencoreagents/adapters-openai
 ```
 
 ---
