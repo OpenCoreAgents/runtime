@@ -26,11 +26,11 @@ This sample is intentionally minimal. Before production, account for:
 | **Session id shape** | `resolveSession` uses `sess-${conversationKey}` (e.g. colons in the string). | Fine for demos; if a downstream store forbids certain characters, hash or encode `conversationKey`. |
 | **Runs stuck in `waiting`** | `ConversationGateway` still calls `outbound.sendReply` after `run`/`resume`; if the run ends in **`waiting`** without a `result` step, reply text can be **empty** — a real bot might still call **`sendMessage`** with `""`. | Skip outbound when there is nothing user-visible, or branch on `run.status` in your adapter (extend or wrap the gateway). |
 | **In-memory idempotency** | The example uses a `Set` in one process. | Use Redis / DB with an **atomic claim** (see doc §5.6) when multiple workers handle the same bot. |
-| **Concurrency** | The script processes one update at a time; real traffic can deliver **overlapping** updates for the same chat. | **Serialize** `handleInbound` per `conversationKey` (FIFO queue or lock); see [§5.1–5.6 in the gateway proposal](../../docs/brainstorm/14-conversation-gateway-implementation-proposal.md). |
+| **Concurrency** | The script processes one update at a time; real traffic can deliver **overlapping** updates for the same chat. | **Serialize** `handleInbound` per `conversationKey` (FIFO queue or lock); see [§5.1–5.6 in the gateway proposal](../../docs/archive/brainstorm/14-conversation-gateway-implementation-proposal.md). |
 
 ## Production checklist
 
 - Verify webhook signatures (`X-Telegram-Bot-Api-Secret-Token` or custom secret).
 - Replace in-memory idempotency with **Redis** / DB (atomic claim) for multi-worker setups.
-- Serialize **`handleInbound`** per `conversationKey` (queue or lock); see [`docs/brainstorm/14-conversation-gateway-implementation-proposal.md`](../../docs/brainstorm/14-conversation-gateway-implementation-proposal.md) §5.
+- Serialize **`handleInbound`** per `conversationKey` (queue or lock); see [`docs/archive/brainstorm/14-conversation-gateway-implementation-proposal.md`](../../docs/archive/brainstorm/14-conversation-gateway-implementation-proposal.md) §5.
 - Implement real **`sendMessage`** with your bot token and handle rate limits / retries.

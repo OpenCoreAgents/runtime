@@ -1,6 +1,6 @@
 # Examples
 
-**Twelve** runnable sample programs under **`examples/*`**, each a **`pnpm` workspace** package (see root [`pnpm-workspace.yaml`](../pnpm-workspace.yaml)). From the repository root: `pnpm install`, build the workspace packages each example depends on, then `pnpm --filter <package> start` (or the script named in that example’s subsection) or `cd examples/<dir> && pnpm …`.
+**Thirteen** runnable sample programs under **`examples/*`**, each a **`pnpm` workspace** package (see root [`pnpm-workspace.yaml`](../pnpm-workspace.yaml)). From the repository root: `pnpm install`, build the workspace packages each example depends on, then `pnpm --filter <package> start` (or the script named in that example’s subsection) or `cd examples/<dir> && pnpm …`.
 
 The tutorial index also points here: [Getting started — further reading](../docs/getting-started.md). **Plan-shaped** HTTP routes (`createRuntimeRestRouter`): [`plan-rest.md`](../docs/roadmap/plan-rest.md) and [`packages/rest-api/README.md`](../packages/rest-api/README.md).
 
@@ -17,6 +17,7 @@ For production or any shared runtime, swap to **`RedisMemoryAdapter`** (`@openco
 | If you want to… | Start here |
 |-----------------|------------|
 | Run an agent entirely in a browser with a deterministic adapter and durable IndexedDB state | [`browser-local/`](./browser-local/) |
+| Give a Core agent access to selected tools from an MCP server | [`mcp-order-lookup/`](./mcp-order-lookup/) |
 | See the **smallest** **`Agent.run()`** loop with a **mock LLM**, no network or keys | [`minimal-run/`](./minimal-run/) |
 | Load **OpenClaw / AgentSkills** **`SKILL.md`** packs with **`@opencoreagents/skill-loader-openclaw`**, **`exec`**, scripted **`node`** demo (no API keys) | [`load-openclaw-skills/`](./load-openclaw-skills/) |
 | Use **OpenAI** with **tools + skills** and **`Tool.define`** in a real provider setup | [`openai-tools-skill/`](./openai-tools-skill/) (needs **`OPENAI_API_KEY`**) |
@@ -42,6 +43,7 @@ For production or any shared runtime, swap to **`RedisMemoryAdapter`** (`@openco
 
 | Package | Directory | Summary |
 |---------|-----------|---------|
+| `@opencoreagents/example-mcp-order-lookup` | [`mcp-order-lookup/`](./mcp-order-lookup/) | Discovers a local MCP catalog and registers two allowlisted tools with Core. |
 | `@opencoreagents/example-minimal-run` | [`minimal-run/`](./minimal-run/) | **`Agent.run()`** end-to-end with a **deterministic mock LLM** and **`InMemoryMemoryAdapter`**. No network, no API keys. |
 | `@opencoreagents/example-browser-local` | [`browser-local/`](./browser-local/) | Vite browser demo with a deterministic primary path, durable IndexedDB state, and an optional WebLLM mode; no application server or API key. |
 | `@opencoreagents/example-load-openclaw-skills` | [`load-openclaw-skills/`](./load-openclaw-skills/) | **`loadOpenClawSkills`** + **`registerOpenClawExecTool`**; sample **`skills/*/SKILL.md`** (one gated skip); mock LLM runs **`exec`** (`node -p 42`). No API keys. |

@@ -189,7 +189,7 @@ For production memory/scale details, use:
 | REST and HTTP tools | [`@opencoreagents/rest-api`](packages/rest-api/README.md), [`@opencoreagents/adapters-http-tool`](packages/adapters-http-tool/README.md), [`@opencoreagents/conversation-gateway`](packages/conversation-gateway/README.md) |
 | Dynamic definitions and RAG | [`@opencoreagents/dynamic-definitions`](packages/dynamic-definitions/README.md), [`@opencoreagents/rag`](packages/rag/README.md), [`@opencoreagents/utils`](packages/utils/README.md) |
 | CLI and scaffold | [`@opencoreagents/cli`](packages/cli/README.md), [`@opencoreagents/scaffold`](packages/scaffold/README.md) |
-| Assistant skills | [`@opencoreagents/code-skills`](packages/code-skills/README.md), [`@opencoreagents/skill-loader-openclaw`](packages/skill-loader-openclaw/README.md) |
+| Assistant skills | [`@opencoreagents/code-skills`](packages/code-skills/README.md), [`@opencoreagents/skill-loader-openclaw`](examples/load-openclaw-skills/README.md) |
 
 ## Examples
 

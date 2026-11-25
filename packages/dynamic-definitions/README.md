@@ -21,4 +21,4 @@ Workspace / monorepo: depend on **`@opencoreagents/dynamic-definitions`**, **`@o
 
 ## Related docs
 
-[`docs/reference/core/21-dynamic-runtime-rest.md`](../docs/reference/core/21-dynamic-runtime-rest.md), [`docs/reference/core/20-http-tool-adapter.md`](../docs/reference/core/20-http-tool-adapter.md).
+[`docs/reference/core/21-dynamic-runtime-rest.md`](../../docs/reference/core/21-dynamic-runtime-rest.md), [`docs/reference/core/20-http-tool-adapter.md`](../../docs/reference/core/20-http-tool-adapter.md).
