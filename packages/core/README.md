@@ -4,6 +4,14 @@ Stateful agent **engine**: `Agent`, `AgentRuntime`, `Tool` / `Skill` / `Agent.de
 
 Sessions carry the required `projectId`, optional `tenantId` sub-scope for run isolation, optional expiry via `expiresAtMs`, and renewal helpers like `session.withExpiresAt(...)` and `session.extendBy(ttlMs)`.
 
+## Install
+
+Install the SDK from the [public npm registry](https://www.npmjs.com/package/@opencoreagents/core).
+
+```bash
+npm install @opencoreagents/core
+```
+
 ## Related docs
 
 Canonical engine index: [`docs/reference/core/README.md`](../../docs/reference/core/README.md).
